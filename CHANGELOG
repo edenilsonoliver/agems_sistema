@@ -1,0 +1,9 @@
+# 🧾 Changelog - Sistema DGE NEW
+
+## [v0.0.1] - 2025-10-23
+### Adicionado
+- Protótipo funcional completo inicial.
+- Módulos de Instrumentos e Obrigações com integração dinâmica.
+
+### Próximos passos
+- Implementar CI/CD e validações automáticas de segurança.
