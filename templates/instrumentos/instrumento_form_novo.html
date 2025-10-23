@@ -419,16 +419,23 @@ function adicionarObrigacao() {
 function removerObrigacao(btn) {
     const formDiv = btn.closest('.obrigacao-form');
     const deleteInput = formDiv.querySelector('input[name$="-DELETE"]');
-    
+
     if (deleteInput) {
-        // Se já existe no banco, marcar para deletar
+        // 🔹 Marca o campo DELETE como "checked" e "on"
+        deleteInput.checked = true;
         deleteInput.value = 'on';
+
+        // 🔹 Esconde o bloco da tela
         formDiv.style.display = 'none';
+
+        console.log(`🗑️ Obrigação marcada para exclusão: ${deleteInput.name}`);
     } else {
-        // Se é novo, remover do DOM
+        // 🔹 Se for uma obrigação nova, remove completamente do DOM
         formDiv.remove();
+        console.log('🆕 Obrigação removida antes de ser salva.');
     }
-    
+
+    // Atualiza contador visual
     atualizarContador();
 }
 
@@ -488,9 +495,9 @@ function excluirArquivo(id) {
 document.addEventListener('DOMContentLoaded', function() {
     console.log('✅ SCRIPT DE DATAS INICIADO');
 
+    // === Corrige datas ===
     const inputs = document.querySelectorAll('input[type="date"]');
     console.log('Campos de data detectados:', inputs.length);
-
     inputs.forEach(function(input) {
         const val = input.getAttribute('value') || input.value;
         if (val && val.includes('/')) {
@@ -505,16 +512,39 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // ✅ Agora o formulário pode ser enviado normalmente
+    // === Garante envio do formulário ===
     const form = document.getElementById('formInstrumento');
     if (form) {
         form.addEventListener('submit', function() {
             console.log('🚀 Enviando formulário Instrumento...');
         });
     }
+
+    // === Corrige o escopo da função removerObrigacao ===
+    window.removerObrigacao = function(btn) {
+        const formDiv = btn.closest('.obrigacao-form');
+        const deleteInput = formDiv.querySelector('input[name$="-DELETE"]');
+
+        if (deleteInput) {
+            deleteInput.checked = true;
+            deleteInput.value = 'on';
+            formDiv.style.display = 'none';
+            console.log(`🗑️ Obrigação marcada para exclusão: ${deleteInput.name}`);
+        } else {
+            formDiv.remove();
+            console.log('🆕 Obrigação removida antes de ser salva.');
+        }
+
+        if (typeof atualizarContador === 'function') {
+            atualizarContador();
+        }
+    };
+
+    console.log('✅ Função removerObrigacao registrada no escopo global.');
 });
 </script>
 {% endblock %}
+
 
 
 

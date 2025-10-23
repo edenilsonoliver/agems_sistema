@@ -278,14 +278,14 @@
                         {% if object %}
                             <div class="mb-4">
                                 <h6>Adicionar Arquivo</h6>
-                                <form id="formUploadArquivo" enctype="multipart/form-data">
+                                <div id="formUploadArquivo" enctype="multipart/form-data">
                                     {% csrf_token %}
                                     <div class="row">
                                         <div class="col-md-4 mb-3">
                                             <input type="text" class="form-control" id="nomeArquivo" placeholder="Nome (opcional)">
                                         </div>
                                         <div class="col-md-6 mb-3">
-                                            <input type="file" class="form-control" id="arquivo" required>
+                                            <input type="file" class="form-control" id="arquivo" name="arquivo">
                                         </div>
                                         <div class="col-md-2 mb-3">
                                             <button type="submit" class="btn btn-primary w-100">
@@ -293,7 +293,7 @@
                                             </button>
                                         </div>
                                     </div>
-                                </form>
+                                </div>
                             </div>
 
                             {% if arquivos %}
@@ -419,16 +419,23 @@ function adicionarObrigacao() {
 function removerObrigacao(btn) {
     const formDiv = btn.closest('.obrigacao-form');
     const deleteInput = formDiv.querySelector('input[name$="-DELETE"]');
-    
+
     if (deleteInput) {
-        // Se já existe no banco, marcar para deletar
+        // 🔹 Marca o campo DELETE como "checked" e "on"
+        deleteInput.checked = true;
         deleteInput.value = 'on';
+
+        // 🔹 Esconde o bloco da tela
         formDiv.style.display = 'none';
+
+        console.log(`🗑️ Obrigação marcada para exclusão: ${deleteInput.name}`);
     } else {
-        // Se é novo, remover do DOM
+        // 🔹 Se for uma obrigação nova, remove completamente do DOM
         formDiv.remove();
+        console.log('🆕 Obrigação removida antes de ser salva.');
     }
-    
+
+    // Atualiza contador visual
     atualizarContador();
 }
 
@@ -486,19 +493,35 @@ function excluirArquivo(id) {
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const form = document.getElementById('formInstrumento');
+    console.log('✅ SCRIPT DE DATAS INICIADO');
 
+    const inputs = document.querySelectorAll('input[type="date"]');
+    console.log('Campos de data detectados:', inputs.length);
+
+    inputs.forEach(function(input) {
+        const val = input.getAttribute('value') || input.value;
+        if (val && val.includes('/')) {
+            const partes = val.split('/');
+            if (partes.length === 3) {
+                const [dia, mes, ano] = partes;
+                const novoValor = `${ano}-${mes.padStart(2, '0')}-${dia.padStart(2, '0')}`;
+                input.value = novoValor;
+                input.setAttribute('value', novoValor);
+                console.log(`✔️ Corrigido: ${val} → ${novoValor}`);
+            }
+        }
+    });
+
+    // ✅ Agora o formulário pode ser enviado normalmente
+    const form = document.getElementById('formInstrumento');
     if (form) {
         form.addEventListener('submit', function() {
-            // Força exibir todas as abas antes do envio, garantindo que o inline formset seja enviado
-            const tabContents = document.querySelectorAll('.tab-pane');
-            tabContents.forEach(tc => tc.classList.add('show', 'active'));
-            console.log('🔧 Todas as abas ativadas antes do envio.');
+            console.log('🚀 Enviando formulário Instrumento...');
         });
-    } else {
-        console.warn('⚠️ Formulário "formInstrumento" não encontrado.');
     }
 });
 </script>
 {% endblock %}
+
+
 
