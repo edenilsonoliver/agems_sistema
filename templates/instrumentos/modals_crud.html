@@ -1,0 +1,106 @@
+<!-- Modal Tipo de Instrumento -->
+<div class="modal fade" id="modalTipoInstrumento" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Adicionar Tipo de Instrumento</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="text" class="form-control" id="novoTipoInstrumento" placeholder="Ex: Contrato de Concessão">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" onclick="adicionarTipoInstrumento()">Adicionar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Diretoria -->
+<div class="modal fade" id="modalDiretoria" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Adicionar Diretoria</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <input type="text" class="form-control" id="siglaDiretoria" placeholder="Sigla (ex: DGE)">
+                </div>
+                <div class="mb-3">
+                    <input type="text" class="form-control" id="nomeDiretoria" placeholder="Nome completo">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" onclick="adicionarDiretoria()">Adicionar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function adicionarTipoInstrumento() {
+    const nome = document.getElementById('novoTipoInstrumento').value;
+    if (!nome) {
+        alert('Digite o nome do tipo de instrumento');
+        return;
+    }
+    
+    fetch('/api/tipo-instrumento/criar/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: 'nome=' + encodeURIComponent(nome)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            const select = document.querySelector('select[name="tipo_instrumento"]');
+            const option = new Option(nome, data.id, true, true);
+            select.add(option);
+            bootstrap.Modal.getInstance(document.getElementById('modalTipoInstrumento')).hide();
+            document.getElementById('novoTipoInstrumento').value = '';
+        } else {
+            alert('Erro: ' + data.error);
+        }
+    });
+}
+
+function adicionarDiretoria() {
+    const sigla = document.getElementById('siglaDiretoria').value;
+    const nome = document.getElementById('nomeDiretoria').value;
+    
+    if (!sigla || !nome) {
+        alert('Preencha sigla e nome da diretoria');
+        return;
+    }
+    
+    fetch('/api/diretoria/criar/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: 'sigla=' + encodeURIComponent(sigla) + '&nome=' + encodeURIComponent(nome)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            const select = document.querySelector('select[name="diretoria"]');
+            const option = new Option(sigla + ' - ' + nome, data.id, true, true);
+            select.add(option);
+            bootstrap.Modal.getInstance(document.getElementById('modalDiretoria')).hide();
+            document.getElementById('siglaDiretoria').value = '';
+            document.getElementById('nomeDiretoria').value = '';
+        } else {
+            alert('Erro: ' + data.error);
+        }
+    });
+}
+</script>
+

@@ -1,0 +1,29 @@
+services:
+  # Aplicação Django com SQLite
+  web:
+    build: .
+    container_name: agems_web
+    command: gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 3 --timeout 120 --reload
+    volumes:
+      - .:/app
+      - static_volume:/app/staticfiles
+      - media_volume:/app/media
+    ports:
+      - "8000:8000"
+    environment:
+      - DEBUG=True
+      - SECRET_KEY=django-insecure-agems-2024-local-development
+      - ALLOWED_HOSTS=localhost,127.0.0.1,0.0.0.0,host.docker.internal
+      - USE_SQLITE=True
+    networks:
+      - agems_network
+    restart: unless-stopped
+
+volumes:
+  static_volume:
+  media_volume:
+
+networks:
+  agems_network:
+    driver: bridge
+

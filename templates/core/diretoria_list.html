@@ -1,0 +1,33 @@
+{% extends 'components/list_view.html' %}
+
+{% block table_headers %}
+<th>Nome</th>
+<th>Descrição</th>
+{% endblock %}
+
+{% block table_rows %}
+{% for item in object_list %}
+<tr>
+    <td>
+        <div class="fw-semibold">{{ item.nome }}</div>
+    </td>
+    <td>
+        {% if item.descricao %}
+        <small class="text-muted">{{ item.descricao|truncatewords:15 }}</small>
+        {% else %}
+        <small class="text-muted">-</small>
+        {% endif %}
+    </td>
+    <td>
+        <div class="btn-group btn-group-sm">
+            <a href="{% url 'diretoria_edit' item.pk %}" class="btn btn-outline-primary" title="Editar">
+                <i class="bi bi-pencil"></i>
+            </a>
+            <a href="{% url 'diretoria_delete' item.pk %}" class="btn btn-outline-danger" title="Excluir">
+                <i class="bi bi-trash"></i>
+            </a>
+        </div>
+    </td>
+</tr>
+{% endfor %}
+{% endblock %}

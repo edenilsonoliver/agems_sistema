@@ -1,0 +1,378 @@
+{% extends 'base_modern.html' %}
+{% load static %}
+
+{% block title %}{% if object %}Editar{% else %}Adicionar{% endif %} Instrumento - AGEMS{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2><i class="bi bi-file-earmark-text me-2"></i>{% if object %}Editar{% else %}Adicionar{% endif %} Instrumento</h2>
+            <p class="text-muted">Gestão de instrumentos jurídicos (Contratos, Convênios, Acordos)</p>
+        </div>
+        <a href="{% url 'instrumento_list' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Voltar
+        </a>
+    </div>
+
+    <!-- Abas -->
+    <ul class="nav nav-tabs mb-4" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="dados-tab" data-bs-toggle="tab" data-bs-target="#dados" type="button">
+                <i class="bi bi-file-text me-2"></i>Dados Gerais
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="obrigacoes-tab" data-bs-toggle="tab" data-bs-target="#obrigacoes" type="button">
+                <i class="bi bi-list-check me-2"></i>Obrigações
+                <span class="badge bg-primary ms-1">{% if object %}{{ obrigacoes|length }}{% else %}0{% endif %}</span>
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="arquivos-tab" data-bs-toggle="tab" data-bs-target="#arquivos" type="button">
+                <i class="bi bi-paperclip me-2"></i>Arquivos
+                <span class="badge bg-primary ms-1">{% if object %}{{ arquivos|length }}{% else %}0{% endif %}</span>
+            </button>
+        </li>
+    </ul>
+
+    <div class="tab-content">
+        <!-- Aba Dados Gerais -->
+        <div class="tab-pane fade show active" id="dados" role="tabpanel">
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                
+                {% if form.errors %}
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <h5 class="alert-heading"><i class="bi bi-exclamation-triangle me-2"></i>Erros no formulário</h5>
+                    <ul class="mb-0">
+                    {% for field in form %}
+                        {% if field.errors %}
+                            {% for error in field.errors %}
+                                <li><strong>{{ field.label }}:</strong> {{ error }}</li>
+                            {% endfor %}
+                        {% endif %}
+                    {% endfor %}
+                    {% for error in form.non_field_errors %}
+                        <li>{{ error }}</li>
+                    {% endfor %}
+                    </ul>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+                {% endif %}
+                
+                <div class="row">
+                    <!-- Coluna Principal -->
+                    <div class="col-lg-8">
+                        <!-- Informações Básicas -->
+                        <div class="card mb-4">
+                            <div class="card-header bg-primary text-white">
+                                <h5 class="mb-0"><i class="bi bi-info-circle me-2"></i>Informações Básicas</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Número do Instrumento *</label>
+                                        {{ form.numero }}
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">NUP (E-MS)</label>
+                                        {{ form.nup }}
+                                        <small class="text-muted d-block">Número Único de Protocolo do sistema E-MS</small>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Tipo de Instrumento *</label>
+                                        <div class="input-group">
+                                            {{ form.tipo_instrumento }}
+                                            <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modalTipoInstrumento">
+                                                <i class="bi bi-plus-circle"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Diretoria Responsável *</label>
+                                        <div class="input-group">
+                                            {{ form.diretoria }}
+                                            <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modalDiretoria">
+                                                <i class="bi bi-plus-circle"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Objeto do Instrumento *</label>
+                                    {{ form.objeto }}
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Entidades Vinculadas *</label>
+                                    {{ form.entidades }}
+                                    <small class="text-muted d-block">Segure Ctrl (ou Cmd) para selecionar múltiplas entidades</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Vigência -->
+                        <div class="card mb-4">
+                            <div class="card-header bg-success text-white">
+                                <h5 class="mb-0"><i class="bi bi-calendar-range me-2"></i>Vigência</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label">Data de Assinatura *</label>
+                                        {{ form.data_assinatura }}
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label">Data de Início *</label>
+                                        {{ form.data_inicio }}
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label">Data de Fim *</label>
+                                        {{ form.data_fim }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Revisão Tarifária -->
+                        <div class="card mb-4">
+                            <div class="card-header bg-warning text-dark">
+                                <h5 class="mb-0"><i class="bi bi-cash-coin me-2"></i>Revisão Tarifária (Opcional)</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Periodicidade (meses)</label>
+                                        {{ form.periodicidade_revisao_tarifaria }}
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Próxima Revisão</label>
+                                        {{ form.data_proxima_revisao }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Observações -->
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h5 class="mb-0"><i class="bi bi-chat-left-text me-2"></i>Observações</h5>
+                            </div>
+                            <div class="card-body">
+                                {{ form.observacoes }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Coluna Lateral -->
+                    <div class="col-lg-4">
+                        <!-- Status -->
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h5 class="mb-0"><i class="bi bi-info-circle me-2"></i>Status</h5>
+                            </div>
+                            <div class="card-body">
+                                <label class="form-label">Status do Instrumento *</label>
+                                {{ form.status }}
+                            </div>
+                        </div>
+
+                        <!-- Botões -->
+                        <div class="card">
+                            <div class="card-body">
+                                <button type="submit" class="btn btn-primary w-100 mb-2">
+                                    <i class="bi bi-check-circle me-2"></i>Salvar
+                                </button>
+                                <a href="{% url 'instrumento_list' %}" class="btn btn-outline-secondary w-100">
+                                    <i class="bi bi-x-circle me-2"></i>Cancelar
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- Aba Obrigações -->
+        <div class="tab-pane fade" id="obrigacoes" role="tabpanel">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="bi bi-list-check me-2"></i>Obrigações</h5>
+                    {% if object %}
+                    <a href="{% url 'obrigacao_create' %}?instrumento={{ object.id }}" class="btn btn-primary btn-sm">
+                        <i class="bi bi-plus-circle"></i> Adicionar
+                    </a>
+                    {% endif %}
+                </div>
+                <div class="card-body">
+                    {% if object %}
+                        {% if obrigacoes %}
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Título</th>
+                                        <th>Tipo</th>
+                                        <th>Vencimento</th>
+                                        <th>Status</th>
+                                        <th>Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for obrigacao in obrigacoes %}
+                                    <tr>
+                                        <td>{{ obrigacao.titulo }}</td>
+                                        <td>{{ obrigacao.tipo_obrigacao }}</td>
+                                        <td>{{ obrigacao.data_vencimento|date:"d/m/Y"|default:"-" }}</td>
+                                        <td><span class="badge bg-{{ obrigacao.get_status_color }}">{{ obrigacao.get_status_display }}</span></td>
+                                        <td>
+                                            <a href="{% url 'obrigacao_update' obrigacao.pk %}" class="btn btn-sm btn-outline-primary">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                            <a href="{% url 'obrigacao_delete' obrigacao.pk %}" class="btn btn-sm btn-outline-danger">
+                                                <i class="bi bi-trash"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        {% else %}
+                            <div class="text-center py-5">
+                                <i class="bi bi-inbox display-1 text-muted"></i>
+                                <p class="text-muted mt-3">Nenhuma obrigação cadastrada para este instrumento</p>
+                            </div>
+                        {% endif %}
+                    {% else %}
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle me-2"></i>
+                            Salve o instrumento primeiro para poder adicionar obrigações.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Aba Arquivos -->
+        <div class="tab-pane fade" id="arquivos" role="tabpanel">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-paperclip me-2"></i>Arquivos</h5>
+                </div>
+                <div class="card-body">
+                    {% if object %}
+                        <div class="mb-4">
+                            <h6>Adicionar Arquivo</h6>
+                            <form id="formUploadArquivo" enctype="multipart/form-data">
+                                {% csrf_token %}
+                                <div class="row">
+                                    <div class="col-md-4 mb-3">
+                                        <input type="text" class="form-control" id="nomeArquivo" placeholder="Nome (opcional)">
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <input type="file" class="form-control" id="arquivo" required>
+                                    </div>
+                                    <div class="col-md-2 mb-3">
+                                        <button type="submit" class="btn btn-primary w-100">
+                                            <i class="bi bi-upload"></i> Upload
+                                        </button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+
+                        {% if arquivos %}
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Nome</th>
+                                        <th>Data Upload</th>
+                                        <th>Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="listaArquivos">
+                                    {% for arquivo in arquivos %}
+                                    <tr>
+                                        <td>{{ arquivo.nome_arquivo }}</td>
+                                        <td>{{ arquivo.data_upload|date:"d/m/Y H:i" }}</td>
+                                        <td>
+                                            <a href="{{ arquivo.arquivo.url }}" class="btn btn-sm btn-outline-primary" target="_blank">
+                                                <i class="bi bi-download"></i>
+                                            </a>
+                                            <button class="btn btn-sm btn-outline-danger" onclick="excluirArquivo({{ arquivo.id }})">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        {% else %}
+                            <div class="text-center py-5">
+                                <i class="bi bi-inbox display-1 text-muted"></i>
+                                <p class="text-muted mt-3">Nenhum arquivo anexado</p>
+                            </div>
+                        {% endif %}
+                    {% else %}
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle me-2"></i>
+                            Salve o instrumento primeiro para poder fazer upload de arquivos.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modais CRUD Inline -->
+{% include 'instrumentos/modals_crud.html' %}
+
+<script>
+// Upload de arquivo via AJAX
+{% if object %}
+document.getElementById('formUploadArquivo').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData();
+    formData.append('arquivo', document.getElementById('arquivo').files[0]);
+    formData.append('nome_arquivo', document.getElementById('nomeArquivo').value);
+    formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+    
+    fetch('{% url "arquivo_upload" object.id %}', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Erro ao fazer upload: ' + data.error);
+        }
+    });
+});
+
+function excluirArquivo(id) {
+    if (confirm('Deseja realmente excluir este arquivo?')) {
+        fetch(`/api/arquivo/${id}/excluir/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Erro ao excluir arquivo');
+            }
+        });
+    }
+}
+{% endif %}
+</script>
+{% endblock %}
+

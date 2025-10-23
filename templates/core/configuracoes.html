@@ -1,0 +1,191 @@
+{% extends 'base_modern.html' %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">
+        <i class="bi bi-gear me-2"></i>
+        Configurações do Sistema
+    </h1>
+    <p class="page-subtitle">Gerenciar tipos e configurações gerais</p>
+</div>
+
+<div class="row g-4">
+    <!-- Diretorias -->
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-building me-2"></i>Diretorias</h5>
+                <a href="{% url 'diretoria_create' %}" class="btn btn-sm btn-light">
+                    <i class="bi bi-plus-circle"></i>
+                </a>
+            </div>
+            <div class="card-body">
+                <div class="list-group list-group-flush">
+                    {% for dir in diretorias %}
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong>{{ dir.sigla }}</strong> - {{ dir.nome }}
+                        </div>
+                        <div class="btn-group btn-group-sm">
+                            <a href="{% url 'diretoria_edit' dir.pk %}" class="btn btn-outline-primary">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                <div class="mt-3 text-center">
+                    <a href="{% url 'diretoria_list' %}" class="btn btn-outline-primary">
+                        Ver Todas
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tipos de Entidade -->
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-tag me-2"></i>Tipos de Entidade</h5>
+                <a href="{% url 'tipoentidade_create' %}" class="btn btn-sm btn-light">
+                    <i class="bi bi-plus-circle"></i>
+                </a>
+            </div>
+            <div class="card-body">
+                <div class="list-group list-group-flush">
+                    {% for tipo in tipos_entidade %}
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        {{ tipo.nome }}
+                        <a href="{% url 'tipoentidade_edit' tipo.pk %}" class="btn btn-sm btn-outline-info">
+                            <i class="bi bi-pencil"></i>
+                        </a>
+                    </div>
+                    {% endfor %}
+                </div>
+                <div class="mt-3 text-center">
+                    <a href="{% url 'tipoentidade_list' %}" class="btn btn-outline-info">
+                        Ver Todos
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tipos de Serviço -->
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-secondary text-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-wrench me-2"></i>Tipos de Serviço</h5>
+                <a href="{% url 'tiposervico_create' %}" class="btn btn-sm btn-light">
+                    <i class="bi bi-plus-circle"></i>
+                </a>
+            </div>
+            <div class="card-body">
+                <div class="list-group list-group-flush">
+                    {% for tipo in tipos_servico %}
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        {{ tipo.nome }}
+                        <a href="{% url 'tiposervico_edit' tipo.pk %}" class="btn btn-sm btn-outline-secondary">
+                            <i class="bi bi-pencil"></i>
+                        </a>
+                    </div>
+                    {% endfor %}
+                </div>
+                <div class="mt-3 text-center">
+                    <a href="{% url 'tiposervico_list' %}" class="btn btn-outline-secondary">
+                        Ver Todos
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tipos de Instrumento -->
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-file-earmark me-2"></i>Tipos de Instrumento</h5>
+                <a href="{% url 'tipoinstrumento_create' %}" class="btn btn-sm btn-light">
+                    <i class="bi bi-plus-circle"></i>
+                </a>
+            </div>
+            <div class="card-body">
+                <div class="list-group list-group-flush">
+                    {% for tipo in tipos_instrumento %}
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        {{ tipo.nome }}
+                        <a href="{% url 'tipoinstrumento_edit' tipo.pk %}" class="btn btn-sm btn-outline-success">
+                            <i class="bi bi-pencil"></i>
+                        </a>
+                    </div>
+                    {% endfor %}
+                </div>
+                <div class="mt-3 text-center">
+                    <a href="{% url 'tipoinstrumento_list' %}" class="btn btn-outline-success">
+                        Ver Todos
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tipos de Obrigação -->
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-warning text-dark d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-list-check me-2"></i>Tipos de Obrigação</h5>
+                <a href="{% url 'tipoobrigacao_create' %}" class="btn btn-sm btn-dark">
+                    <i class="bi bi-plus-circle"></i>
+                </a>
+            </div>
+            <div class="card-body">
+                <div class="list-group list-group-flush">
+                    {% for tipo in tipos_obrigacao %}
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        {{ tipo.nome }}
+                        <a href="{% url 'tipoobrigacao_edit' tipo.pk %}" class="btn btn-sm btn-outline-warning">
+                            <i class="bi bi-pencil"></i>
+                        </a>
+                    </div>
+                    {% endfor %}
+                </div>
+                <div class="mt-3 text-center">
+                    <a href="{% url 'tipoobrigacao_list' %}" class="btn btn-outline-warning">
+                        Ver Todos
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tipos de Ação -->
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-danger text-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-lightning me-2"></i>Tipos de Ação</h5>
+                <a href="{% url 'tipoacao_create' %}" class="btn btn-sm btn-light">
+                    <i class="bi bi-plus-circle"></i>
+                </a>
+            </div>
+            <div class="card-body">
+                <div class="list-group list-group-flush">
+                    {% for tipo in tipos_acao %}
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        {{ tipo.nome }}
+                        <a href="{% url 'tipoacao_edit' tipo.pk %}" class="btn btn-sm btn-outline-danger">
+                            <i class="bi bi-pencil"></i>
+                        </a>
+                    </div>
+                    {% endfor %}
+                </div>
+                <div class="mt-3 text-center">
+                    <a href="{% url 'tipoacao_list' %}" class="btn btn-outline-danger">
+                        Ver Todos
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

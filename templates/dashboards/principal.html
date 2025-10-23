@@ -1,0 +1,207 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard - AGEMS{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-3 border-bottom">
+    <h1 class="h2"><i class="bi bi-speedometer2"></i> Dashboard Principal</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <button type="button" class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-calendar"></i> Hoje: {{ "now"|date:"d/m/Y" }}
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Cards de Estatísticas -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card card-stat">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-muted mb-2">Contratos Vigentes</h6>
+                        <h2 class="mb-0">{{ total_contratos }}</h2>
+                    </div>
+                    <div class="text-primary">
+                        <i class="bi bi-file-earmark-text" style="font-size: 2.5rem;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card card-stat">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-muted mb-2">Concessionárias Ativas</h6>
+                        <h2 class="mb-0">{{ total_concessionarias }}</h2>
+                    </div>
+                    <div class="text-success">
+                        <i class="bi bi-building" style="font-size: 2.5rem;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card card-stat">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-muted mb-2">Indicadores Ativos</h6>
+                        <h2 class="mb-0">{{ total_indicadores }}</h2>
+                    </div>
+                    <div class="text-info">
+                        <i class="bi bi-graph-up" style="font-size: 2.5rem;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card card-stat border-danger">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-muted mb-2">Obrigações Vencidas</h6>
+                        <h2 class="mb-0 text-danger">{{ obrigacoes_vencidas }}</h2>
+                    </div>
+                    <div class="text-danger">
+                        <i class="bi bi-exclamation-triangle" style="font-size: 2.5rem;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Alertas e Obrigações -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-warning text-white">
+                <h5 class="mb-0"><i class="bi bi-calendar-check"></i> Obrigações Pendentes</h5>
+            </div>
+            <div class="card-body">
+                {% if obrigacoes_pendentes %}
+                <div class="table-responsive">
+                    <table class="table table-hover table-sm">
+                        <thead>
+                            <tr>
+                                <th>Contrato</th>
+                                <th>Tipo</th>
+                                <th>Vencimento</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for obrigacao in obrigacoes_pendentes %}
+                            <tr>
+                                <td>{{ obrigacao.contrato.numero }}</td>
+                                <td><span class="badge bg-secondary">{{ obrigacao.get_tipo_display }}</span></td>
+                                <td>{{ obrigacao.data_vencimento|date:"d/m/Y" }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                <a href="/admin/contratos/obrigacaocontratual/" class="btn btn-sm btn-outline-primary">Ver Todas</a>
+                {% else %}
+                <p class="text-muted mb-0">Nenhuma obrigação pendente no momento.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-danger text-white">
+                <h5 class="mb-0"><i class="bi bi-clock-history"></i> Contratos Próximos ao Vencimento</h5>
+            </div>
+            <div class="card-body">
+                {% if contratos_vencimento %}
+                <div class="table-responsive">
+                    <table class="table table-hover table-sm">
+                        <thead>
+                            <tr>
+                                <th>Número</th>
+                                <th>Concessionária</th>
+                                <th>Vencimento</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for contrato in contratos_vencimento %}
+                            <tr>
+                                <td>{{ contrato.numero }}</td>
+                                <td>{{ contrato.concessionaria.razao_social|truncatewords:3 }}</td>
+                                <td>{{ contrato.data_fim|date:"d/m/Y" }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                <a href="/admin/contratos/contrato/" class="btn btn-sm btn-outline-primary">Ver Todos</a>
+                {% else %}
+                <p class="text-muted mb-0">Nenhum contrato próximo ao vencimento.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Indicadores Recentes -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-graph-up"></i> Indicadores Recentemente Coletados</h5>
+            </div>
+            <div class="card-body">
+                {% if indicadores_recentes %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Indicador</th>
+                                <th>Contrato</th>
+                                <th>Período</th>
+                                <th>Valor</th>
+                                <th>Meta</th>
+                                <th>Data Coleta</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for valor in indicadores_recentes %}
+                            <tr>
+                                <td>{{ valor.indicador.nome }}</td>
+                                <td>{{ valor.contrato.numero }}</td>
+                                <td>{{ valor.periodo_referencia|date:"m/Y" }}</td>
+                                <td>{{ valor.valor }} {{ valor.indicador.unidade_medida }}</td>
+                                <td>
+                                    {% if valor.valor_meta %}
+                                        {{ valor.valor_meta }} {{ valor.indicador.unidade_medida }}
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                                <td>{{ valor.data_coleta|date:"d/m/Y H:i" }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                <a href="/admin/indicadores/valorindicador/" class="btn btn-sm btn-outline-primary">Ver Todos</a>
+                {% else %}
+                <p class="text-muted mb-0">Nenhum indicador coletado recentemente.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

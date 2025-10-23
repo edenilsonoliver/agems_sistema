@@ -1,0 +1,49 @@
+============================================================
+  AGEMS - GUIA DE INSTALAÇÃO RÁPIDA
+============================================================
+
+PASSO 1: Instalar Docker Desktop
+---------------------------------
+1. Baixe em: https://www.docker.com/products/docker-desktop
+2. Instale e reinicie o computador se necessário
+3. Abra o Docker Desktop e aguarde inicializar
+
+PASSO 2: Extrair o Pacote
+--------------------------
+1. Extraia o arquivo ZIP em uma pasta (ex: C:\AGEMS)
+2. NÃO use pastas com acentos ou caracteres especiais
+
+PASSO 3: Executar o Sistema
+----------------------------
+1. Clique com botão direito na pasta do projeto
+2. Selecione "Abrir no Terminal" ou "Open PowerShell"
+3. Digite: .\iniciar.ps1
+4. Pressione ENTER
+
+PRONTO! O sistema abrirá automaticamente no navegador.
+
+============================================================
+ACESSO
+============================================================
+URL: http://localhost:8000
+Usuário: admin
+Senha: admin123
+
+============================================================
+COMANDOS ÚTEIS
+============================================================
+Iniciar:    .\iniciar.ps1
+Parar:      .\parar.ps1
+Reiniciar:  .\reiniciar.ps1
+Ver Logs:   .\logs.ps1
+Backup:     .\backup.ps1
+
+============================================================
+PROBLEMAS?
+============================================================
+1. Certifique-se que o Docker Desktop está rodando
+2. Execute: .\logs.ps1 para ver os logs
+3. Tente: .\reiniciar.ps1
+
+============================================================
+

@@ -1,0 +1,60 @@
+{% extends 'components/list_view.html' %}
+
+{% block table_headers %}
+<th>Nome</th>
+<th>Ação</th>
+<th>Responsável</th>
+<th>Período</th>
+<th>Progresso</th>
+<th>Status</th>
+{% endblock %}
+
+{% block table_rows %}
+{% for tarefa in object_list %}
+<tr>
+    <td>
+        <div class="fw-semibold">{{ tarefa.nome }}</div>
+        <small class="text-muted">
+            <i class="bi bi-flag me-1"></i>
+            {{ tarefa.get_prioridade_display }}
+        </small>
+    </td>
+    <td><small>{{ tarefa.acao.nome }}</small></td>
+    <td><small>{{ tarefa.responsavel.get_full_name|default:tarefa.responsavel.username }}</small></td>
+    <td>
+        <small>
+            <i class="bi bi-calendar me-1"></i>
+            {{ tarefa.data_inicio|date:"d/m/Y" }} - {{ tarefa.data_fim|date:"d/m/Y" }}
+        </small>
+    </td>
+    <td>
+        <div class="progress" style="height: 20px;">
+            <div class="progress-bar" role="progressbar" style="width: {{ tarefa.percentual_cumprido }}%">
+                {{ tarefa.percentual_cumprido }}%
+            </div>
+        </div>
+    </td>
+    <td>
+        {% if tarefa.status == 'finalizado' %}
+            <span class="badge bg-success">Finalizado</span>
+        {% elif tarefa.status == 'em_andamento' %}
+            <span class="badge bg-primary">Em Andamento</span>
+        {% elif tarefa.status == 'atrasado' %}
+            <span class="badge bg-danger">Atrasado</span>
+        {% else %}
+            <span class="badge bg-secondary">{{ tarefa.get_status_display }}</span>
+        {% endif %}
+    </td>
+    <td>
+        <div class="btn-group btn-group-sm">
+            <a href="{% url 'tarefa_edit' tarefa.pk %}" class="btn btn-outline-primary" title="Editar">
+                <i class="bi bi-pencil"></i>
+            </a>
+            <a href="{% url 'tarefa_delete' tarefa.pk %}" class="btn btn-outline-danger" title="Excluir">
+                <i class="bi bi-trash"></i>
+            </a>
+        </div>
+    </td>
+</tr>
+{% endfor %}
+{% endblock %}

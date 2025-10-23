@@ -1,0 +1,52 @@
+{% extends 'components/list_view.html' %}
+
+{% block table_headers %}
+<th>Nome</th>
+<th>Obrigação</th>
+<th>Tipo</th>
+<th>Responsável</th>
+<th>Progresso</th>
+<th>Status</th>
+{% endblock %}
+
+{% block table_rows %}
+{% for acao in object_list %}
+<tr>
+    <td>
+        <div class="fw-semibold">{{ acao.nome }}</div>
+        <small class="text-muted">{{ acao.descricao|truncatewords:10 }}</small>
+    </td>
+    <td><small>{{ acao.obrigacao.titulo }}</small></td>
+    <td><span class="badge bg-primary">{{ acao.tipo_acao }}</span></td>
+    <td><small>{{ acao.responsavel.get_full_name|default:acao.responsavel.username }}</small></td>
+    <td>
+        <div class="progress" style="height: 20px;">
+            <div class="progress-bar" role="progressbar" style="width: {{ acao.percentual_cumprido }}%">
+                {{ acao.percentual_cumprido }}%
+            </div>
+        </div>
+    </td>
+    <td>
+        {% if acao.status == 'finalizado' %}
+            <span class="badge bg-success">Finalizado</span>
+        {% elif acao.status == 'em_andamento' %}
+            <span class="badge bg-primary">Em Andamento</span>
+        {% elif acao.status == 'atrasado' %}
+            <span class="badge bg-danger">Atrasado</span>
+        {% else %}
+            <span class="badge bg-secondary">{{ acao.get_status_display }}</span>
+        {% endif %}
+    </td>
+    <td>
+        <div class="btn-group btn-group-sm">
+            <a href="{% url 'acao_edit' acao.pk %}" class="btn btn-outline-primary" title="Editar">
+                <i class="bi bi-pencil"></i>
+            </a>
+            <a href="{% url 'acao_delete' acao.pk %}" class="btn btn-outline-danger" title="Excluir">
+                <i class="bi bi-trash"></i>
+            </a>
+        </div>
+    </td>
+</tr>
+{% endfor %}
+{% endblock %}

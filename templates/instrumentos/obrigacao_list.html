@@ -1,0 +1,68 @@
+{% extends 'components/list_view.html' %}
+
+{% block table_headers %}
+<th>Título</th>
+<th>Instrumento</th>
+<th>Tipo</th>
+<th>Cláusula</th>
+<th>Vencimento</th>
+<th>Status</th>
+<th>Recorrente</th>
+{% endblock %}
+
+{% block table_rows %}
+{% for obrigacao in object_list %}
+<tr>
+    <td>
+        <div class="fw-semibold">{{ obrigacao.titulo }}</div>
+        <small class="text-muted">{{ obrigacao.descricao|truncatewords:10 }}</small>
+    </td>
+    <td>
+        <small class="text-primary">
+            <i class="bi bi-file-earmark-text me-1"></i>
+            {{ obrigacao.instrumento.numero }}
+        </small>
+    </td>
+    <td><span class="badge bg-info">{{ obrigacao.tipo_obrigacao }}</span></td>
+    <td><small class="text-muted">{{ obrigacao.clausula_referencia|default:"—" }}</small></td>
+    <td>
+        {% if obrigacao.data_vencimento %}
+            <small>{{ obrigacao.data_vencimento|date:"d/m/Y" }}</small>
+        {% else %}
+            <small class="text-muted">—</small>
+        {% endif %}
+    </td>
+    <td>
+        {% if obrigacao.status == 'cumprida' %}
+            <span class="badge bg-success">Cumprida</span>
+        {% elif obrigacao.status == 'em_andamento' %}
+            <span class="badge bg-primary">Em Andamento</span>
+        {% elif obrigacao.status == 'vencida' %}
+            <span class="badge bg-danger">Vencida</span>
+        {% else %}
+            <span class="badge bg-warning text-dark">Pendente</span>
+        {% endif %}
+    </td>
+    <td>
+        {% if obrigacao.recorrente %}
+            <span class="badge bg-secondary">
+                <i class="bi bi-arrow-repeat"></i> Sim
+            </span>
+        {% else %}
+            <small class="text-muted">Não</small>
+        {% endif %}
+    </td>
+    <td>
+        <div class="btn-group btn-group-sm">
+            <a href="{% url 'obrigacao_edit' obrigacao.pk %}" class="btn btn-outline-primary" title="Editar">
+                <i class="bi bi-pencil"></i>
+            </a>
+            <a href="{% url 'obrigacao_delete' obrigacao.pk %}" class="btn btn-outline-danger" title="Excluir">
+                <i class="bi bi-trash"></i>
+            </a>
+        </div>
+    </td>
+</tr>
+{% endfor %}
+{% endblock %}
+

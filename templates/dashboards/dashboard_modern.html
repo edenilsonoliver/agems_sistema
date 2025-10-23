@@ -1,0 +1,301 @@
+{% extends 'base_modern.html' %}
+
+{% block title %}Dashboard - AGEMS{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">
+        <i class="bi bi-speedometer2 me-2"></i>
+        Dashboard
+    </h1>
+    <p class="page-subtitle">Visão geral do sistema de gestão regulatória</p>
+</div>
+
+<!-- Stats Cards -->
+<div class="row g-4 mb-4">
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="stat-card">
+            <div class="stat-icon primary">
+                <i class="bi bi-file-earmark-text"></i>
+            </div>
+            <div class="stat-value">{{ total_instrumentos }}</div>
+            <div class="stat-label">Instrumentos Vigentes</div>
+        </div>
+    </div>
+    
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="stat-card">
+            <div class="stat-icon success">
+                <i class="bi bi-building"></i>
+            </div>
+            <div class="stat-value">{{ total_entidades }}</div>
+            <div class="stat-label">Entidades Ativas</div>
+        </div>
+    </div>
+    
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="stat-card">
+            <div class="stat-icon warning">
+                <i class="bi bi-exclamation-triangle"></i>
+            </div>
+            <div class="stat-value">{{ obrigacoes_pendentes_count }}</div>
+            <div class="stat-label">Obrigações Pendentes</div>
+        </div>
+    </div>
+    
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="stat-card">
+            <div class="stat-icon danger">
+                <i class="bi bi-clock-history"></i>
+            </div>
+            <div class="stat-value">{{ obrigacoes_vencidas }}</div>
+            <div class="stat-label">Obrigações Vencidas</div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Row -->
+<div class="row g-4 mb-4">
+    <div class="col-12 col-lg-8">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white border-0 py-3">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-graph-up me-2"></i>
+                    Ações por Status
+                </h5>
+            </div>
+            <div class="card-body">
+                <canvas id="acoesChart" height="80"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-12 col-lg-4">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white border-0 py-3">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-pie-chart me-2"></i>
+                    Distribuição por Tipo
+                </h5>
+            </div>
+            <div class="card-body">
+                <canvas id="tiposChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tables Row -->
+<div class="row g-4">
+    <div class="col-12 col-xl-6">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white border-0 py-3">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-list-check me-2"></i>
+                    Obrigações Pendentes
+                </h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>Obrigação</th>
+                                <th>Instrumento</th>
+                                <th>Vencimento</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for obrigacao in obrigacoes_pendentes %}
+                            <tr>
+                                <td>
+                                    <div class="fw-semibold">{{ obrigacao.titulo }}</div>
+                                    <small class="text-muted">{{ obrigacao.tipo_obrigacao }}</small>
+                                </td>
+                                <td>{{ obrigacao.instrumento.numero }}</td>
+                                <td>
+                                    <small class="text-muted">
+                                        <i class="bi bi-calendar me-1"></i>
+                                        {{ obrigacao.data_vencimento|date:"d/m/Y" }}
+                                    </small>
+                                </td>
+                                <td>
+                                    {% if obrigacao.status == 'pendente' %}
+                                        <span class="badge bg-warning">Pendente</span>
+                                    {% elif obrigacao.status == 'em_andamento' %}
+                                        <span class="badge bg-info">Em Andamento</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">{{ obrigacao.get_status_display }}</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="4" class="text-center text-muted py-4">
+                                    <i class="bi bi-check-circle fs-1 d-block mb-2"></i>
+                                    Nenhuma obrigação pendente
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-12 col-xl-6">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white border-0 py-3">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-lightning me-2"></i>
+                    Ações Recentes
+                </h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>Ação</th>
+                                <th>Responsável</th>
+                                <th>Progresso</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for acao in acoes_recentes %}
+                            <tr>
+                                <td>
+                                    <div class="fw-semibold">{{ acao.nome }}</div>
+                                    <small class="text-muted">{{ acao.tipo_acao }}</small>
+                                </td>
+                                <td>
+                                    <small>{{ acao.responsavel.get_full_name }}</small>
+                                </td>
+                                <td>
+                                    <div class="progress" style="height: 8px;">
+                                        <div class="progress-bar" role="progressbar" 
+                                             style="width: {{ acao.percentual_cumprido }}%"
+                                             aria-valuenow="{{ acao.percentual_cumprido }}" 
+                                             aria-valuemin="0" aria-valuemax="100"></div>
+                                    </div>
+                                    <small class="text-muted">{{ acao.percentual_cumprido }}%</small>
+                                </td>
+                                <td>
+                                    {% if acao.status == 'finalizado' %}
+                                        <span class="badge bg-success">Finalizado</span>
+                                    {% elif acao.status == 'em_andamento' %}
+                                        <span class="badge bg-primary">Em Andamento</span>
+                                    {% elif acao.status == 'atrasado' %}
+                                        <span class="badge bg-danger">Atrasado</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">{{ acao.get_status_display }}</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="4" class="text-center text-muted py-4">
+                                    <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                                    Nenhuma ação cadastrada
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Gráfico de Ações por Status
+    const acoesCtx = document.getElementById('acoesChart');
+    if (acoesCtx) {
+        new Chart(acoesCtx, {
+            type: 'bar',
+            data: {
+                labels: ['A Iniciar', 'Em Andamento', 'Atrasado', 'Em Validação', 'Finalizado'],
+                datasets: [{
+                    label: 'Quantidade de Ações',
+                    data: [12, 19, 3, 5, 28],
+                    backgroundColor: [
+                        'rgba(108, 117, 125, 0.8)',
+                        'rgba(13, 110, 253, 0.8)',
+                        'rgba(220, 53, 69, 0.8)',
+                        'rgba(255, 193, 7, 0.8)',
+                        'rgba(25, 135, 84, 0.8)'
+                    ],
+                    borderColor: [
+                        'rgb(108, 117, 125)',
+                        'rgb(13, 110, 253)',
+                        'rgb(220, 53, 69)',
+                        'rgb(255, 193, 7)',
+                        'rgb(25, 135, 84)'
+                    ],
+                    borderWidth: 2,
+                    borderRadius: 8
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            display: true,
+                            drawBorder: false
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+    // Gráfico de Tipos
+    const tiposCtx = document.getElementById('tiposChart');
+    if (tiposCtx) {
+        new Chart(tiposCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Contrato', 'Convênio', 'Acordo', 'TAC'],
+                datasets: [{
+                    data: [45, 25, 20, 10],
+                    backgroundColor: [
+                        'rgba(102, 126, 234, 0.8)',
+                        'rgba(118, 75, 162, 0.8)',
+                        'rgba(13, 110, 253, 0.8)',
+                        'rgba(25, 135, 84, 0.8)'
+                    ],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+    }
+</script>
+{% endblock %}

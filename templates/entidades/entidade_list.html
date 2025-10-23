@@ -1,0 +1,51 @@
+{% extends 'components/list_view.html' %}
+
+{% block table_headers %}
+<th>Razão Social</th>
+<th>CNPJ</th>
+<th>Tipo</th>
+<th>Serviço</th>
+<th>Status</th>
+{% endblock %}
+
+{% block table_rows %}
+{% for entidade in object_list %}
+<tr>
+    <td>
+        <div class="d-flex align-items-center">
+            {% if entidade.logo %}
+            <img src="{{ entidade.logo.url }}" class="rounded me-2" width="40" height="40" style="object-fit: cover;">
+            {% else %}
+            <div class="bg-light rounded me-2 d-flex align-items-center justify-content-center" style="width:40px; height:40px;">
+                <i class="bi bi-building text-muted"></i>
+            </div>
+            {% endif %}
+            <div>
+                <div class="fw-semibold">{{ entidade.razao_social }}</div>
+                <small class="text-muted">{{ entidade.nome_fantasia }}</small>
+            </div>
+        </div>
+    </td>
+    <td><small>{{ entidade.cnpj }}</small></td>
+    <td><span class="badge bg-info">{{ entidade.tipo_entidade }}</span></td>
+    <td><span class="badge bg-secondary">{{ entidade.tipo_servico }}</span></td>
+    <td>
+        {% if entidade.status == 'ativa' %}
+            <span class="badge bg-success">Ativa</span>
+        {% else %}
+            <span class="badge bg-secondary">{{ entidade.get_status_display }}</span>
+        {% endif %}
+    </td>
+    <td>
+        <div class="btn-group btn-group-sm">
+            <a href="{% url 'entidade_edit' entidade.pk %}" class="btn btn-outline-primary" title="Editar">
+                <i class="bi bi-pencil"></i>
+            </a>
+            <a href="{% url 'entidade_delete' entidade.pk %}" class="btn btn-outline-danger" title="Excluir">
+                <i class="bi bi-trash"></i>
+            </a>
+        </div>
+    </td>
+</tr>
+{% endfor %}
+{% endblock %}

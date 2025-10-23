@@ -1,0 +1,520 @@
+{% extends 'base_modern.html' %}
+{% load static %}
+
+{% block title %}{% if object %}Editar{% else %}Adicionar{% endif %} Instrumento - AGEMS{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2><i class="bi bi-file-earmark-text me-2"></i>{% if object %}Editar{% else %}Adicionar{% endif %} Instrumento</h2>
+            <p class="text-muted">Gestão de instrumentos jurídicos (Contratos, Convênios, Acordos)</p>
+        </div>
+        <a href="{% url 'instrumento_list' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Voltar
+        </a>
+    </div>
+
+    <form method="post" enctype="multipart/form-data" id="formInstrumento">
+        {% csrf_token %}
+        
+        {% if form.errors or formset.errors %}
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <h5 class="alert-heading"><i class="bi bi-exclamation-triangle me-2"></i>Erros no formulário</h5>
+            <ul class="mb-0">
+            {% for field in form %}
+                {% if field.errors %}
+                    {% for error in field.errors %}
+                        <li><strong>{{ field.label }}:</strong> {{ error }}</li>
+                    {% endfor %}
+                {% endif %}
+            {% endfor %}
+            {% for error in form.non_field_errors %}
+                <li>{{ error }}</li>
+            {% endfor %}
+            {% if formset %}
+                {% for form_obrig in formset %}
+                    {% for field in form_obrig %}
+                        {% if field.errors %}
+                            {% for error in field.errors %}
+                                <li><strong>Obrigação {{ forloop.parentloop.counter }} - {{ field.label }}:</strong> {{ error }}</li>
+                            {% endfor %}
+                        {% endif %}
+                    {% endfor %}
+                {% endfor %}
+            {% endif %}
+            </ul>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        {% endif %}
+
+        <!-- Abas -->
+        <ul class="nav nav-tabs mb-4" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="dados-tab" data-bs-toggle="tab" data-bs-target="#dados" type="button">
+                    <i class="bi bi-file-text me-2"></i>Dados Gerais
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="obrigacoes-tab" data-bs-toggle="tab" data-bs-target="#obrigacoes" type="button">
+                    <i class="bi bi-list-check me-2"></i>Obrigações
+                    <span class="badge bg-primary ms-1" id="countObrigacoes">0</span>
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="arquivos-tab" data-bs-toggle="tab" data-bs-target="#arquivos" type="button">
+                    <i class="bi bi-paperclip me-2"></i>Arquivos
+                    <span class="badge bg-primary ms-1">{% if object %}{{ arquivos|length }}{% else %}0{% endif %}</span>
+                </button>
+            </li>
+        </ul>
+
+        <div class="tab-content">
+            <!-- Aba Dados Gerais -->
+            <div class="tab-pane fade show active" id="dados" role="tabpanel">
+                <div class="row">
+                    <!-- Coluna Principal -->
+                    <div class="col-lg-8">
+                        <!-- Informações Básicas -->
+                        <div class="card mb-4">
+                            <div class="card-header bg-primary text-white">
+                                <h5 class="mb-0"><i class="bi bi-info-circle me-2"></i>Informações Básicas</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Número do Instrumento *</label>
+                                        {{ form.numero }}
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">NUP (E-MS)</label>
+                                        {{ form.nup }}
+                                        <small class="text-muted d-block">Número Único de Protocolo do sistema E-MS</small>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Tipo de Instrumento *</label>
+                                        <div class="input-group">
+                                            {{ form.tipo_instrumento }}
+                                            <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modalTipoInstrumento">
+                                                <i class="bi bi-plus-circle"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Diretoria Responsável *</label>
+                                        <div class="input-group">
+                                            {{ form.diretoria }}
+                                            <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modalDiretoria">
+                                                <i class="bi bi-plus-circle"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Objeto do Instrumento *</label>
+                                    {{ form.objeto }}
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Entidades Vinculadas *</label>
+                                    {{ form.entidades }}
+                                    <small class="text-muted d-block">Segure Ctrl (ou Cmd) para selecionar múltiplas entidades</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Vigência -->
+                        <div class="card mb-4">
+                            <div class="card-header bg-success text-white">
+                                <h5 class="mb-0"><i class="bi bi-calendar-range me-2"></i>Vigência</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label">Data de Assinatura *</label>
+                                        {{ form.data_assinatura }}
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label">Data de Início *</label>
+                                        {{ form.data_inicio }}
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label">Data de Fim *</label>
+                                        {{ form.data_fim }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Revisão Tarifária -->
+                        <div class="card mb-4">
+                            <div class="card-header bg-warning text-dark">
+                                <h5 class="mb-0"><i class="bi bi-cash-coin me-2"></i>Revisão Tarifária (Opcional)</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Periodicidade (meses)</label>
+                                        {{ form.periodicidade_revisao_tarifaria }}
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Próxima Revisão</label>
+                                        {{ form.data_proxima_revisao }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Observações -->
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h5 class="mb-0"><i class="bi bi-chat-left-text me-2"></i>Observações</h5>
+                            </div>
+                            <div class="card-body">
+                                {{ form.observacoes }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Coluna Lateral -->
+                    <div class="col-lg-4">
+                        <!-- Status -->
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h5 class="mb-0"><i class="bi bi-info-circle me-2"></i>Status</h5>
+                            </div>
+                            <div class="card-body">
+                                <label class="form-label">Status do Instrumento *</label>
+                                {{ form.status }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Aba Obrigações -->
+            <div class="tab-pane fade" id="obrigacoes" role="tabpanel">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0"><i class="bi bi-list-check me-2"></i>Obrigações do Instrumento</h5>
+                        <button type="button" class="btn btn-primary btn-sm" onclick="adicionarObrigacao()">
+                            <i class="bi bi-plus-circle"></i> Adicionar Obrigação
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        {{ formset.management_form }}
+                        
+                        <div id="obrigacoes-container">
+                            {% for form_obrig in formset %}
+                            <div class="obrigacao-form card mb-3" data-form-idx="{{ forloop.counter0 }}">
+                                <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                                    <h6 class="mb-0">Obrigação #<span class="obrig-number">{{ forloop.counter }}</span></h6>
+                                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="removerObrigacao(this)">
+                                        <i class="bi bi-trash"></i> Remover
+                                    </button>
+                                </div>
+                                <div class="card-body">
+                                    {{ form_obrig.id }}
+                                    {{ form_obrig.DELETE }}
+                                    
+                                    <div class="row">
+                                        <div class="col-md-8 mb-3">
+                                            <label class="form-label">Título *</label>
+                                            {{ form_obrig.titulo }}
+                                        </div>
+                                        <div class="col-md-4 mb-3">
+                                            <label class="form-label">Tipo *</label>
+                                            {{ form_obrig.tipo_obrigacao }}
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label class="form-label">Descrição *</label>
+                                        {{ form_obrig.descricao }}
+                                    </div>
+                                    
+                                    <div class="row">
+                                        <div class="col-md-4 mb-3">
+                                            <label class="form-label">Cláusula</label>
+                                            {{ form_obrig.clausula_referencia }}
+                                        </div>
+                                        <div class="col-md-4 mb-3">
+                                            <label class="form-label">Vencimento</label>
+                                            {{ form_obrig.data_vencimento }}
+                                        </div>
+                                        <div class="col-md-4 mb-3">
+                                            <label class="form-label">Status *</label>
+                                            {{ form_obrig.status }}
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="form-check">
+                                        {{ form_obrig.recorrente }}
+                                        <label class="form-check-label" for="{{ form_obrig.recorrente.id_for_label }}">
+                                            Obrigação Recorrente
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        
+                        <div id="empty-obrigacoes" class="text-center py-5" style="display: none;">
+                            <i class="bi bi-inbox display-1 text-muted"></i>
+                            <p class="text-muted mt-3">Nenhuma obrigação adicionada. Clique em "Adicionar Obrigação" para começar.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Aba Arquivos -->
+            <div class="tab-pane fade" id="arquivos" role="tabpanel">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="bi bi-paperclip me-2"></i>Arquivos</h5>
+                    </div>
+                    <div class="card-body">
+                        {% if object %}
+                            <div class="mb-4">
+                                <h6>Adicionar Arquivo</h6>
+                                <div id="formUploadArquivo" enctype="multipart/form-data">
+                                    {% csrf_token %}
+                                    <div class="row">
+                                        <div class="col-md-4 mb-3">
+                                            <input type="text" class="form-control" id="nomeArquivo" placeholder="Nome (opcional)">
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <input type="file" class="form-control" id="arquivo" name="arquivo">
+                                        </div>
+                                        <div class="col-md-2 mb-3">
+                                            <button type="submit" class="btn btn-primary w-100">
+                                                <i class="bi bi-upload"></i> Upload
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {% if arquivos %}
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Nome</th>
+                                            <th>Data Upload</th>
+                                            <th>Ações</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for arquivo in arquivos %}
+                                        <tr>
+                                            <td>{{ arquivo.nome_arquivo }}</td>
+                                            <td>{{ arquivo.data_upload|date:"d/m/Y H:i" }}</td>
+                                            <td>
+                                                <a href="{{ arquivo.arquivo.url }}" class="btn btn-sm btn-outline-primary" target="_blank">
+                                                    <i class="bi bi-download"></i>
+                                                </a>
+                                                <button class="btn btn-sm btn-outline-danger" onclick="excluirArquivo({{ arquivo.id }})">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            {% else %}
+                                <div class="text-center py-5">
+                                    <i class="bi bi-inbox display-1 text-muted"></i>
+                                    <p class="text-muted mt-3">Nenhum arquivo anexado</p>
+                                </div>
+                            {% endif %}
+                        {% else %}
+                            <div class="alert alert-info">
+                                <i class="bi bi-info-circle me-2"></i>
+                                Salve o instrumento para poder fazer upload de arquivos.
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Botões de Ação -->
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="d-flex justify-content-end gap-2">
+                    <a href="{% url 'instrumento_list' %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-x-circle me-2"></i>Cancelar
+                    </a>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-circle me-2"></i>Salvar Instrumento e Obrigações
+                    </button>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- Modais CRUD Inline -->
+{% include 'instrumentos/modals_crud.html' %}
+
+<!-- Template vazio para nova obrigação -->
+<div id="empty-form-template" style="display: none;">
+    {{ formset.empty_form }}
+</div>
+
+<script>
+let formIdx = {{ formset.total_form_count }};
+
+function atualizarContador() {
+    const count = document.querySelectorAll('.obrigacao-form:not([style*="display: none"])').length;
+    document.getElementById('countObrigacoes').textContent = count;
+    
+    // Mostrar/ocultar mensagem vazia
+    const emptyMsg = document.getElementById('empty-obrigacoes');
+    if (count === 0) {
+        emptyMsg.style.display = 'block';
+    } else {
+        emptyMsg.style.display = 'none';
+    }
+    
+    // Renumerar obrigações
+    document.querySelectorAll('.obrigacao-form:not([style*="display: none"])').forEach((form, idx) => {
+        form.querySelector('.obrig-number').textContent = idx + 1;
+    });
+}
+
+function adicionarObrigacao() {
+    const container = document.getElementById('obrigacoes-container');
+    const template = document.getElementById('empty-form-template').innerHTML;
+    
+    // Substituir __prefix__ pelo índice atual
+    const newForm = template.replace(/__prefix__/g, formIdx);
+    
+    // Criar elemento
+    const div = document.createElement('div');
+    div.className = 'obrigacao-form card mb-3';
+    div.setAttribute('data-form-idx', formIdx);
+    div.innerHTML = `
+        <div class="card-header bg-light d-flex justify-content-between align-items-center">
+            <h6 class="mb-0">Obrigação #<span class="obrig-number">${formIdx + 1}</span></h6>
+            <button type="button" class="btn btn-sm btn-outline-danger" onclick="removerObrigacao(this)">
+                <i class="bi bi-trash"></i> Remover
+            </button>
+        </div>
+        <div class="card-body">
+            ${newForm}
+        </div>
+    `;
+    
+    container.appendChild(div);
+    
+    // Incrementar índice
+    formIdx++;
+    document.getElementById('id_obrigacoes-TOTAL_FORMS').value = formIdx;
+    
+    atualizarContador();
+}
+
+function removerObrigacao(btn) {
+    const formDiv = btn.closest('.obrigacao-form');
+    const deleteInput = formDiv.querySelector('input[name$="-DELETE"]');
+    
+    if (deleteInput) {
+        // Se já existe no banco, marcar para deletar
+        deleteInput.value = 'on';
+        formDiv.style.display = 'none';
+    } else {
+        // Se é novo, remover do DOM
+        formDiv.remove();
+    }
+    
+    atualizarContador();
+}
+
+// Inicializar contador
+document.addEventListener('DOMContentLoaded', function() {
+    atualizarContador();
+});
+
+{% if object %}
+// Upload de arquivo via AJAX
+document.getElementById('formUploadArquivo').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData();
+    formData.append('arquivo', document.getElementById('arquivo').files[0]);
+    formData.append('nome_arquivo', document.getElementById('nomeArquivo').value);
+    formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+    
+    fetch('{% url "arquivo_upload" object.id %}', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Erro ao fazer upload: ' + data.error);
+        }
+    });
+});
+
+function excluirArquivo(id) {
+    if (confirm('Deseja realmente excluir este arquivo?')) {
+        fetch(`/api/arquivo/${id}/excluir/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Erro ao excluir arquivo');
+            }
+        });
+    }
+}
+{% endif %}
+</script>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('✅ SCRIPT DE DATAS INICIADO');
+
+    const inputs = document.querySelectorAll('input[type="date"]');
+    console.log('Campos de data detectados:', inputs.length);
+
+    inputs.forEach(function(input) {
+        const val = input.getAttribute('value') || input.value;
+        if (val && val.includes('/')) {
+            const partes = val.split('/');
+            if (partes.length === 3) {
+                const [dia, mes, ano] = partes;
+                const novoValor = `${ano}-${mes.padStart(2, '0')}-${dia.padStart(2, '0')}`;
+                input.value = novoValor;
+                input.setAttribute('value', novoValor);
+                console.log(`✔️ Corrigido: ${val} → ${novoValor}`);
+            }
+        }
+    });
+
+    // ✅ Agora o formulário pode ser enviado normalmente
+    const form = document.getElementById('formInstrumento');
+    if (form) {
+        form.addEventListener('submit', function() {
+            console.log('🚀 Enviando formulário Instrumento...');
+        });
+    }
+});
+</script>
+{% endblock %}
+
+
+
