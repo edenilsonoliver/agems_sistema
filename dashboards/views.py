@@ -1,3 +1,4 @@
+import json
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 from django.db.models import Count, Q
@@ -17,46 +18,58 @@ Concessionaria = Entidade
 @login_required
 def dashboard_principal(request):
     """Dashboard principal do sistema."""
-    from acoes.models import Acao
+    from acoes.models import Acao, Tarefa
     
     usuario = request.user
-    total_instrumentos = Instrumento.objects.filter(status='vigente').count()
-    total_entidades = Entidade.objects.filter(status='ativa').count()
-    total_indicadores = IndicadorContratual.objects.filter(ativo=True).count()
-    
     hoje = timezone.now().date()
-    obrigacoes_pendentes = Obrigacao.objects.filter(
-        cumprida=False, data_vencimento__gte=hoje
-    ).select_related('instrumento', 'tipo_obrigacao').order_by('data_vencimento')[:10]
-    
-    obrigacoes_pendentes_count = Obrigacao.objects.filter(
-        cumprida=False, data_vencimento__gte=hoje
+
+    # Instrumentos vigentes (mantém igual)
+    total_instrumentos = Instrumento.objects.filter(status='vigente').count()
+
+    # --- Distribuição de Instrumentos por Tipo ---
+    instrumentos_por_tipo = (
+        Instrumento.objects
+        .values('tipo_instrumento__nome')
+        .annotate(total=Count('id'))
+        .order_by('tipo_instrumento__nome')
+    )
+
+    # Total de obrigações relacionadas ao usuário
+    total_obrigacoes = Obrigacao.objects.filter(
+        acoes__responsavel=usuario
+    ).distinct().count()
+
+    # Tarefas do usuário
+    tarefas = Tarefa.objects.filter(responsavel=usuario)
+
+    tarefas_vencidas = tarefas.filter(
+        data_fim__lt=hoje, status__in=['a_iniciar', 'em_andamento']
     ).count()
-    
-    obrigacoes_vencidas = Obrigacao.objects.filter(
-        cumprida=False, data_vencimento__lt=hoje
+
+    tarefas_a_vencer = tarefas.filter(
+        data_fim__gte=hoje, data_fim__lte=hoje + timedelta(days=7)
     ).count()
-    
-    data_limite = hoje + timedelta(days=90)
-    instrumentos_vencimento = Instrumento.objects.filter(
-        status='vigente', data_fim__lte=data_limite, data_fim__gte=hoje
-    ).order_by('data_fim')
-    
+
     # Ações recentes
     acoes_recentes = Acao.objects.select_related(
         'obrigacao', 'tipo_acao', 'responsavel'
     ).order_by('-data_cadastro')[:10]
-    
+
+    tarefas_por_status = (
+        tarefas.values('status')
+        .annotate(total=Count('id'))
+        .order_by('status')
+    )
+
     context = {
-        'total_instrumentos': total_instrumentos,
-        'total_entidades': total_entidades,
-        'total_indicadores': total_indicadores,
-        'obrigacoes_pendentes': obrigacoes_pendentes,
-        'obrigacoes_pendentes_count': obrigacoes_pendentes_count,
-        'obrigacoes_vencidas': obrigacoes_vencidas,
-        'instrumentos_vencimento': instrumentos_vencimento,
-        'acoes_recentes': acoes_recentes,
         'usuario': usuario,
+        'total_instrumentos': total_instrumentos,
+        'total_obrigacoes': total_obrigacoes,
+        'instrumentos_por_tipo': json.dumps(list(instrumentos_por_tipo)),
+        'tarefas_por_status': json.dumps(list(tarefas_por_status)),
+        'tarefas_a_vencer': tarefas_a_vencer,
+        'tarefas_vencidas': tarefas_vencidas,
+        'acoes_recentes': acoes_recentes,
     }
-    
+
     return render(request, 'dashboards/dashboard_modern.html', context)

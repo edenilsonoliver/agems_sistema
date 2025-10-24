@@ -19,7 +19,9 @@ class ModernListView(LoginRequiredMixin, ListView):
         return context
     
     def get_queryset(self):
-        queryset = super().get_queryset()
+        # Não mexe na ordenação, apenas aplica o filtro de busca
+        queryset = self.model.objects.all()
+
         search = self.request.GET.get('q')
         if search and hasattr(self, 'search_fields'):
             from django.db.models import Q
@@ -27,8 +29,8 @@ class ModernListView(LoginRequiredMixin, ListView):
             for field in self.search_fields:
                 query |= Q(**{f'{field}__icontains': search})
             queryset = queryset.filter(query)
-        return queryset
 
+        return queryset
 
 class ModernCreateView(LoginRequiredMixin, CreateView):
     """View genérica para criação moderna"""
@@ -39,7 +41,7 @@ class ModernCreateView(LoginRequiredMixin, CreateView):
         context['form_title'] = f'Adicionar {self.model._meta.verbose_name.title()}'
         context['icon'] = getattr(self, 'icon', 'bi bi-plus-circle')
         context['module_name'] = self.model._meta.verbose_name_plural.title()
-        context['list_url'] = getattr(self, 'list_url', f'{self.model._meta.model_name}_list')
+        context['list_url'] = reverse_lazy(f'{self.model._meta.model_name}_list')
         return context
     
     def form_valid(self, form):
@@ -56,8 +58,9 @@ class ModernUpdateView(LoginRequiredMixin, UpdateView):
         context['form_title'] = f'Editar {self.model._meta.verbose_name.title()}'
         context['icon'] = getattr(self, 'icon', 'bi bi-pencil')
         context['module_name'] = self.model._meta.verbose_name_plural.title()
-        context['list_url'] = getattr(self, 'list_url', f'{self.model._meta.model_name}_list')
-        context['delete_url'] = getattr(self, 'delete_url', f'{self.model._meta.model_name}_delete')
+        context['list_url'] = reverse_lazy(f'{self.model._meta.model_name}_list')
+        context['delete_url'] = reverse_lazy(f'{self.model._meta.model_name}_delete', args=[self.object.pk])
+
         return context
     
     def form_valid(self, form):
@@ -74,7 +77,7 @@ class ModernDeleteView(LoginRequiredMixin, DeleteView):
         context['title'] = f'Excluir {self.model._meta.verbose_name.title()}'
         context['icon'] = 'bi bi-trash'
         context['module_name'] = self.model._meta.verbose_name_plural.title()
-        context['list_url'] = getattr(self, 'list_url', f'{self.model._meta.model_name}_list')
+        context['list_url'] = reverse_lazy(f'{self.model._meta.model_name}_list')
         return context
     
     def delete(self, request, *args, **kwargs):

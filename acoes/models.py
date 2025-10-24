@@ -1,12 +1,12 @@
 from django.db import models
 from django.conf import settings
 from core.models import TipoAcao
-from instrumentos.models import Obrigacao
+from instrumentos.models import Instrumento, Obrigacao
 
 
 class Acao(models.Model):
     """Modelo para representar ações de cumprimento de obrigações."""
-    
+
     STATUS_CHOICES = [
         ('a_iniciar', 'A Iniciar'),
         ('em_andamento', 'Em Andamento'),
@@ -14,7 +14,7 @@ class Acao(models.Model):
         ('em_validacao', 'Em Validação'),
         ('finalizado', 'Finalizado'),
     ]
-    
+
     PERIODICIDADE_CHOICES = [
         ('unica', 'Única'),
         ('mensal', 'Mensal'),
@@ -24,12 +24,20 @@ class Acao(models.Model):
         ('semestral', 'Semestral'),
         ('anual', 'Anual'),
     ]
-    
-    # Informações Básicas
+
+    # Informações básicas
     nome = models.CharField('Nome da Ação', max_length=200)
     descricao = models.TextField('Descrição')
-    
+
     # Relacionamentos
+    instrumento = models.ForeignKey(
+        Instrumento,
+        on_delete=models.PROTECT,
+        verbose_name='Instrumento',
+        related_name='acoes',
+        null=True,
+        blank=True
+    )
     obrigacao = models.ForeignKey(
         Obrigacao,
         on_delete=models.CASCADE,
@@ -48,50 +56,39 @@ class Acao(models.Model):
         verbose_name='Responsável',
         related_name='acoes_responsavel'
     )
-    
-    # Status e Progresso
+
+    # Status e progresso
     status = models.CharField('Status', max_length=15, choices=STATUS_CHOICES, default='a_iniciar')
-    percentual_cumprido = models.IntegerField(
-        'Percentual Cumprido (%)',
-        default=0,
-        help_text='Percentual de conclusão da ação (0-100)'
-    )
-    
-    # Periodicidade e Prazos
-    periodicidade = models.CharField(
-        'Periodicidade',
-        max_length=15,
-        choices=PERIODICIDADE_CHOICES,
-        default='unica'
-    )
+    percentual_cumprido = models.IntegerField('Percentual Cumprido (%)', default=0, help_text='Percentual de conclusão da ação (0-100)')
+
+    # Periodicidade e datas
+    periodicidade = models.CharField('Periodicidade', max_length=15, choices=PERIODICIDADE_CHOICES, default='unica')
     data_inicio = models.DateField('Data de Início', null=True, blank=True)
-    data_fim_prevista = models.DateField('Data de Fim Prevista')
+    data_fim_prevista = models.DateField('Data de Fim Prevista', null=True, blank=True)
     data_fim_real = models.DateField('Data de Fim Real', null=True, blank=True)
-    prazo_cumprimento = models.DateField(
-        'Prazo de Cumprimento',
-        help_text='Data limite para conclusão da ação'
-    )
-    
+
     # Alertas
     dias_antecedencia_alerta = models.IntegerField(
         'Dias de Antecedência para Alerta',
-        default=15,
-        help_text='Número de dias antes do prazo para gerar alerta'
+        null=True,
+        blank=True,
+        default=None,
+        help_text='Número de dias antes do prazo para gerar alerta (opcional)'
     )
-    
-    # Observações e Metadados
+
+    # Observações e metadados
     observacoes = models.TextField('Observações', blank=True)
     data_cadastro = models.DateTimeField('Data de Cadastro', auto_now_add=True)
     data_atualizacao = models.DateTimeField('Última Atualização', auto_now=True)
-    
+
     class Meta:
         verbose_name = 'Ação'
         verbose_name_plural = 'Ações'
-        ordering = ['prazo_cumprimento', 'nome']
-    
+        ordering = ['data_fim_prevista', 'nome']
+
     def __str__(self):
         return f"{self.nome} - {self.obrigacao.titulo}"
-    
+
     def atualizar_percentual(self):
         """Atualiza o percentual com base nas tarefas"""
         tarefas = self.tarefas.all()
@@ -99,39 +96,37 @@ class Acao(models.Model):
             total_percentual = sum(t.percentual_cumprido for t in tarefas)
             self.percentual_cumprido = total_percentual // tarefas.count()
             self.save()
-    
+
     def verificar_status_automatico(self):
         """Atualiza o status com base nas tarefas e datas"""
         from django.utils import timezone
-        
         hoje = timezone.now().date()
-        
-        # Se todas as tarefas estão finalizadas
         tarefas = self.tarefas.all()
+
         if tarefas.exists() and all(t.status == 'finalizado' for t in tarefas):
             self.status = 'finalizado'
             if not self.data_fim_real:
                 self.data_fim_real = hoje
-        # Se passou do prazo e não está finalizado
-        elif self.prazo_cumprimento < hoje and self.status != 'finalizado':
+        elif self.data_fim_prevista and self.data_fim_prevista < hoje and self.status != 'finalizado':
             self.status = 'atrasado'
-        # Se está em andamento
         elif self.data_inicio and self.data_inicio <= hoje and self.status == 'a_iniciar':
             self.status = 'em_andamento'
-        
+
         self.save()
-    
+
     def esta_atrasada(self):
         """Verifica se a ação está atrasada"""
         from django.utils import timezone
         hoje = timezone.now().date()
-        return self.prazo_cumprimento < hoje and self.status != 'finalizado'
-    
+        return self.data_fim_prevista and self.data_fim_prevista < hoje and self.status != 'finalizado'
+
     def dias_para_vencimento(self):
         """Retorna quantos dias faltam para o vencimento"""
         from django.utils import timezone
         hoje = timezone.now().date()
-        delta = self.prazo_cumprimento - hoje
+        if not self.data_fim_prevista:
+            return None
+        delta = self.data_fim_prevista - hoje
         return delta.days
 
 
@@ -268,3 +263,11 @@ class Tarefa(models.Model):
     def get_executores_display(self):
         """Retorna lista de executores"""
         return ", ".join([e.get_full_name() or e.username for e in self.executores.all()])
+
+class ChecklistItem(models.Model):
+    tarefa = models.ForeignKey('Tarefa', related_name='checklist_itens', on_delete=models.CASCADE)
+    nome = models.CharField(max_length=255)
+    concluido = models.BooleanField(default=False)
+
+    def __str__(self):
+        return self.nome

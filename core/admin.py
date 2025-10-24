@@ -10,8 +10,12 @@ class DiretoriaAdmin(admin.ModelAdmin):
     list_display = ['sigla', 'nome', 'diretor_responsavel', 'ativa']
     list_filter = ['ativa']
     search_fields = ['nome', 'sigla', 'diretor_responsavel']
+    #inlines = [SubunidadeInline]
     ordering = ['sigla']
 
+#class SubunidadeInline(admin.TabularInline):
+ #   model = Subunidade
+ #   extra = 1
 
 @admin.register(TipoEntidade)
 class TipoEntidadeAdmin(admin.ModelAdmin):

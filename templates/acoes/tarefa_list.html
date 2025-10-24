@@ -1,5 +1,90 @@
 {% extends 'components/list_view.html' %}
 
+{% block header_actions %}
+<a href="{% url 'tarefa_calendario' %}" class="btn btn-outline-primary">
+    <i class="bi bi-calendar3"></i> Ver Cronograma
+</a>
+{% endblock %}
+
+{% block content %}
+{{ block.super }}
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+  // Cria o botão dinamicamente após o carregamento da página
+  const headerDiv = document.querySelector(".page-header .d-flex > div:last-child");
+  if (headerDiv) {
+    const btn = document.createElement("a");
+    btn.href = "{% url 'tarefa_calendario' %}";
+    btn.className = "btn btn-outline-primary me-2";
+    btn.innerHTML = '<i class="bi bi-calendar3"></i> Ver Calendário';
+    headerDiv.prepend(btn);
+  }
+});
+</script>
+{% endblock %}
+
+
+{% block extra_buttons %}
+<a href="{% url 'tarefa_calendario' %}" class="btn btn-outline-primary btn-sm">
+    <i class="bi bi-calendar3"></i> Ver Calendário
+</a>
+{% endblock %}
+
+
+{% block extra_filters %}
+<div class="col-md-3">
+    <select name="instrumento" id="instrumento" class="form-select" style="height: 40px;">
+        <option value="">🔍 Filtrar por Instrumento...</option>
+        {% for inst in instrumentos %}
+            <option value="{{ inst.id }}" {% if instrumento_selecionado == inst.id|stringformat:"s" %}selected{% endif %}>
+                {{ inst }}
+            </option>
+        {% endfor %}
+    </select>
+</div>
+
+<div class="col-md-3">
+    <select name="obrigacao" id="obrigacao" class="form-select" style="height: 40px;">
+        <option value="">🔍 Filtrar por Obrigação...</option>
+        {% for obrigacao in obrigacoes %}
+            <option value="{{ obrigacao.id }}" {% if obrigacao_selecionada == obrigacao.id|stringformat:"s" %}selected{% endif %}>
+                {{ obrigacao.titulo }}
+            </option>
+        {% endfor %}
+    </select>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const instrumentoSelect = document.getElementById("instrumento");
+    const obrigacaoSelect = document.getElementById("obrigacao");
+
+    instrumentoSelect.addEventListener("change", async function() {
+        const instrumentoId = this.value;
+        obrigacaoSelect.innerHTML = '<option value="">Carregando...</option>';
+
+        if (!instrumentoId) {
+            obrigacaoSelect.innerHTML = '<option value="">🔍 Filtrar por Obrigação...</option>';
+            return;
+        }
+
+        const response = await fetch(`/tarefas/obrigacoes/?instrumento_id=${instrumentoId}`);
+        const data = await response.json();
+
+        obrigacaoSelect.innerHTML = '<option value="">🔍 Filtrar por Obrigação...</option>';
+        data.obrigacoes.forEach(o => {
+            const opt = document.createElement('option');
+            opt.value = o.id;
+            opt.textContent = o.titulo;
+            obrigacaoSelect.appendChild(opt);
+        });
+    });
+});
+</script>
+{% endblock %}
+
+
 {% block table_headers %}
 <th>Nome</th>
 <th>Ação</th>
@@ -13,19 +98,35 @@
 {% for tarefa in object_list %}
 <tr>
     <td>
-        <div class="fw-semibold">{{ tarefa.nome }}</div>
+        <!-- Nome da Tarefa (clicável para expandir checklist) -->
+        <div class="fw-semibold toggle-checklist" data-tarefa="{{ tarefa.id }}" style="cursor:pointer;">
+            {{ tarefa.nome }}
+        </div>
         <small class="text-muted">
             <i class="bi bi-flag me-1"></i>
             {{ tarefa.get_prioridade_display }}
         </small>
+
+        <!-- Checklist oculto -->
+        <div class="checklist collapse mt-2" id="checklist-{{ tarefa.id }}">
+            {% if tarefa.checklist_itens.exists %}
+                {% for item in tarefa.checklist_itens.all %}
+                    <div class="d-flex align-items-center mb-1">
+                        <input type="checkbox" {% if item.concluido %}checked{% endif %} disabled class="me-2">
+                        <small>{{ item.nome }}</small>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <small class="text-muted">Sem checklist</small>
+            {% endif %}
+        </div>
     </td>
+
     <td><small>{{ tarefa.acao.nome }}</small></td>
     <td><small>{{ tarefa.responsavel.get_full_name|default:tarefa.responsavel.username }}</small></td>
     <td>
-        <small>
-            <i class="bi bi-calendar me-1"></i>
-            {{ tarefa.data_inicio|date:"d/m/Y" }} - {{ tarefa.data_fim|date:"d/m/Y" }}
-        </small>
+        <small><i class="bi bi-calendar me-1"></i>
+        {{ tarefa.data_inicio|date:"d/m/Y" }} - {{ tarefa.data_fim|date:"d/m/Y" }}</small>
     </td>
     <td>
         <div class="progress" style="height: 20px;">
@@ -57,4 +158,15 @@
     </td>
 </tr>
 {% endfor %}
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    document.querySelectorAll('.toggle-checklist').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const id = btn.getAttribute('data-tarefa');
+            const checklist = document.getElementById(`checklist-${id}`);
+            checklist.classList.toggle('show');
+        });
+    });
+});
+</script>
 {% endblock %}

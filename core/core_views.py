@@ -1,6 +1,9 @@
 from .views import ModernListView, ModernCreateView, ModernUpdateView, ModernDeleteView
 from .models import Diretoria, TipoEntidade, TipoServico, TipoInstrumento, TipoObrigacao, TipoAcao
 from django.urls import reverse_lazy
+from django.urls import reverse_lazy
+from core.models import Subunidade
+from core.views import ModernListView, ModernCreateView, ModernUpdateView, ModernDeleteView
 
 # Diretoria
 class DiretoriaListView(ModernListView):
@@ -121,3 +124,30 @@ class TipoAcaoUpdateView(ModernUpdateView):
 class TipoAcaoDeleteView(ModernDeleteView):
     model = TipoAcao
     success_url = reverse_lazy('tipoacao_list')
+
+class SubunidadeListView(ModernListView):
+    model = Subunidade
+    title = 'Subunidades'
+    subtitle = 'Gerencie as subunidades vinculadas às diretorias'
+    icon = 'bi bi-diagram-3'
+    search_fields = ['nome', 'sigla', 'diretoria__nome']
+    create_url = 'subunidade_create'
+
+
+class SubunidadeCreateView(ModernCreateView):
+    model = Subunidade
+    fields = ['nome', 'sigla', 'diretoria', 'responsavel', 'ativa']
+    success_url = reverse_lazy('subunidade_list')
+    icon = 'bi bi-plus-circle'
+
+
+class SubunidadeUpdateView(ModernUpdateView):
+    model = Subunidade
+    fields = ['nome', 'sigla', 'diretoria', 'responsavel', 'ativa']
+    success_url = reverse_lazy('subunidade_list')
+    icon = 'bi bi-pencil-square'
+
+
+class SubunidadeDeleteView(ModernDeleteView):
+    model = Subunidade
+    success_url = reverse_lazy('subunidade_list')

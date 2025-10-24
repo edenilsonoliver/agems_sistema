@@ -1,0 +1,93 @@
+{% extends 'base_modern.html' %}
+{% load static %}
+
+{% block title %}Calendário de Tarefas{% endblock %}
+
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.css" rel="stylesheet">
+<style>
+  #calendar {
+    max-width: 100%;
+    background: white;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h4><i class="bi bi-calendar-check"></i> Calendário de Tarefas</h4>
+  <a href="{% url 'tarefa_list' %}" class="btn btn-secondary btn-sm">
+    <i class="bi bi-list-task"></i> Ver Lista
+  </a>
+</div>
+
+<div id="calendar"></div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- FullCalendar Core e Locale -->
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/locales/pt-br.global.min.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  var calendarEl = document.getElementById('calendar');
+
+  var calendar = new FullCalendar.Calendar(calendarEl, {
+    locale: 'pt-br',
+    initialView: 'dayGridMonth',
+    headerToolbar: {
+      left: 'prev,next today',
+      center: 'title',
+      right: 'dayGridMonth,timeGridWeek,listWeek'
+    },
+    buttonText: {
+      today: 'Hoje',
+      month: 'Mês',
+      week: 'Semana',
+      list: 'Lista'
+    },
+    weekText: 'Sem',
+    allDayText: 'Dia inteiro',
+    moreLinkText: 'mais',
+    noEventsText: 'Nenhum evento para exibir',
+    events: '{% url "tarefas_json" %}',
+    eventDisplay: 'block',
+
+    eventClick: function(info) {
+      const tarefa = info.event.extendedProps;
+      const detalhes = `
+        <strong>Tarefa:</strong> ${info.event.title}<br>
+        <strong>Ação:</strong> ${tarefa.acao}<br>
+        <strong>Responsável:</strong> ${tarefa.responsavel}<br>
+        <strong>Status:</strong> ${tarefa.status}
+      `;
+      const modal = new bootstrap.Modal(document.getElementById('modalDetalhes'));
+      document.getElementById('detalhesTarefa').innerHTML = detalhes;
+      modal.show();
+    }
+  });
+
+  calendar.render();
+});
+</script>
+
+<!-- Modal de Detalhes -->
+<div class="modal fade" id="modalDetalhes" tabindex="-1" aria-labelledby="modalDetalhesLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalDetalhesLabel">Detalhes da Tarefa</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <div class="modal-body" id="detalhesTarefa"></div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

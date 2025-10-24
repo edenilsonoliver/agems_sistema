@@ -396,7 +396,35 @@
         .fade-in {
             animation: fadeIn 0.5s ease;
         }
+
+        /* --- Ajustes visuais para dropdown de alertas --- */
+        #alertsDropdown + .dropdown-menu {
+            max-width: 340px;
+            width: 320px;
+            white-space: normal;
+            word-wrap: break-word;
+            overflow-wrap: anywhere;
+        }
+
+        #alertList a.dropdown-item {
+            white-space: normal;
+            line-height: 1.4;
+            padding: 0.5rem 1rem;
+        }
+
+        #alertList h6.dropdown-header {
+            font-weight: 600;
+            font-size: 0.9rem;
+            background-color: #f8f9fa;
+            margin-bottom: 0.25rem;
+        }
+
+        #alertList small.text-muted {
+            display: block;
+            font-size: 0.75rem;
+        }
     </style>
+
     
     {% block extra_css %}{% endblock %}
 </head>
@@ -417,21 +445,15 @@
                 </a>
             </li>
             <li class="sidebar-nav-item">
-                <a href="{% url 'instrumento_list' %}" class="sidebar-nav-link">
-                    <i class="bi bi-file-earmark-text"></i>
-                    <span>Instrumentos</span>
-                </a>
-            </li>
-            <li class="sidebar-nav-item">
-                <a href="{% url 'instrumento_list' %}" class="sidebar-nav-link">
-                    <i class="bi bi-list-check"></i>
-                    <span>Obrigações</span>
-                </a>
-            </li>
-            <li class="sidebar-nav-item">
                 <a href="{% url 'entidade_list' %}" class="sidebar-nav-link">
                     <i class="bi bi-building"></i>
                     <span>Entidades</span>
+                </a>
+            </li>
+            <li class="sidebar-nav-item">
+                <a href="{% url 'instrumento_list' %}" class="sidebar-nav-link">
+                    <i class="bi bi-file-earmark-text"></i>
+                    <span>Instrumentos</span>
                 </a>
             </li>
             <li class="sidebar-nav-item">
@@ -482,9 +504,15 @@
             </div>
             
             <div class="header-actions">
-                <div class="header-icon">
+                <!-- 🔔 ALERTAS DINÂMICOS -->
+                <div class="dropdown">
+                <a class="header-icon dropdown-toggle text-decoration-none" href="#" id="alertsDropdown" data-bs-toggle="dropdown" aria-expanded="false">
                     <i class="bi bi-bell"></i>
-                    <span class="badge bg-danger">3</span>
+                    <span id="alertCount" class="badge bg-danger rounded-pill">0</span>
+                </a>
+                <ul class="dropdown-menu dropdown-menu-end shadow" aria-labelledby="alertsDropdown" id="alertList" style="width: 300px;">
+                    <li><span class="dropdown-item-text text-muted">Carregando alertas...</span></li>
+                </ul>
                 </div>
                 
                 <div class="user-profile dropdown">
@@ -542,6 +570,46 @@
             });
         });
     </script>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", async () => {
+        try {
+            const response = await fetch("/alertas/");
+            const data = await response.json();
+
+            const alertCount = document.getElementById("alertCount");
+            const alertList = document.getElementById("alertList");
+
+            alertCount.textContent = data.total;
+            alertList.innerHTML = "";
+
+            if (data.total === 0) {
+            alertList.innerHTML = "<li><span class='dropdown-item-text text-muted'>Sem alertas</span></li>";
+            return;
+            }
+
+            const addAlert = (titulo, lista, icone, cor) => {
+            if (lista.length) {
+                alertList.innerHTML += `<li><h6 class='dropdown-header text-${cor}'><i class='bi ${icone} me-1'></i>${titulo}</h6></li>`;
+                lista.forEach(t => {
+                alertList.innerHTML += `
+                    <li><a class='dropdown-item' href='/tarefas/${t.id}/editar/'>
+                    ${t.nome} <br><small class='text-muted'>
+                    ${t.data_fim ? 'Vence em ' + t.data_fim : 'Criada em ' + t.data_cadastro}</small>
+                    </a></li>`;
+                });
+            }
+            };
+
+            addAlert("Tarefas em atraso", data.atrasadas, "bi-exclamation-circle", "danger");
+            addAlert("A vencer (até 7 dias)", data.a_vencer, "bi-hourglass-split", "warning");
+            addAlert("Novas tarefas", data.novas, "bi-plus-circle", "primary");
+        } catch (error) {
+            console.error("Erro ao carregar alertas:", error);
+        }
+        });
+    </script>
+
     
     {% block extra_js %}{% endblock %}
 </body>

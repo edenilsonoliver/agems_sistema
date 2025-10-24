@@ -7,7 +7,7 @@ from .models import Usuario
 class UsuarioAdmin(UserAdmin):
     """Administração customizada para o modelo Usuario."""
     
-    list_display = ['username', 'email', 'first_name', 'last_name', 'perfil', 'ativo', 'is_staff']
+    list_display = ['username', 'email', 'first_name', 'last_name', 'subunidade', 'diretoria', 'perfil', 'ativo', 'is_staff']
     list_filter = ['perfil', 'ativo', 'is_staff', 'is_superuser']
     search_fields = ['username', 'first_name', 'last_name', 'email']
     

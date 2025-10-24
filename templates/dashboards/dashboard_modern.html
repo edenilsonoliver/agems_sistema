@@ -26,20 +26,20 @@
     <div class="col-12 col-sm-6 col-xl-3">
         <div class="stat-card">
             <div class="stat-icon success">
-                <i class="bi bi-building"></i>
+                <i class="bi bi-journal-check"></i>
             </div>
-            <div class="stat-value">{{ total_entidades }}</div>
-            <div class="stat-label">Entidades Ativas</div>
+            <div class="stat-value">{{ total_obrigacoes }}</div>
+            <div class="stat-label">Obrigações</div>
         </div>
     </div>
     
     <div class="col-12 col-sm-6 col-xl-3">
         <div class="stat-card">
             <div class="stat-icon warning">
-                <i class="bi bi-exclamation-triangle"></i>
+                <i class="bi bi-hourglass-split"></i>
             </div>
-            <div class="stat-value">{{ obrigacoes_pendentes_count }}</div>
-            <div class="stat-label">Obrigações Pendentes</div>
+            <div class="stat-value">{{ tarefas_a_vencer }}</div>
+            <div class="stat-label">Tarefas a Vencer</div>
         </div>
     </div>
     
@@ -48,8 +48,8 @@
             <div class="stat-icon danger">
                 <i class="bi bi-clock-history"></i>
             </div>
-            <div class="stat-value">{{ obrigacoes_vencidas }}</div>
-            <div class="stat-label">Obrigações Vencidas</div>
+            <div class="stat-value">{{ tarefas_vencidas }}</div>
+            <div class="stat-label">Tarefas Vencidas</div>
         </div>
     </div>
 </div>
@@ -61,11 +61,11 @@
             <div class="card-header bg-white border-0 py-3">
                 <h5 class="card-title mb-0">
                     <i class="bi bi-graph-up me-2"></i>
-                    Ações por Status
+                    Tarefas por Status
                 </h5>
             </div>
             <div class="card-body">
-                <canvas id="acoesChart" height="80"></canvas>
+                <canvas id="tarefasChart" height="80"></canvas>
             </div>
         </div>
     </div>
@@ -214,29 +214,41 @@
 
 {% block extra_js %}
 <script>
-    // Gráfico de Ações por Status
-    const acoesCtx = document.getElementById('acoesChart');
-    if (acoesCtx) {
-        new Chart(acoesCtx, {
+    // --- Gráfico de Tarefas por Status ---
+    const tarefasData = JSON.parse('{{ tarefas_por_status|safe|escapejs }}');
+    const labelMap = {
+        "a_iniciar": "A Iniciar",
+        "em_andamento": "Em Andamento",
+        "atrasado": "Atrasado",
+        "em_validacao": "Em Validação",
+        "finalizado": "Finalizado"
+    };
+
+    const labels = tarefasData.map(t => labelMap[t.status] || t.status);
+    const valores = tarefasData.map(t => t.total);
+
+    const tarefasCtx = document.getElementById('tarefasChart');
+    if (tarefasCtx) {
+        new Chart(tarefasCtx, {
             type: 'bar',
             data: {
-                labels: ['A Iniciar', 'Em Andamento', 'Atrasado', 'Em Validação', 'Finalizado'],
+                labels: labels,
                 datasets: [{
-                    label: 'Quantidade de Ações',
-                    data: [12, 19, 3, 5, 28],
+                    label: 'Quantidade de Tarefas',
+                    data: valores,
                     backgroundColor: [
-                        'rgba(108, 117, 125, 0.8)',
-                        'rgba(13, 110, 253, 0.8)',
-                        'rgba(220, 53, 69, 0.8)',
-                        'rgba(255, 193, 7, 0.8)',
-                        'rgba(25, 135, 84, 0.8)'
+                        'rgba(245, 124, 0, 0.8)',   // A iniciar
+                        'rgba(25, 118, 210, 0.8)', // Em andamento
+                        'rgba(198, 40, 40, 0.8)',  // Atrasado
+                        'rgba(106, 27, 154, 0.8)', // Em validação
+                        'rgba(46, 125, 50, 0.8)'   // Finalizado
                     ],
                     borderColor: [
-                        'rgb(108, 117, 125)',
-                        'rgb(13, 110, 253)',
-                        'rgb(220, 53, 69)',
-                        'rgb(255, 193, 7)',
-                        'rgb(25, 135, 84)'
+                        'rgb(245, 124, 0)',
+                        'rgb(25, 118, 210)',
+                        'rgb(198, 40, 40)',
+                        'rgb(106, 27, 154)',
+                        'rgb(46, 125, 50)'
                     ],
                     borderWidth: 2,
                     borderRadius: 8
@@ -246,42 +258,43 @@
                 responsive: true,
                 maintainAspectRatio: true,
                 plugins: {
-                    legend: {
-                        display: false
-                    }
+                    legend: { display: false }
                 },
                 scales: {
                     y: {
                         beginAtZero: true,
-                        grid: {
-                            display: true,
-                            drawBorder: false
-                        }
+                        grid: { display: true, drawBorder: false }
                     },
                     x: {
-                        grid: {
-                            display: false
-                        }
+                        grid: { display: false }
                     }
                 }
             }
         });
     }
-    
-    // Gráfico de Tipos
+</script>
+
+<script>
+    // --- Gráfico de Instrumentos por Tipo ---
+    const tiposData = JSON.parse('{{ instrumentos_por_tipo|safe|escapejs }}');
+    const tipoLabels = tiposData.map(t => t.tipo_instrumento__nome);
+    const tipoValores = tiposData.map(t => t.total);
+
     const tiposCtx = document.getElementById('tiposChart');
-    if (tiposCtx) {
+    if (tiposCtx && tiposData.length) {
         new Chart(tiposCtx, {
             type: 'doughnut',
             data: {
-                labels: ['Contrato', 'Convênio', 'Acordo', 'TAC'],
+                labels: tipoLabels,
                 datasets: [{
-                    data: [45, 25, 20, 10],
+                    data: tipoValores,
                     backgroundColor: [
-                        'rgba(102, 126, 234, 0.8)',
-                        'rgba(118, 75, 162, 0.8)',
                         'rgba(13, 110, 253, 0.8)',
-                        'rgba(25, 135, 84, 0.8)'
+                        'rgba(118, 75, 162, 0.8)',
+                        'rgba(25, 135, 84, 0.8)',
+                        'rgba(255, 193, 7, 0.8)',
+                        'rgba(220, 53, 69, 0.8)',
+                        'rgba(102, 126, 234, 0.8)'
                     ],
                     borderWidth: 0
                 }]
@@ -291,11 +304,16 @@
                 maintainAspectRatio: true,
                 plugins: {
                     legend: {
-                        position: 'bottom'
-                    }
+                        position: 'bottom',
+                        labels: { color: '#333', font: { size: 13 } }
+                    },
+                    title: { display: false }
                 }
             }
         });
+    } else {
+        document.getElementById('tiposChart').outerHTML =
+            "<p class='text-center text-muted mt-3'>Sem dados de tipos de instrumentos.</p>";
     }
 </script>
 {% endblock %}

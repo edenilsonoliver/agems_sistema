@@ -1,5 +1,6 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+#from core.models import Subunidade
 
 
 class Usuario(AbstractUser):
@@ -24,6 +25,19 @@ class Usuario(AbstractUser):
     ativo = models.BooleanField(default=True, verbose_name='Usuário Ativo')
     data_criacao = models.DateTimeField(auto_now_add=True, verbose_name='Data de Criação')
     data_atualizacao = models.DateTimeField(auto_now=True, verbose_name='Última Atualização')
+    
+    subunidade = models.ForeignKey(
+        'core.Subunidade',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='usuarios'
+    )
+
+    @property
+    def diretoria(self):
+        """Permite acessar diretoria diretamente a partir do usuário."""
+        return self.subunidade.diretoria if self.subunidade else None
     
     class Meta:
         verbose_name = 'Usuário'

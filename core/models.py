@@ -17,6 +17,25 @@ class Diretoria(models.Model):
     
     def __str__(self):
         return f"{self.sigla} - {self.nome}"
+    
+
+class Subunidade(models.Model):
+    """Subunidades vinculadas às Diretorias."""
+    nome = models.CharField('Nome da Subunidade', max_length=200)
+    sigla = models.CharField('Sigla', max_length=10, blank=True)
+    diretoria = models.ForeignKey('core.Diretoria', on_delete=models.CASCADE, related_name='subunidades')
+    responsavel = models.CharField('Responsável', max_length=200, blank=True)
+    ativa = models.BooleanField('Ativa', default=True)
+    data_criacao = models.DateTimeField('Data de Criação', auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Subunidade'
+        verbose_name_plural = 'Subunidades'
+        ordering = ['nome']
+
+    def __str__(self):
+        return f"{self.nome} ({self.diretoria.sigla})"
+
 
 
 class TipoEntidade(models.Model):

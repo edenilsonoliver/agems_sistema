@@ -13,12 +13,12 @@ class TarefaInline(admin.TabularInline):
 class AcaoAdmin(admin.ModelAdmin):
     list_display = [
         'nome', 'obrigacao', 'tipo_acao', 'responsavel', 
-        'status', 'percentual_cumprido', 'prazo_cumprimento', 'periodicidade'
+        'status', 'percentual_cumprido', 'data_fim_prevista', 'periodicidade'
     ]
     list_filter = ['status', 'tipo_acao', 'periodicidade', 'responsavel']
     search_fields = ['nome', 'descricao', 'obrigacao__titulo']
     readonly_fields = ['data_cadastro', 'data_atualizacao']
-    date_hierarchy = 'prazo_cumprimento'
+    date_hierarchy = 'data_fim_prevista'
     inlines = [TarefaInline]
     
     fieldsets = (
@@ -33,8 +33,7 @@ class AcaoAdmin(admin.ModelAdmin):
                 'periodicidade', 
                 'data_inicio', 
                 'data_fim_prevista', 
-                'data_fim_real', 
-                'prazo_cumprimento'
+                'data_fim_real'
             )
         }),
         ('Alertas', {
