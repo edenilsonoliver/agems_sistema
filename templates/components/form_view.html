@@ -61,30 +61,37 @@
                         </button>
 
                         <script>
-                        document.addEventListener("DOMContentLoaded", function() {
-                            const addButton = document.getElementById("add-checklist-item");
-                            const container = document.getElementById("checklist-container");
-                            const totalForms = document.querySelector("[name='checklist_itens-TOTAL_FORMS']");
+                            document.addEventListener("DOMContentLoaded", function() {
+                                const addButton = document.getElementById("add-checklist-item");
+                                const container = document.getElementById("checklist-container");
+                                const totalFormsInput = document.querySelector("input[name$='-TOTAL_FORMS']");
 
-                            if (!addButton || !container || !totalForms) return;
+                                if (!addButton || !container || !totalFormsInput) return;
 
-                            addButton.addEventListener("click", function() {
-                                const index = parseInt(totalForms.value);
-                                const newItem = document.createElement("div");
-                                newItem.classList.add("checklist-item", "mb-2", "d-flex", "align-items-center");
-                                newItem.innerHTML = `
-                                    <input type="text"
-                                        name="checklist_itens-${index}-nome"
-                                        class="form-control me-2"
-                                        placeholder="Novo item">
-                                    <input type="checkbox"
-                                        name="checklist_itens-${index}-concluido">
-                                `;
-                                container.appendChild(newItem);
-                                totalForms.value = index + 1;
+                                // Obtém o prefixo dinamicamente, removendo "-TOTAL_FORMS"
+                                const prefix = totalFormsInput.name.replace("-TOTAL_FORMS", "");
+
+                                addButton.addEventListener("click", function() {
+                                    const index = parseInt(totalFormsInput.value);
+
+                                    const newItem = document.createElement("div");
+                                    newItem.classList.add("checklist-item", "mb-2", "d-flex", "align-items-center");
+                                    newItem.innerHTML = `
+                                        <input type="text"
+                                            id="id_${prefix}-${index}-nome"
+                                            name="${prefix}-${index}-nome"
+                                            class="form-control me-2"
+                                            placeholder="Novo item">
+                                        <input type="checkbox"
+                                            id="id_${prefix}-${index}-concluido"
+                                            name="${prefix}-${index}-concluido">
+                                    `;
+
+                                    container.appendChild(newItem);
+                                    totalFormsInput.value = index + 1;
+                                });
                             });
-                        });
-                        </script>
+                            </script>
                     {% endif %}
                     {% endblock %}
 

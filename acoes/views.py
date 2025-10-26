@@ -81,46 +81,128 @@ class TarefaCreateView(ModernCreateView):
     model = Tarefa
     fields = '__all__'
     success_url = reverse_lazy('tarefa_list')
+    template_name = 'acoes/tarefa_form.html'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        if self.request.POST:
-            context['checklist_formset'] = ChecklistFormSet(self.request.POST)
+        if self.request.method == 'POST':
+            context['checklist_formset'] = ChecklistItemFormSet(
+                self.request.POST,
+                prefix='checklist_itens'
+            )
         else:
-            context['checklist_formset'] = ChecklistFormSet()
+            context['checklist_formset'] = ChecklistItemFormSet(
+                prefix='checklist_itens'
+            )
         return context
 
     def form_valid(self, form):
         context = self.get_context_data()
         checklist_formset = context['checklist_formset']
-        self.object = form.save()
+        self.object = form.save(commit=False)
+
+        print("---- DEBUG FORMSET POST ----")
+        print("TOTAL_FORMS:", self.request.POST.get('checklist_itens-TOTAL_FORMS'))
+        print("INITIAL_FORMS:", self.request.POST.get('checklist_itens-INITIAL_FORMS'))
+
+        for k in sorted(self.request.POST.keys()):
+            if k.startswith('checklist_itens-'):
+                print(k, "=>", self.request.POST.get(k))
+        print("---- END DEBUG ----")
+
+        # DEBUG fino: confere IDs esperados x recebidos
+        try:
+            pref = 'checklist_itens'
+            total = int(self.request.POST.get(f'{pref}-TOTAL_FORMS') or 0)
+            initial = int(self.request.POST.get(f'{pref}-INITIAL_FORMS') or 0)
+            print(f"[CHK] total_forms={total} initial_forms={initial}")
+
+            for i in range(total):
+                id_val   = self.request.POST.get(f'{pref}-{i}-id')
+                nome_val = self.request.POST.get(f'{pref}-{i}-nome')
+                conc_val = self.request.POST.get(f'{pref}-{i}-concluido')
+                print(f"[CHK] i={i} id={id_val!r} nome={nome_val!r} concluido={conc_val!r}")
+        except Exception as e:
+            print("[CHK] erro ao inspecionar POST:", e)
+
         if checklist_formset.is_valid():
+            self.object.save()
             checklist_formset.instance = self.object
             checklist_formset.save()
-        return super().form_valid(form)
+            return super().form_valid(form)
+        else:
+            # Mantém a tela com os erros do formset, sem “limpar” o formulário
+            print("⚠️ FORMSET INVÁLIDO EM:", self.__class__.__name__)
+            print("ERROS GERAIS:", checklist_formset.non_form_errors())
+            for i, f in enumerate(checklist_formset.forms):
+                print(f"  → Form {i} errors:", f.errors)
+            context['form'] = form
+            return self.render_to_response(context)
 
 
 class TarefaUpdateView(ModernUpdateView):
     model = Tarefa
-    fields = ['nome', 'descricao', 'acao', 'responsavel', 'status', 'percentual_cumprido', 'data_inicio', 'data_fim', 'prioridade']
+    fields = ['nome', 'descricao', 'acao', 'responsavel', 'status',
+              'percentual_cumprido', 'data_inicio', 'data_fim', 'prioridade']
     success_url = reverse_lazy('tarefa_list')
+    template_name = 'acoes/tarefa_form.html'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        if self.request.POST:
-            context['checklist_formset'] = ChecklistFormSet(self.request.POST, instance=self.object)
+        if self.request.method == 'POST':
+            context['checklist_formset'] = ChecklistItemFormSet(
+                self.request.POST,
+                instance=self.object,
+                prefix='checklist_itens'
+            )
         else:
-            context['checklist_formset'] = ChecklistFormSet(instance=self.object)
+            context['checklist_formset'] = ChecklistItemFormSet(
+                instance=self.object,
+                prefix='checklist_itens'
+            )
         return context
 
     def form_valid(self, form):
         context = self.get_context_data()
         checklist_formset = context['checklist_formset']
-        self.object = form.save()
+        self.object = form.save(commit=False)
+
+        print("---- DEBUG FORMSET POST ----")
+        print("TOTAL_FORMS:", self.request.POST.get('checklist_itens-TOTAL_FORMS'))
+        print("INITIAL_FORMS:", self.request.POST.get('checklist_itens-INITIAL_FORMS'))
+
+        for k in sorted(self.request.POST.keys()):
+            if k.startswith('checklist_itens-'):
+                print(k, "=>", self.request.POST.get(k))
+        print("---- END DEBUG ----")
+
+        # DEBUG fino: confere IDs esperados x recebidos
+        try:
+            pref = 'checklist_itens'
+            total = int(self.request.POST.get(f'{pref}-TOTAL_FORMS') or 0)
+            initial = int(self.request.POST.get(f'{pref}-INITIAL_FORMS') or 0)
+            print(f"[CHK] total_forms={total} initial_forms={initial}")
+
+            for i in range(total):
+                id_val   = self.request.POST.get(f'{pref}-{i}-id')
+                nome_val = self.request.POST.get(f'{pref}-{i}-nome')
+                conc_val = self.request.POST.get(f'{pref}-{i}-concluido')
+                print(f"[CHK] i={i} id={id_val!r} nome={nome_val!r} concluido={conc_val!r}")
+        except Exception as e:
+            print("[CHK] erro ao inspecionar POST:", e)
+
         if checklist_formset.is_valid():
+            self.object.save()
             checklist_formset.instance = self.object
             checklist_formset.save()
-        return super().form_valid(form)
+            return super().form_valid(form)
+        else:
+            print("⚠️ FORMSET INVÁLIDO EM:", self.__class__.__name__)
+            print("ERROS GERAIS:", checklist_formset.non_form_errors())
+            for i, f in enumerate(checklist_formset.forms):
+                print(f"  → Form {i} errors:", f.errors)
+            context['form'] = form
+            return self.render_to_response(context)
 
 
 class TarefaDeleteView(ModernDeleteView):

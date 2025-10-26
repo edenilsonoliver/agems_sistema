@@ -41,8 +41,22 @@ class AcaoForm(forms.ModelForm):
         return f"{nome} | {sub} | {dir}"
 
 ChecklistItemFormSet = inlineformset_factory(
-    Tarefa, ChecklistItem,
+    Tarefa,
+    ChecklistItem,
     fields=['nome', 'concluido'],
     extra=1,
-    can_delete=True
+    can_delete=True,
+    widgets={
+        'nome': forms.TextInput(attrs={
+            'class': 'form-control me-2',
+            'placeholder': 'Novo item'
+        }),
+        'concluido': forms.CheckboxInput(attrs={
+            'class': 'form-check-input'
+        }),
+    }
 )
+
+# Permite que formulários vazios sejam ignorados (não geram erro de validação)
+for field in ChecklistItemFormSet.form.base_fields.values():
+    field.required = False

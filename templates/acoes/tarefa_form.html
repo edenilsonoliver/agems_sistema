@@ -1,53 +1,59 @@
-<h5 class="mt-3">Checklist</h5>
-<div id="checklist-container">
-    {{ checklist_formset.management_form }}
-    {% for form in checklist_formset %}
-        <div class="checklist-item mb-2 d-flex align-items-center">
-            <input type="text"
-                   name="{{ form.nome.name }}"
-                   value="{{ form.nome.value|default:'' }}"
-                   class="form-control me-2"
-                   placeholder="Novo item">
-            <input type="checkbox"
-                   name="{{ form.concluido.name }}"
-                   {% if form.concluido.value %}checked{% endif %}>
-        </div>
-    {% endfor %}
-</div>
+{% extends 'components/form_view.html' %}
+{% load crispy_forms_tags %}
 
-<button type="button" class="btn btn-sm btn-outline-success mt-2" id="add-checklist-item">
-    <i class="bi bi-plus-circle"></i> Adicionar item
-</button>
+{% block form_content %}
+    {{ form|crispy }}
 
-<div class="text-end mt-3">
-    <button type="submit" class="btn btn-primary">Salvar</button>
-    <a href="{% url 'tarefa_list' %}" class="btn btn-secondary">Cancelar</a>
-</div>
+    <hr class="my-4">
 
-<!-- ===================== SCRIPT CHECKLIST ===================== -->
-<script>
-document.addEventListener("DOMContentLoaded", function() {
-    const addButton = document.getElementById("add-checklist-item");
-    const container = document.getElementById("checklist-container");
-    const totalForms = document.querySelector("[name='checklist_itens-TOTAL_FORMS']");
+    <h5 class="mt-3">
+        <i class="bi bi-list-check me-2"></i> Checklist da Tarefa
+    </h5>
 
-    if (!addButton || !container || !totalForms) return;
+    <div id="checklist-container">
+        {{ checklist_formset.management_form }}
+        {% for form in checklist_formset %}
+            {{ form.id }}
+            <div style="display:none;">{{ form.DELETE }}</div>  {# Oculta o checkbox de exclusão #}
+            <div class="checklist-item mb-2 d-flex align-items-center">
+                {{ form.nome }}
+                {{ form.concluido }}
+            </div>
+        {% endfor %}
 
-    addButton.addEventListener("click", function() {
-        const index = parseInt(totalForms.value);
-        const newItem = document.createElement("div");
-        newItem.classList.add("checklist-item", "mb-2", "d-flex", "align-items-center");
-        newItem.innerHTML = `
-            <input type="text"
-                   name="checklist_itens-${index}-nome"
-                   class="form-control me-2"
-                   placeholder="Novo item">
-            <input type="checkbox"
-                   name="checklist_itens-${index}-concluido">
-        `;
-        container.appendChild(newItem);
-        totalForms.value = index + 1;
-    });
-});
-</script>
-<!-- ============================================================ -->
+    </div>
+
+    <button type="button" class="btn btn-sm btn-outline-success mt-2" id="add-checklist-item">
+        <i class="bi bi-plus-circle"></i> Adicionar item
+    </button>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const addButton = document.getElementById('add-checklist-item');
+            const container = document.getElementById('checklist-container');
+            const totalForms = document.querySelector('#id_checklist_itens-TOTAL_FORMS');
+
+            // Proteção contra erros
+            if (!addButton || !container || !totalForms) return;
+
+            addButton.addEventListener('click', function() {
+                const newIndex = parseInt(totalForms.value);
+
+                const newItem = `
+                    <div class="checklist-item mb-2 d-flex align-items-center">
+                        <input type="text"
+                               name="checklist_itens-${newIndex}-nome"
+                               class="form-control me-2"
+                               placeholder="Novo item">
+                        <input type="checkbox"
+                               name="checklist_itens-${newIndex}-concluido"
+                               class="form-check-input">
+                    </div>
+                `;
+
+                container.insertAdjacentHTML('beforeend', newItem);
+                totalForms.value = newIndex + 1;
+            });
+        });
+    </script>
+{% endblock %}
