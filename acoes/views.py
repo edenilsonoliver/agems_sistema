@@ -1,26 +1,14 @@
 from core.views import ModernListView, ModernCreateView, ModernUpdateView, ModernDeleteView
 from django.shortcuts import render, get_object_or_404, redirect
-from django.views.generic import ListView, CreateView, UpdateView, DeleteView
+from django.views.generic import ListView, CreateView, UpdateView, DeleteView, TemplateView
 from .models import Tarefa, Acao, ChecklistItem
 from django.urls import reverse_lazy
-from .forms import AcaoForm
-from instrumentos.models import Instrumento
-
-from core.views import ModernListView, ModernCreateView, ModernUpdateView, ModernDeleteView
-from django.http import JsonResponse
-from django.urls import reverse_lazy
+from .forms import AcaoForm, ChecklistItemFormSet
 from instrumentos.models import Instrumento, Obrigacao
-from .models import Tarefa
-from .forms import AcaoForm
-from acoes.models import Tarefa
-from .forms import ChecklistItemFormSet
+from django.http import JsonResponse
 from django.forms import inlineformset_factory
 
-# --- CALENDÁRIO DE TAREFAS (FullCalendar.js) ---
-from django.views.generic import TemplateView
-from django.http import JsonResponse
-
-# logo abaixo das importações e antes das views de tarefa
+# Formset para checklist
 ChecklistFormSet = inlineformset_factory(
     Tarefa,
     ChecklistItem,
@@ -35,11 +23,9 @@ class TarefaListView(ModernListView):
     template_name = 'acoes/tarefa_list.html'
     icon = "bi bi-check2-square"
     create_url = 'tarefa_create'
-    search_fields = ['titulo', 'descricao']
+    search_fields = ['nome', 'descricao']
 
     def get_queryset(self):
-        from acoes.models import Tarefa
-
         instrumento_id = self.request.GET.get('instrumento')
         obrigacao_id = self.request.GET.get('obrigacao')
 
@@ -48,13 +34,11 @@ class TarefaListView(ModernListView):
         if instrumento_id:
             queryset = queryset.filter(acao__instrumento_id=instrumento_id)
         if obrigacao_id:
-            queryset = queryset.filter(acao_id=obrigacao_id)
+            queryset = queryset.filter(acao__obrigacao_id=obrigacao_id)
 
-        queryset = queryset.order_by('id')
+        queryset = queryset.order_by('data_inicio', 'prioridade', 'nome')
 
-        print("DEBUG >>> Ordem aplicada:", list(queryset.values_list('id', flat=True)))
         return queryset
-
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -68,7 +52,7 @@ class TarefaListView(ModernListView):
         return context
 
 
-# --- Endpoint AJAX ---
+# Endpoint AJAX para obrigações
 def get_obrigacoes_por_instrumento(request):
     instrumento_id = request.GET.get('instrumento_id')
     if not instrumento_id:
@@ -76,6 +60,7 @@ def get_obrigacoes_por_instrumento(request):
 
     obrigacoes = Obrigacao.objects.filter(instrumento_id=instrumento_id).values('id', 'titulo')
     return JsonResponse({'obrigacoes': list(obrigacoes)})
+
 
 class TarefaCreateView(ModernCreateView):
     model = Tarefa
@@ -101,49 +86,22 @@ class TarefaCreateView(ModernCreateView):
         checklist_formset = context['checklist_formset']
         self.object = form.save(commit=False)
 
-        print("---- DEBUG FORMSET POST ----")
-        print("TOTAL_FORMS:", self.request.POST.get('checklist_itens-TOTAL_FORMS'))
-        print("INITIAL_FORMS:", self.request.POST.get('checklist_itens-INITIAL_FORMS'))
-
-        for k in sorted(self.request.POST.keys()):
-            if k.startswith('checklist_itens-'):
-                print(k, "=>", self.request.POST.get(k))
-        print("---- END DEBUG ----")
-
-        # DEBUG fino: confere IDs esperados x recebidos
-        try:
-            pref = 'checklist_itens'
-            total = int(self.request.POST.get(f'{pref}-TOTAL_FORMS') or 0)
-            initial = int(self.request.POST.get(f'{pref}-INITIAL_FORMS') or 0)
-            print(f"[CHK] total_forms={total} initial_forms={initial}")
-
-            for i in range(total):
-                id_val   = self.request.POST.get(f'{pref}-{i}-id')
-                nome_val = self.request.POST.get(f'{pref}-{i}-nome')
-                conc_val = self.request.POST.get(f'{pref}-{i}-concluido')
-                print(f"[CHK] i={i} id={id_val!r} nome={nome_val!r} concluido={conc_val!r}")
-        except Exception as e:
-            print("[CHK] erro ao inspecionar POST:", e)
-
         if checklist_formset.is_valid():
             self.object.save()
             checklist_formset.instance = self.object
             checklist_formset.save()
             return super().form_valid(form)
         else:
-            # Mantém a tela com os erros do formset, sem “limpar” o formulário
-            print("⚠️ FORMSET INVÁLIDO EM:", self.__class__.__name__)
-            print("ERROS GERAIS:", checklist_formset.non_form_errors())
-            for i, f in enumerate(checklist_formset.forms):
-                print(f"  → Form {i} errors:", f.errors)
+            # Renderiza novamente com erros
             context['form'] = form
             return self.render_to_response(context)
 
 
 class TarefaUpdateView(ModernUpdateView):
     model = Tarefa
-    fields = ['nome', 'descricao', 'acao', 'responsavel', 'status',
-              'percentual_cumprido', 'data_inicio', 'data_fim', 'prioridade']
+    fields = ['nome', 'descricao', 'acao', 'responsavel', 'executores', 'status',
+              'percentual_cumprido', 'data_inicio', 'data_fim', 'data_conclusao',
+              'tarefas_predecessoras', 'prioridade', 'observacoes']
     success_url = reverse_lazy('tarefa_list')
     template_name = 'acoes/tarefa_form.html'
 
@@ -167,40 +125,15 @@ class TarefaUpdateView(ModernUpdateView):
         checklist_formset = context['checklist_formset']
         self.object = form.save(commit=False)
 
-        print("---- DEBUG FORMSET POST ----")
-        print("TOTAL_FORMS:", self.request.POST.get('checklist_itens-TOTAL_FORMS'))
-        print("INITIAL_FORMS:", self.request.POST.get('checklist_itens-INITIAL_FORMS'))
-
-        for k in sorted(self.request.POST.keys()):
-            if k.startswith('checklist_itens-'):
-                print(k, "=>", self.request.POST.get(k))
-        print("---- END DEBUG ----")
-
-        # DEBUG fino: confere IDs esperados x recebidos
-        try:
-            pref = 'checklist_itens'
-            total = int(self.request.POST.get(f'{pref}-TOTAL_FORMS') or 0)
-            initial = int(self.request.POST.get(f'{pref}-INITIAL_FORMS') or 0)
-            print(f"[CHK] total_forms={total} initial_forms={initial}")
-
-            for i in range(total):
-                id_val   = self.request.POST.get(f'{pref}-{i}-id')
-                nome_val = self.request.POST.get(f'{pref}-{i}-nome')
-                conc_val = self.request.POST.get(f'{pref}-{i}-concluido')
-                print(f"[CHK] i={i} id={id_val!r} nome={nome_val!r} concluido={conc_val!r}")
-        except Exception as e:
-            print("[CHK] erro ao inspecionar POST:", e)
-
         if checklist_formset.is_valid():
             self.object.save()
+            # Salvar M2M fields
+            form.save_m2m()
             checklist_formset.instance = self.object
             checklist_formset.save()
             return super().form_valid(form)
         else:
-            print("⚠️ FORMSET INVÁLIDO EM:", self.__class__.__name__)
-            print("ERROS GERAIS:", checklist_formset.non_form_errors())
-            for i, f in enumerate(checklist_formset.forms):
-                print(f"  → Form {i} errors:", f.errors)
+            # Renderiza novamente com erros
             context['form'] = form
             return self.render_to_response(context)
 
@@ -210,29 +143,33 @@ class TarefaDeleteView(ModernDeleteView):
     success_url = reverse_lazy('tarefa_list')
 
 
-#Classes de Ações
+# Classes de Ações
 class AcaoListView(ModernListView):
     model = Acao
     template_name = 'acoes/acao_list.html'
     icon = "bi bi-lightning"
     create_url = 'acao_create'
-    search_fields = ['titulo', 'descricao']
+    search_fields = ['nome', 'descricao']
 
 
 class AcaoCreateView(ModernCreateView):
     model = Acao
-    form_class = AcaoForm  # substitui fields='__all__'
+    form_class = AcaoForm
     success_url = reverse_lazy('acao_list')
+
 
 class AcaoUpdateView(ModernUpdateView):
     model = Acao
-    form_class = AcaoForm  # substitui fields='__all__'
+    form_class = AcaoForm
     success_url = reverse_lazy('acao_list')
+
 
 class AcaoDeleteView(ModernDeleteView):
     model = Acao
     success_url = reverse_lazy('acao_list')
 
+
+# Calendário de Tarefas
 class TarefaCalendarioView(TemplateView):
     template_name = 'acoes/tarefas_calendario.html'
 
@@ -268,3 +205,4 @@ def cor_status(status):
         'finalizado': '#2e7d32',      # verde
     }
     return cores.get(status, '#607d8b')
+

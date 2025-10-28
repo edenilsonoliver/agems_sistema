@@ -2,8 +2,103 @@
 {% load crispy_forms_tags %}
 
 {% block form_content %}
-    {# Renderizar todos os campos com Crispy Forms #}
-    {{ form|crispy }}
+    {# Renderizar campos individuais ao invés de {{ form|crispy }} #}
+    
+    {# Nome da Tarefa #}
+    {{ form.nome|as_crispy_field }}
+    
+    {# Descrição #}
+    {{ form.descricao|as_crispy_field }}
+    
+    {# Ação #}
+    {{ form.acao|as_crispy_field }}
+    
+    {# Responsável #}
+    {{ form.responsavel|as_crispy_field }}
+    
+    {# Executores #}
+    {{ form.executores|as_crispy_field }}
+    
+    {# Status #}
+    {{ form.status|as_crispy_field }}
+    
+    {# Percentual Cumprido #}
+    {{ form.percentual_cumprido|as_crispy_field }}
+    
+    {# CAMPOS DE DATA - RENDERIZAÇÃO MANUAL #}
+    <div class="mb-3">
+        <label for="{{ form.data_inicio.id_for_label }}" class="form-label">
+            Data de Início<span class="text-danger">*</span>
+        </label>
+        <input type="text" 
+               name="{{ form.data_inicio.html_name }}" 
+               id="{{ form.data_inicio.id_for_label }}"
+               value="{{ form.data_inicio.value|default:'' }}"
+               class="form-control date-mask" 
+               placeholder="dd/mm/aaaa"
+               maxlength="10"
+               required>
+        {% if form.data_inicio.help_text %}
+            <small class="form-text text-muted">{{ form.data_inicio.help_text }}</small>
+        {% endif %}
+        {% if form.data_inicio.errors %}
+            <div class="invalid-feedback d-block">
+                {{ form.data_inicio.errors }}
+            </div>
+        {% endif %}
+    </div>
+    
+    <div class="mb-3">
+        <label for="{{ form.data_fim.id_for_label }}" class="form-label">
+            Data de Fim<span class="text-danger">*</span>
+        </label>
+        <input type="text" 
+               name="{{ form.data_fim.html_name }}" 
+               id="{{ form.data_fim.id_for_label }}"
+               value="{{ form.data_fim.value|default:'' }}"
+               class="form-control date-mask" 
+               placeholder="dd/mm/aaaa"
+               maxlength="10"
+               required>
+        {% if form.data_fim.help_text %}
+            <small class="form-text text-muted">{{ form.data_fim.help_text }}</small>
+        {% endif %}
+        {% if form.data_fim.errors %}
+            <div class="invalid-feedback d-block">
+                {{ form.data_fim.errors }}
+            </div>
+        {% endif %}
+    </div>
+    
+    <div class="mb-3">
+        <label for="{{ form.data_conclusao.id_for_label }}" class="form-label">
+            Data de Conclusão Real
+        </label>
+        <input type="text" 
+               name="{{ form.data_conclusao.html_name }}" 
+               id="{{ form.data_conclusao.id_for_label }}"
+               value="{{ form.data_conclusao.value|default:'' }}"
+               class="form-control date-mask" 
+               placeholder="dd/mm/aaaa"
+               maxlength="10">
+        {% if form.data_conclusao.help_text %}
+            <small class="form-text text-muted">{{ form.data_conclusao.help_text }}</small>
+        {% endif %}
+        {% if form.data_conclusao.errors %}
+            <div class="invalid-feedback d-block">
+                {{ form.data_conclusao.errors }}
+            </div>
+        {% endif %}
+    </div>
+    
+    {# Tarefas Predecessoras #}
+    {{ form.tarefas_predecessoras|as_crispy_field }}
+    
+    {# Prioridade #}
+    {{ form.prioridade|as_crispy_field }}
+    
+    {# Observações #}
+    {{ form.observacoes|as_crispy_field }}
 
     <hr class="my-4">
 
@@ -69,7 +164,7 @@
 
     <script>
         (function() {
-            console.log('=== CHECKLIST SCRIPT INICIADO ===');
+            console.log('=== CHECKLIST SCRIPT V3 INICIADO ===');
 
             const container = document.getElementById('checklist-container');
             const toggleContainer = document.getElementById('checklist-toggle-container');
@@ -204,8 +299,61 @@
                     console.log('Reindexação completa. Total:', totalItems);
                 }
 
-                console.log('=== CHECKLIST SCRIPT PRONTO ===');
+                console.log('=== CHECKLIST SCRIPT V3 PRONTO ===');
             }
+        })();
+
+        // === MÁSCARA DE DATA (dd/mm/aaaa) ===
+        (function() {
+            console.log('✅ SCRIPT DE MÁSCARA DE DATA INICIADO');
+
+            const dateInputs = document.querySelectorAll('.date-mask');
+            console.log('Campos de data detectados:', dateInputs.length);
+
+            dateInputs.forEach(function(input) {
+                // Converter valor inicial de yyyy-mm-dd para dd/mm/yyyy
+                const initialValue = input.value;
+                if (initialValue && initialValue.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                    const [ano, mes, dia] = initialValue.split('-');
+                    input.value = `${dia}/${mes}/${ano}`;
+                    console.log(`✔️ Valor inicial convertido: ${initialValue} → ${input.value}`);
+                }
+
+                // Aplicar máscara ao digitar
+                input.addEventListener('input', function(e) {
+                    let value = e.target.value.replace(/\D/g, ''); // Remove não-dígitos
+                    
+                    if (value.length >= 2) {
+                        value = value.substring(0, 2) + '/' + value.substring(2);
+                    }
+                    if (value.length >= 5) {
+                        value = value.substring(0, 5) + '/' + value.substring(5, 9);
+                    }
+                    
+                    e.target.value = value;
+                });
+
+                // Validar data ao sair do campo
+                input.addEventListener('blur', function(e) {
+                    const value = e.target.value;
+                    if (value && value.length === 10) {
+                        const partes = value.split('/');
+                        if (partes.length === 3) {
+                            const dia = parseInt(partes[0]);
+                            const mes = parseInt(partes[1]);
+                            const ano = parseInt(partes[2]);
+                            
+                            if (dia < 1 || dia > 31 || mes < 1 || mes > 12 || ano < 1900 || ano > 2100) {
+                                alert('Data inválida! Use o formato dd/mm/aaaa');
+                                e.target.value = '';
+                                e.target.focus();
+                            }
+                        }
+                    }
+                });
+            });
+
+            console.log('✅ MÁSCARA DE DATA PRONTA');
         })();
     </script>
 {% endblock %}

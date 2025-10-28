@@ -56,13 +56,15 @@ def dashboard_principal(request):
         status__in=['a_iniciar', 'em_andamento']
     ).count()
 
-    # ✅ TODAS as obrigações do sistema (visão geral)
-    obrigacoes_usuario = Obrigacao.objects.select_related(
+    # ✅ Obrigações do usuário (através das ações)
+    obrigacoes_usuario = Obrigacao.objects.filter(
+        acoes__responsavel=usuario
+    ).select_related(
         'instrumento',
         'tipo_obrigacao'
     ).prefetch_related(
         'acoes'
-    ).order_by('-data_vencimento')[:10]
+    ).distinct().order_by('-data_vencimento')[:10]
     
     # Ações recentes
     acoes_recentes = Acao.objects.select_related(

@@ -1,0 +1,97 @@
+{% load crispy_forms_tags %}
+
+<!-- Formulário de Edição de Tarefa para Modal -->
+<form method="post" action="{% url 'tarefa_edit_ajax' tarefa.pk %}" id="tarefaEditForm">
+    {% csrf_token %}
+    
+    <!-- Renderizar formulário principal COM CRISPY (mantém estilos Bootstrap) -->
+    {{ form|crispy }}
+    
+    <!-- Checklist -->
+    <hr class="my-3">
+    <h6 class="mb-3">
+        <i class="bi bi-list-check me-2"></i> Checklist da Tarefa
+    </h6>
+    
+    {{ checklist_formset.management_form }}
+    
+    <div id="checklist-items-modal">
+        {% for form in checklist_formset %}
+            <div class="checklist-item mb-2 d-flex align-items-center gap-2">
+                {{ form.id }}
+                
+                <!-- Campo nome -->
+                <input type="text" 
+                       name="{{ form.nome.html_name }}" 
+                       id="{{ form.nome.id_for_label }}"
+                       value="{{ form.nome.value|default:'' }}"
+                       class="form-control form-control-sm" 
+                       placeholder="Item do checklist">
+                
+                <!-- Campo concluído -->
+                <div class="form-check">
+                    <input type="checkbox" 
+                           name="{{ form.concluido.html_name }}"
+                           id="{{ form.concluido.id_for_label }}"
+                           class="form-check-input"
+                           {% if form.concluido.value %}checked{% endif %}>
+                    <label class="form-check-label small" for="{{ form.concluido.id_for_label }}">
+                        Concluído
+                    </label>
+                </div>
+                
+                <!-- Campo DELETE -->
+                {{ form.DELETE }}
+            </div>
+        {% endfor %}
+    </div>
+    
+    <!-- Botões -->
+    <div class="modal-footer mt-3">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+            <i class="bi bi-x-circle me-1"></i>
+            Cancelar
+        </button>
+        <button type="submit" class="btn btn-primary">
+            <i class="bi bi-check-circle me-1"></i>
+            Salvar Alterações
+        </button>
+    </div>
+</form>
+
+<script>
+// Interceptar submit do formulário para usar AJAX
+document.getElementById('tarefaEditForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const form = e.target;
+    const formData = new FormData(form);
+    
+    fetch(form.action, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Fechar modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('tarefaModal'));
+            modal.hide();
+            
+            // Recarregar página do Kanban (NÃO redirecionar para lista)
+            window.location.href = '/tarefas/kanban/';
+        } else {
+            // Mostrar erros
+            alert('Erro ao salvar: ' + (data.error || 'Erro desconhecido'));
+        }
+    })
+    .catch(error => {
+        console.error('Erro ao salvar:', error);
+        alert('Erro ao salvar tarefa. Tente novamente.');
+    });
+});
+</script>
+

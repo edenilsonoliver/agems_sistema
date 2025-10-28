@@ -1,0 +1,639 @@
+{% extends 'base_modern.html' %}
+
+{% block title %}Tarefas - Kanban - AGEMS{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* ===== ESTILOS DO KANBAN ===== */
+    .kanban-container {
+        display: flex;
+        gap: 1rem;
+        overflow-x: auto;
+        padding: 1rem 0;
+        min-height: 70vh;
+    }
+
+    .kanban-column {
+        flex: 1;
+        min-width: 280px;
+        max-width: 320px;
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 1rem;
+    }
+
+    .kanban-column-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 1rem;
+        padding-bottom: 0.75rem;
+        border-bottom: 3px solid;
+    }
+
+    .kanban-column-title {
+        font-weight: 600;
+        font-size: 0.95rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .kanban-column-count {
+        background: white;
+        padding: 0.25rem 0.5rem;
+        border-radius: 12px;
+        font-size: 0.85rem;
+        font-weight: 600;
+    }
+
+    /* Cores das colunas */
+    .kanban-column[data-status="a_iniciar"] .kanban-column-header {
+        border-color: #6c757d; /* Cinza */
+        color: #6c757d;
+    }
+
+    .kanban-column[data-status="em_andamento"] .kanban-column-header {
+        border-color: #0d6efd; /* Azul */
+        color: #0d6efd;
+    }
+
+    .kanban-column[data-status="atrasado"] .kanban-column-header {
+        border-color: #dc3545; /* Vermelho */
+        color: #dc3545;
+    }
+
+    .kanban-column[data-status="em_validacao"] .kanban-column-header {
+        border-color: #ffc107; /* Amarelo */
+        color: #ffc107;
+    }
+
+    .kanban-column[data-status="finalizado"] .kanban-column-header {
+        border-color: #198754; /* Verde */
+        color: #198754;
+    }
+
+    .kanban-cards {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+        min-height: 100px;
+    }
+
+    .kanban-card {
+        background: white;
+        border-radius: 8px;
+        padding: 1rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        cursor: pointer;
+        transition: all 0.2s;
+        border-left: 4px solid;
+    }
+
+    .kanban-card:hover {
+        box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        transform: translateY(-2px);
+    }
+
+    .kanban-card.sortable-ghost {
+        opacity: 0.4;
+    }
+
+    .kanban-card.sortable-drag {
+        opacity: 0.8;
+        transform: rotate(2deg);
+    }
+
+    /* Cores da borda do card por status */
+    .kanban-card[data-status="a_iniciar"] {
+        border-left-color: #6c757d;
+    }
+
+    .kanban-card[data-status="em_andamento"] {
+        border-left-color: #0d6efd;
+    }
+
+    .kanban-card[data-status="atrasado"] {
+        border-left-color: #dc3545;
+    }
+
+    .kanban-card[data-status="em_validacao"] {
+        border-left-color: #ffc107;
+    }
+
+    .kanban-card[data-status="finalizado"] {
+        border-left-color: #198754;
+    }
+
+    .kanban-card-title {
+        font-weight: 600;
+        font-size: 0.95rem;
+        margin-bottom: 0.5rem;
+        color: #212529;
+        line-height: 1.4;
+    }
+
+    .kanban-card-meta {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        font-size: 0.85rem;
+        color: #6c757d;
+    }
+
+    .kanban-card-meta-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .kanban-card-meta-item i {
+        width: 16px;
+        text-align: center;
+    }
+
+    .kanban-card-progress {
+        margin-top: 0.75rem;
+    }
+
+    .kanban-card-progress-bar {
+        height: 6px;
+        background: #e9ecef;
+        border-radius: 3px;
+        overflow: hidden;
+        margin-bottom: 0.25rem;
+    }
+
+    .kanban-card-progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #0d6efd, #0dcaf0);
+        border-radius: 3px;
+        transition: width 0.3s;
+    }
+
+    .kanban-card-progress-text {
+        font-size: 0.75rem;
+        color: #6c757d;
+        text-align: right;
+    }
+
+    .kanban-card-checklist {
+        margin-top: 0.5rem;
+        padding-top: 0.5rem;
+        border-top: 1px solid #e9ecef;
+        font-size: 0.8rem;
+        color: #6c757d;
+    }
+
+    .kanban-empty {
+        text-align: center;
+        padding: 2rem 1rem;
+        color: #adb5bd;
+        font-size: 0.9rem;
+    }
+
+    /* Botão de alternância de visualização */
+    .view-toggle {
+        display: flex;
+        gap: 0.5rem;
+        background: #f8f9fa;
+        padding: 0.25rem;
+        border-radius: 8px;
+    }
+
+    .view-toggle-btn {
+        padding: 0.5rem 1rem;
+        border: none;
+        background: transparent;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.2s;
+        font-size: 0.9rem;
+        color: #6c757d;
+    }
+
+    .view-toggle-btn:hover {
+        background: rgba(13, 110, 253, 0.1);
+        color: #0d6efd;
+    }
+
+    .view-toggle-btn.active {
+        background: white;
+        color: #0d6efd;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    /* Responsivo */
+    @media (max-width: 768px) {
+        .kanban-column {
+            min-width: 250px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-center">
+    <div>
+        <h1 class="page-title">
+            <i class="bi bi-check2-square me-2"></i>
+            Tarefas
+        </h1>
+        <p class="page-subtitle">Gerencie suas tarefas em formato Kanban</p>
+    </div>
+    
+    <!-- Botões de alternância de visualização -->
+    <div>
+        <a href="{% url 'tarefa_list' %}" class="btn btn-outline-primary me-2">
+            <i class="bi bi-list-task me-1"></i>
+            Lista de Tarefas
+        </a>
+        <button class="btn btn-success" disabled>
+            <i class="bi bi-kanban me-1"></i>
+            Kanban
+        </button>
+    </div>
+</div>
+
+<!-- Kanban Board -->
+<div class="kanban-container">
+    <!-- Coluna: A Iniciar -->
+    <div class="kanban-column" data-status="a_iniciar">
+        <div class="kanban-column-header">
+            <span class="kanban-column-title">
+                <i class="bi bi-circle me-1"></i>
+                A Iniciar
+            </span>
+            <span class="kanban-column-count" id="count-a_iniciar">0</span>
+        </div>
+        <div class="kanban-cards" id="cards-a_iniciar" data-status="a_iniciar">
+            <!-- Cards serão inseridos aqui via JavaScript -->
+        </div>
+    </div>
+
+    <!-- Coluna: Em Andamento -->
+    <div class="kanban-column" data-status="em_andamento">
+        <div class="kanban-column-header">
+            <span class="kanban-column-title">
+                <i class="bi bi-arrow-repeat me-1"></i>
+                Em Andamento
+            </span>
+            <span class="kanban-column-count" id="count-em_andamento">0</span>
+        </div>
+        <div class="kanban-cards" id="cards-em_andamento" data-status="em_andamento">
+            <!-- Cards serão inseridos aqui via JavaScript -->
+        </div>
+    </div>
+
+    <!-- Coluna: Atrasado -->
+    <div class="kanban-column" data-status="atrasado">
+        <div class="kanban-column-header">
+            <span class="kanban-column-title">
+                <i class="bi bi-exclamation-triangle me-1"></i>
+                Atrasado
+            </span>
+            <span class="kanban-column-count" id="count-atrasado">0</span>
+        </div>
+        <div class="kanban-cards" id="cards-atrasado" data-status="atrasado">
+            <!-- Cards serão inseridos aqui via JavaScript -->
+        </div>
+    </div>
+
+    <!-- Coluna: Em Validação -->
+    <div class="kanban-column" data-status="em_validacao">
+        <div class="kanban-column-header">
+            <span class="kanban-column-title">
+                <i class="bi bi-clipboard-check me-1"></i>
+                Em Validação
+            </span>
+            <span class="kanban-column-count" id="count-em_validacao">0</span>
+        </div>
+        <div class="kanban-cards" id="cards-em_validacao" data-status="em_validacao">
+            <!-- Cards serão inseridos aqui via JavaScript -->
+        </div>
+    </div>
+
+    <!-- Coluna: Finalizado -->
+    <div class="kanban-column" data-status="finalizado">
+        <div class="kanban-column-header">
+            <span class="kanban-column-title">
+                <i class="bi bi-check-circle me-1"></i>
+                Finalizado
+            </span>
+            <span class="kanban-column-count" id="count-finalizado">0</span>
+        </div>
+        <div class="kanban-cards" id="cards-finalizado" data-status="finalizado">
+            <!-- Cards serão inseridos aqui via JavaScript -->
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Edição de Tarefa -->
+<div class="modal fade" id="tarefaModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-pencil me-2"></i>
+                    Editar Tarefa
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="tarefaModalBody">
+                <!-- Conteúdo será carregado via AJAX -->
+                <div class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Carregando...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- SortableJS CDN -->
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+
+<script>
+// ===== DADOS DAS TAREFAS (vindo do Django) =====
+const tarefasData = {{ tarefas_json|safe }};
+
+// ===== CSRF TOKEN =====
+const csrfToken = '{{ csrf_token }}';
+
+// ===== INICIALIZAÇÃO =====
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Kanban inicializado com', tarefasData.length, 'tarefas');
+    
+    // Renderizar cards
+    renderCards();
+    
+    // Inicializar Sortable em todas as colunas
+    initSortable();
+    
+    // Atualizar contadores
+    updateCounters();
+});
+
+// ===== RENDERIZAR CARDS =====
+function renderCards() {
+    // Limpar todas as colunas
+    document.querySelectorAll('.kanban-cards').forEach(column => {
+        column.innerHTML = '';
+    });
+    
+    // Renderizar cada tarefa
+    tarefasData.forEach(tarefa => {
+        const card = createCard(tarefa);
+        const column = document.getElementById(`cards-${tarefa.status}`);
+        if (column) {
+            column.appendChild(card);
+        }
+    });
+    
+    // Verificar colunas vazias
+    document.querySelectorAll('.kanban-cards').forEach(column => {
+        if (column.children.length === 0) {
+            column.innerHTML = '<div class="kanban-empty"><i class="bi bi-inbox fs-3 d-block mb-2"></i>Nenhuma tarefa</div>';
+        }
+    });
+}
+
+// ===== CRIAR CARD =====
+function createCard(tarefa) {
+    const card = document.createElement('div');
+    card.className = 'kanban-card';
+    card.setAttribute('data-id', tarefa.id);
+    card.setAttribute('data-status', tarefa.status);
+    
+    // Formatar data
+    const dataVencimento = tarefa.data_fim ? new Date(tarefa.data_fim).toLocaleDateString('pt-BR') : 'Sem prazo';
+    
+    // Checklist info
+    const checklistInfo = tarefa.checklist_total > 0 
+        ? `<div class="kanban-card-checklist">
+             <i class="bi bi-list-check me-1"></i>
+             ${tarefa.checklist_concluidos}/${tarefa.checklist_total} itens concluídos
+           </div>`
+        : '';
+    
+    card.innerHTML = `
+        <div class="kanban-card-title">${tarefa.nome}</div>
+        <div class="kanban-card-meta">
+            <div class="kanban-card-meta-item">
+                <i class="bi bi-person"></i>
+                <span>${tarefa.responsavel}</span>
+            </div>
+            <div class="kanban-card-meta-item">
+                <i class="bi bi-calendar"></i>
+                <span>${dataVencimento}</span>
+            </div>
+            ${tarefa.acao ? `
+            <div class="kanban-card-meta-item">
+                <i class="bi bi-lightning"></i>
+                <span>${tarefa.acao}</span>
+            </div>
+            ` : ''}
+        </div>
+        <div class="kanban-card-progress">
+            <div class="kanban-card-progress-bar">
+                <div class="kanban-card-progress-fill" style="width: ${tarefa.percentual_cumprido}%"></div>
+            </div>
+            <div class="kanban-card-progress-text">${tarefa.percentual_cumprido}% concluído</div>
+        </div>
+        ${checklistInfo}
+    `;
+    
+    // Evento de clique para abrir modal
+    card.addEventListener('click', function() {
+        openTarefaModal(tarefa.id);
+    });
+    
+    return card;
+}
+
+// ===== INICIALIZAR SORTABLE =====
+function initSortable() {
+    document.querySelectorAll('.kanban-cards').forEach(column => {
+        new Sortable(column, {
+            group: 'kanban',
+            animation: 150,
+            ghostClass: 'sortable-ghost',
+            dragClass: 'sortable-drag',
+            onEnd: function(evt) {
+                const cardId = evt.item.getAttribute('data-id');
+                const newStatus = evt.to.getAttribute('data-status');
+                const oldStatus = evt.from.getAttribute('data-status');
+                
+                console.log(`Tarefa ${cardId} movida de ${oldStatus} para ${newStatus}`);
+                
+                // Atualizar status no servidor
+                updateTarefaStatus(cardId, newStatus, oldStatus);
+                
+                // Atualizar contadores
+                updateCounters();
+            }
+        });
+    });
+}
+
+// ===== ATUALIZAR STATUS DA TAREFA =====
+function updateTarefaStatus(tarefaId, newStatus, oldStatus) {
+    fetch(`/tarefas/${tarefaId}/update-status/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken
+        },
+        body: JSON.stringify({
+            status: newStatus
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            console.log('Status atualizado com sucesso!');
+            
+            // Atualizar data-status do card
+            const card = document.querySelector(`[data-id="${tarefaId}"]`);
+            if (card) {
+                card.setAttribute('data-status', newStatus);
+            }
+            
+            // Atualizar array de tarefas
+            const tarefa = tarefasData.find(t => t.id == tarefaId);
+            if (tarefa) {
+                tarefa.status = newStatus;
+            }
+            
+            // Mostrar toast de sucesso (opcional)
+            showToast('Status atualizado com sucesso!', 'success');
+        } else {
+            console.error('Erro ao atualizar status:', data.error);
+            
+            // Reverter movimento do card
+            const card = document.querySelector(`[data-id="${tarefaId}"]`);
+            const oldColumn = document.getElementById(`cards-${oldStatus}`);
+            if (card && oldColumn) {
+                oldColumn.appendChild(card);
+            }
+            
+            // Mostrar toast de erro
+            showToast('Erro ao atualizar status: ' + data.error, 'danger');
+        }
+    })
+    .catch(error => {
+        console.error('Erro na requisição:', error);
+        
+        // Reverter movimento do card
+        const card = document.querySelector(`[data-id="${tarefaId}"]`);
+        const oldColumn = document.getElementById(`cards-${oldStatus}`);
+        if (card && oldColumn) {
+            oldColumn.appendChild(card);
+        }
+        
+        // Mostrar toast de erro
+        showToast('Erro ao atualizar status', 'danger');
+    });
+}
+
+// ===== ABRIR MODAL DE EDIÇÃO =====
+function openTarefaModal(tarefaId) {
+    const modal = new bootstrap.Modal(document.getElementById('tarefaModal'));
+    const modalBody = document.getElementById('tarefaModalBody');
+    
+    // Mostrar loading
+    modalBody.innerHTML = `
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Carregando...</span>
+            </div>
+        </div>
+    `;
+    
+    // Abrir modal
+    modal.show();
+    
+    // Carregar formulário via AJAX
+    fetch(`/tarefas/${tarefaId}/edit-ajax/`)
+        .then(response => response.text())
+        .then(html => {
+            modalBody.innerHTML = html;
+            
+            // Inicializar scripts do formulário (se necessário)
+            initFormScripts();
+        })
+        .catch(error => {
+            console.error('Erro ao carregar formulário:', error);
+            modalBody.innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    Erro ao carregar formulário. Tente novamente.
+                </div>
+            `;
+        });
+}
+
+// ===== INICIALIZAR SCRIPTS DO FORMULÁRIO =====
+function initFormScripts() {
+    // Aqui você pode adicionar inicializações necessárias
+    // Ex: datepickers, select2, etc.
+    console.log('Scripts do formulário inicializados');
+}
+
+// ===== ATUALIZAR CONTADORES =====
+function updateCounters() {
+    const statuses = ['a_iniciar', 'em_andamento', 'atrasado', 'em_validacao', 'finalizado'];
+    
+    statuses.forEach(status => {
+        const column = document.getElementById(`cards-${status}`);
+        const counter = document.getElementById(`count-${status}`);
+        
+        if (column && counter) {
+            // Contar apenas cards reais (não mensagens de vazio)
+            const count = column.querySelectorAll('.kanban-card').length;
+            counter.textContent = count;
+        }
+    });
+}
+
+// ===== MOSTRAR TOAST =====
+function showToast(message, type = 'info') {
+    // Criar toast dinamicamente
+    const toastHtml = `
+        <div class="toast align-items-center text-white bg-${type} border-0" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="d-flex">
+                <div class="toast-body">
+                    ${message}
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+        </div>
+    `;
+    
+    // Adicionar ao container de toasts (criar se não existir)
+    let toastContainer = document.getElementById('toastContainer');
+    if (!toastContainer) {
+        toastContainer = document.createElement('div');
+        toastContainer.id = 'toastContainer';
+        toastContainer.className = 'toast-container position-fixed top-0 end-0 p-3';
+        toastContainer.style.zIndex = '9999';
+        document.body.appendChild(toastContainer);
+    }
+    
+    toastContainer.insertAdjacentHTML('beforeend', toastHtml);
+    
+    // Mostrar toast
+    const toastElement = toastContainer.lastElementChild;
+    const toast = new bootstrap.Toast(toastElement);
+    toast.show();
+    
+    // Remover após esconder
+    toastElement.addEventListener('hidden.bs.toast', function() {
+        toastElement.remove();
+    });
+}
+</script>
+{% endblock %}
+

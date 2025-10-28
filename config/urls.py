@@ -37,6 +37,9 @@ from acoes.views import (
     TarefaListView, TarefaCreateView, TarefaUpdateView, TarefaDeleteView
 )
 
+# ✅ KANBAN - Import das views do Kanban
+from acoes import views_kanban
+
 # Indicadores
 from indicadores.views import (
     IndicadorListView, IndicadorCreateView, IndicadorUpdateView, IndicadorDeleteView
@@ -103,6 +106,11 @@ urlpatterns = [
     # Calendário de Tarefas
     path('tarefas/calendario/', acoes_views.TarefaCalendarioView.as_view(), name='tarefa_calendario'),
     path('tarefas/json/', acoes_views.tarefas_json, name='tarefas_json'),
+
+    # ===== KANBAN DE TAREFAS =====
+    path('tarefas/kanban/', views_kanban.tarefa_kanban_view, name='tarefa_kanban'),
+    path('tarefas/<int:pk>/update-status/', views_kanban.tarefa_update_status, name='tarefa_update_status'),
+    path('tarefas/<int:pk>/edit-ajax/', views_kanban.tarefa_edit_ajax, name='tarefa_edit_ajax'),
 
     # Indicadores
     path('indicadores/', IndicadorListView.as_view(), name='indicador_list'),
@@ -173,3 +181,4 @@ urlpatterns = [
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
     urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+
