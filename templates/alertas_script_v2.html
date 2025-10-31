@@ -1,0 +1,257 @@
+<!-- ===== SCRIPT DE ALERTAS - VERSÃO 2 ===== -->
+<!-- Incluir no base_modern.html antes de </body> -->
+
+<script>
+// ===== CONFIGURAÇÃO =====
+const INTERVALO_POLLING = 5 * 60 * 1000; // 5 minutos
+let totalAnterior = 0;
+
+// ===== SOM DE NOTIFICAÇÃO =====
+function tocarSomNotificacao() {
+    // Som simples usando Web Audio API
+    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+    
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+    
+    oscillator.frequency.value = 800;
+    oscillator.type = 'sine';
+    
+    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+    
+    oscillator.start(audioContext.currentTime);
+    oscillator.stop(audioContext.currentTime + 0.5);
+}
+
+// ===== TOAST DE NOTIFICAÇÃO =====
+function mostrarToast(titulo, mensagem) {
+    // Criar toast Bootstrap
+    const toastContainer = document.getElementById('toastContainer') || criarToastContainer();
+    
+    const toastId = 'toast_' + Date.now();
+    const toastHTML = `
+        <div id="${toastId}" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-header bg-primary text-white">
+                <i class="bi bi-bell-fill me-2"></i>
+                <strong class="me-auto">${titulo}</strong>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+            </div>
+            <div class="toast-body">
+                ${mensagem}
+            </div>
+        </div>
+    `;
+    
+    toastContainer.insertAdjacentHTML('beforeend', toastHTML);
+    
+    const toastElement = document.getElementById(toastId);
+    const toast = new bootstrap.Toast(toastElement, { delay: 5000 });
+    toast.show();
+    
+    // Remover após fechar
+    toastElement.addEventListener('hidden.bs.toast', () => {
+        toastElement.remove();
+    });
+}
+
+function criarToastContainer() {
+    const container = document.createElement('div');
+    container.id = 'toastContainer';
+    container.className = 'toast-container position-fixed top-0 end-0 p-3';
+    container.style.zIndex = '9999';
+    document.body.appendChild(container);
+    return container;
+}
+
+// ===== CARREGAR ALERTAS =====
+async function carregarAlertas() {
+    try {
+        const response = await fetch("/alertas/");
+        const data = await response.json();
+        
+        const alertCount = document.getElementById("alertCount");
+        const alertList = document.getElementById("alertList");
+        
+        if (!alertCount || !alertList) {
+            console.warn('Elementos de alerta não encontrados');
+            return;
+        }
+        
+        // Atualizar badge
+        const novoTotal = data.total;
+        alertCount.textContent = novoTotal;
+        
+        // Se houver novos alertas, notificar
+        if (novoTotal > totalAnterior && totalAnterior > 0) {
+            tocarSomNotificacao();
+            mostrarToast('Novos Alertas', `Você tem ${novoTotal - totalAnterior} novos alertas!`);
+        }
+        
+        totalAnterior = novoTotal;
+        
+        // Limpar lista
+        alertList.innerHTML = "";
+        
+        // Se não houver alertas
+        if (novoTotal === 0) {
+            alertList.innerHTML = `
+                <li>
+                    <span class='dropdown-item-text text-muted text-center py-3'>
+                        <i class='bi bi-check-circle me-2'></i>
+                        Sem alertas
+                    </span>
+                </li>
+            `;
+            return;
+        }
+        
+        // Adicionar botão "Marcar todas como lidas"
+        alertList.innerHTML += `
+            <li>
+                <button class='dropdown-item text-primary fw-bold' onclick='marcarTodasComoLidas()'>
+                    <i class='bi bi-check-all me-2'></i>
+                    Marcar todas como lidas
+                </button>
+            </li>
+            <li><hr class='dropdown-divider'></li>
+        `;
+        
+        // Renderizar notificações
+        if (data.todas && data.todas.length > 0) {
+            data.todas.forEach(notif => {
+                const icones = {
+                    'Tarefa Atrasada': 'bi-exclamation-circle text-danger',
+                    'Tarefa Vencendo Hoje': 'bi-hourglass-split text-warning',
+                    'Tarefa a Vencer': 'bi-clock text-info',
+                    'Nova Tarefa': 'bi-plus-circle text-primary',
+                    'Obrigação Vencendo': 'bi-file-earmark-text text-warning',
+                };
+                
+                const icone = icones[notif.tipo] || 'bi-bell text-secondary';
+                
+                alertList.innerHTML += `
+                    <li>
+                        <a class='dropdown-item' href='${notif.link}' onclick='marcarComoLida(${notif.id})'>
+                            <div class='d-flex align-items-start'>
+                                <i class='bi ${icone} me-2 mt-1'></i>
+                                <div class='flex-grow-1'>
+                                    <div class='fw-bold'>${notif.titulo}</div>
+                                    ${notif.mensagem ? `<small class='text-muted'>${notif.mensagem}</small>` : ''}
+                                    <small class='text-muted d-block mt-1'>
+                                        <i class='bi bi-clock me-1'></i>${notif.data_criacao}
+                                    </small>
+                                </div>
+                            </div>
+                        </a>
+                    </li>
+                `;
+            });
+        }
+        
+        // Link para histórico
+        alertList.innerHTML += `
+            <li><hr class='dropdown-divider'></li>
+            <li>
+                <a class='dropdown-item text-center text-primary' href='/alertas/historico/'>
+                    Ver todas as notificações
+                    <i class='bi bi-arrow-right ms-1'></i>
+                </a>
+            </li>
+        `;
+        
+    } catch (error) {
+        console.error("Erro ao carregar alertas:", error);
+    }
+}
+
+// ===== MARCAR COMO LIDA =====
+async function marcarComoLida(notificacaoId) {
+    try {
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
+        
+        await fetch(`/alertas/${notificacaoId}/marcar-lida/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': csrfToken,
+                'Content-Type': 'application/json',
+            }
+        });
+        
+        // Recarregar alertas
+        setTimeout(() => carregarAlertas(), 500);
+        
+    } catch (error) {
+        console.error("Erro ao marcar como lida:", error);
+    }
+}
+
+// ===== MARCAR TODAS COMO LIDAS =====
+async function marcarTodasComoLidas() {
+    try {
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
+        
+        const response = await fetch('/alertas/marcar-todas-lidas/', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': csrfToken,
+                'Content-Type': 'application/json',
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            mostrarToast('Sucesso', `${data.count} notificações marcadas como lidas`);
+            carregarAlertas();
+        }
+        
+    } catch (error) {
+        console.error("Erro ao marcar todas como lidas:", error);
+    }
+}
+
+// ===== INICIALIZAÇÃO =====
+document.addEventListener("DOMContentLoaded", () => {
+    // Carregar alertas imediatamente
+    carregarAlertas();
+    
+    // Polling a cada 5 minutos
+    setInterval(carregarAlertas, INTERVALO_POLLING);
+    
+    console.log('✅ Sistema de alertas V2 inicializado');
+});
+</script>
+
+<style>
+/* Estilos para alertas */
+#alertList {
+    max-height: 500px;
+    overflow-y: auto;
+}
+
+#alertList .dropdown-item {
+    white-space: normal;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+#alertList .dropdown-item:hover {
+    background-color: #f8f9fa;
+}
+
+#alertList .dropdown-item:last-child {
+    border-bottom: none;
+}
+
+#alertCount {
+    min-width: 20px;
+    height: 20px;
+    font-size: 0.75rem;
+    line-height: 20px;
+    padding: 0 6px;
+}
+</style>
+

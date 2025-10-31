@@ -571,8 +571,46 @@
         });
     </script>
 
-    {% include 'alertas_script_v2.html' %}
-    {% block extra_js %}{% endblock %}
+    <script>
+        document.addEventListener("DOMContentLoaded", async () => {
+        try {
+            const response = await fetch("/alertas/");
+            const data = await response.json();
+
+            const alertCount = document.getElementById("alertCount");
+            const alertList = document.getElementById("alertList");
+
+            alertCount.textContent = data.total;
+            alertList.innerHTML = "";
+
+            if (data.total === 0) {
+            alertList.innerHTML = "<li><span class='dropdown-item-text text-muted'>Sem alertas</span></li>";
+            return;
+            }
+
+            const addAlert = (titulo, lista, icone, cor) => {
+            if (lista.length) {
+                alertList.innerHTML += `<li><h6 class='dropdown-header text-${cor}'><i class='bi ${icone} me-1'></i>${titulo}</h6></li>`;
+                lista.forEach(t => {
+                alertList.innerHTML += `
+                    <li><a class='dropdown-item' href='/tarefas/${t.id}/editar/'>
+                    ${t.nome} <br><small class='text-muted'>
+                    ${t.data_fim ? 'Vence em ' + t.data_fim : 'Criada em ' + t.data_cadastro}</small>
+                    </a></li>`;
+                });
+            }
+            };
+
+            addAlert("Tarefas em atraso", data.atrasadas, "bi-exclamation-circle", "danger");
+            addAlert("A vencer (até 7 dias)", data.a_vencer, "bi-hourglass-split", "warning");
+            addAlert("Novas tarefas", data.novas, "bi-plus-circle", "primary");
+        } catch (error) {
+            console.error("Erro ao carregar alertas:", error);
+        }
+        });
+    </script>
+
     
+    {% block extra_js %}{% endblock %}
 </body>
 </html>

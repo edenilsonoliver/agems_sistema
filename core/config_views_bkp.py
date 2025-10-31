@@ -1,9 +1,6 @@
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth import get_user_model
 from .models import Diretoria, TipoEntidade, TipoServico, TipoInstrumento, TipoObrigacao, TipoAcao
-
-User = get_user_model()
 
 
 @login_required
@@ -15,8 +12,5 @@ def configuracoes(request):
         'tipos_instrumento': TipoInstrumento.objects.all(),
         'tipos_obrigacao': TipoObrigacao.objects.all(),
         'tipos_acao': TipoAcao.objects.all(),
-        # Estatísticas de usuários
-        'total_usuarios': User.objects.count(),
-        'usuarios_ativos': User.objects.filter(is_active=True).count(),
     }
     return render(request, 'core/configuracoes.html', context)

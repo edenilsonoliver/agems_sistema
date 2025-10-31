@@ -173,8 +173,7 @@ urlpatterns = [
    path('tarefas/obrigacoes/', acoes_views.get_obrigacoes_por_instrumento, name='get_obrigacoes_por_instrumento'),
 
    # Alertas do usuário
-   #path('alertas/', alertas_views.alertas_usuario, name='alertas_usuario'),
-   path('alertas/', include('alertas.urls')),
+   path('alertas/', alertas_views.alertas_usuario, name='alertas_usuario'),
 
 
 ]

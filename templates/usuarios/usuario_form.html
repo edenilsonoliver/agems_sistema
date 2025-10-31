@@ -1,0 +1,168 @@
+{% extends 'components/form_view.html' %}
+{% load crispy_forms_tags %}
+
+{% block form_content %}
+{{ form|crispy }}
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const perfilField = document.getElementById('id_perfil');
+    const diretoriaField = document.getElementById('id_diretoria');
+    const subunidadeField = document.getElementById('id_subunidade');
+    const alterarSenhaCheckbox = document.getElementById('id_alterar_senha');
+    const password1Field = document.getElementById('id_password1');
+    const password2Field = document.getElementById('id_password2');
+    
+    // Função para atualizar visibilidade dos campos
+    function atualizarCampos() {
+        const perfil = parseInt(perfilField.value);
+        
+        // Diretoria obrigatória para perfis 1-5
+        const diretoriaRow = diretoriaField.closest('.mb-3');
+        if (perfil >= 1 && perfil <= 5) {
+            diretoriaRow.style.display = 'block';
+            diretoriaField.required = true;
+        } else {
+            diretoriaRow.style.display = 'none';
+            diretoriaField.required = false;
+        }
+        
+        // Subunidade obrigatória para perfis 2, 3, 4
+        const subunidadeRow = subunidadeField.closest('.mb-3');
+        if (perfil >= 2 && perfil <= 4) {
+            subunidadeRow.style.display = 'block';
+            subunidadeField.required = true;
+        } else {
+            subunidadeRow.style.display = 'none';
+            subunidadeField.required = false;
+        }
+    }
+    
+    // Função para filtrar subunidades baseado na diretoria
+    function filtrarSubunidades() {
+        const diretoriaId = diretoriaField.value;
+        
+        if (!diretoriaId) {
+            return;
+        }
+        
+        // Fazer requisição AJAX para buscar subunidades da diretoria
+        fetch(`/api/subunidades/?diretoria=${diretoriaId}`)
+            .then(response => response.json())
+            .then(data => {
+                // Limpar opções atuais
+                subunidadeField.innerHTML = '<option value="">---------</option>';
+                
+                // Adicionar novas opções
+                data.forEach(sub => {
+                    const option = document.createElement('option');
+                    option.value = sub.id;
+                    option.textContent = sub.nome;
+                    subunidadeField.appendChild(option);
+                });
+            })
+            .catch(error => {
+                console.error('Erro ao buscar subunidades:', error);
+            });
+    }
+    
+    // Função para mostrar/ocultar campos de senha na edição
+    if (alterarSenhaCheckbox) {
+        function toggleSenhaFields() {
+            const mostrar = alterarSenhaCheckbox.checked;
+            const password1Row = password1Field.closest('.mb-3');
+            const password2Row = password2Field.closest('.mb-3');
+            
+            if (mostrar) {
+                password1Row.style.display = 'block';
+                password2Row.style.display = 'block';
+                password1Field.required = true;
+                password2Field.required = true;
+            } else {
+                password1Row.style.display = 'none';
+                password2Row.style.display = 'none';
+                password1Field.required = false;
+                password2Field.required = false;
+            }
+        }
+        
+        alterarSenhaCheckbox.addEventListener('change', toggleSenhaFields);
+        toggleSenhaFields(); // Executar no carregamento
+    }
+    
+    // Event listeners
+    perfilField.addEventListener('change', atualizarCampos);
+    diretoriaField.addEventListener('change', filtrarSubunidades);
+    
+    // Executar no carregamento
+    atualizarCampos();
+});
+</script>
+
+<style>
+.form-control:invalid {
+    border-color: #dc3545;
+}
+
+.form-control:valid {
+    border-color: #198754;
+}
+
+.password-strength {
+    height: 5px;
+    border-radius: 3px;
+    margin-top: 5px;
+    transition: all 0.3s;
+}
+
+.password-strength.weak {
+    width: 33%;
+    background-color: #dc3545;
+}
+
+.password-strength.medium {
+    width: 66%;
+    background-color: #ffc107;
+}
+
+.password-strength.strong {
+    width: 100%;
+    background-color: #198754;
+}
+</style>
+{% endblock %}
+
+{% block sidebar_info %}
+<div class="alert alert-info">
+    <h6><i class="bi bi-info-circle me-2"></i>Perfis de Acesso</h6>
+    <hr>
+    <small>
+        <strong>Admin (0):</strong> Acesso total ao sistema<br>
+        <strong>Diretoria (1):</strong> Acesso à sua diretoria<br>
+        <strong>Assessoria (2):</strong> Acesso à subunidade (pode editar instrumentos)<br>
+        <strong>Coordenação (3):</strong> Acesso à subunidade (sem instrumentos)<br>
+        <strong>Usuário Comum (4):</strong> Apenas ações e tarefas<br>
+        <strong>Visualizador (5):</strong> Apenas leitura
+    </small>
+</div>
+
+{% if form.instance.pk %}
+<div class="alert alert-warning">
+    <h6><i class="bi bi-shield-lock me-2"></i>Segurança</h6>
+    <hr>
+    <small>
+        Marque "Alterar Senha" para definir uma nova senha para este usuário.
+        Se "Forçar Troca de Senha" estiver marcado, o usuário será obrigado a trocar a senha no próximo acesso.
+    </small>
+</div>
+{% else %}
+<div class="alert alert-warning">
+    <h6><i class="bi bi-shield-lock me-2"></i>Senha Temporária</h6>
+    <hr>
+    <small>
+        Por padrão, a senha será marcada como temporária e o usuário será obrigado a trocá-la no primeiro acesso.
+    </small>
+</div>
+{% endif %}
+{% endblock %}
+
