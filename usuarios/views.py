@@ -16,10 +16,10 @@ from .mixins import (
 User = get_user_model()
 
 
-class UsuarioListView(VerificaSenhaTemporariaMixin, FiltrarPorDiretoriaMixin, ListView):
+class UsuarioListView(VerificaSenhaTemporariaMixin, LoginRequiredMixin, ListView):
     """Lista usuários com filtro baseado no perfil do usuário logado"""
     model = User
-    template_name = 'components/list_view.html'
+    template_name = 'usuarios/usuario_list.html'
     context_object_name = 'usuarios'
     paginate_by = 20
     
@@ -35,28 +35,46 @@ class UsuarioListView(VerificaSenhaTemporariaMixin, FiltrarPorDiretoriaMixin, Li
         return context
     
     def get_queryset(self):
-        """Filtra usuários baseado no perfil do usuário logado"""
-        queryset = User.objects.select_related('diretoria', 'subunidade').all()
+        """Filtra usuários baseado no perfil do usuário logado e filtros de busca"""
         user = self.request.user
+        queryset = User.objects.select_related('diretoria', 'subunidade').all()
         
-        # Admin vê todos
-        if user.perfil == 0:
-            pass  # Não aplica filtro
-        
-        # Diretoria vê usuários da sua diretoria
+        # 1. Filtro de Permissão (Quem pode ver o quê)
+        if user.is_superuser or user.perfil == 0:
+            # Admin vê todos
+            pass
         elif user.perfil == 1 and user.diretoria:
+            # Diretoria vê usuários da sua diretoria
             queryset = queryset.filter(
                 Q(diretoria=user.diretoria) | 
                 Q(subunidade__diretoria=user.diretoria)
             )
-        
-        # Assessoria e Coordenação veem usuários da sua subunidade
         elif user.perfil in [2, 3] and user.subunidade:
+            # Assessoria e Coordenação veem usuários da sua subunidade
             queryset = queryset.filter(subunidade=user.subunidade)
-        
-        # Usuário Comum e Visualizador não podem ver lista de usuários
         else:
+            # Usuário Comum e Visualizador não podem ver lista de usuários
             return User.objects.none()
+        
+        # 2. Filtros de Busca e Interface
+        q = self.request.GET.get('q')
+        if q:
+            queryset = queryset.filter(
+                Q(username__icontains=q) |
+                Q(first_name__icontains=q) |
+                Q(last_name__icontains=q) |
+                Q(email__icontains=q)
+            )
+            
+        perfil_filtro = self.request.GET.get('perfil')
+        if perfil_filtro:
+            queryset = queryset.filter(perfil=perfil_filtro)
+            
+        status_filtro = self.request.GET.get('status')
+        if status_filtro == 'ativo':
+            queryset = queryset.filter(is_active=True)
+        elif status_filtro == 'inativo':
+            queryset = queryset.filter(is_active=False)
         
         return queryset.order_by('first_name', 'last_name')
 
