@@ -1,0 +1,34 @@
+CORREÇÃO MANUAL - UPLOAD DE ARQUIVOS
+=====================================
+
+PROBLEMA:
+O botão "Upload" não funciona porque o elemento HTML é <div> em vez de <form>
+
+SOLUÇÃO (2 mudanças simples):
+==============================
+
+1. LINHA 281 - Trocar:
+   DE:   <div id="formUploadArquivo" enctype="multipart/form-data">
+   PARA: <form id="formUploadArquivo" method="post" enctype="multipart/form-data">
+
+2. LINHA 296 - Trocar:
+   DE:   </div>
+   PARA: </form>
+
+COMO FAZER:
+===========
+1. Abra o arquivo: templates/instrumentos/instrumento_form_novo.html
+2. Use Ctrl+G para ir para a linha 281
+3. Procure por: <div id="formUploadArquivo"
+4. Substitua por: <form id="formUploadArquivo" method="post"
+5. Use Ctrl+G para ir para a linha 296
+6. Procure por: </div> (logo após o fechamento da div row do upload)
+7. Substitua por: </form>
+8. Salve o arquivo
+
+RESULTADO:
+==========
+O JavaScript que já existe (linha 449) vai funcionar porque agora
+o elemento é um <form> real que pode disparar o evento "submit"
+
+NÃO PRECISA MEXER EM MAIS NADA!
