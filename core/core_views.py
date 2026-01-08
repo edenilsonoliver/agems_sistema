@@ -8,6 +8,7 @@ from core.views import ModernListView, ModernCreateView, ModernUpdateView, Moder
 # Diretoria
 class DiretoriaListView(ModernListView):
     model = Diretoria
+    template_name = 'core/diretoria_list.html'
     icon = "bi bi-building"
     create_url = 'diretoria_create'
 
@@ -28,6 +29,7 @@ class DiretoriaDeleteView(ModernDeleteView):
 # TipoEntidade
 class TipoEntidadeListView(ModernListView):
     model = TipoEntidade
+    template_name = 'core/tipoentidade_list.html'
     icon = "bi bi-tag"
     create_url = 'tipoentidade_create'
 
@@ -48,6 +50,7 @@ class TipoEntidadeDeleteView(ModernDeleteView):
 # TipoServico
 class TipoServicoListView(ModernListView):
     model = TipoServico
+    template_name = 'core/tiposervico_list.html'
     icon = "bi bi-wrench"
     create_url = 'tiposervico_create'
 
@@ -68,6 +71,7 @@ class TipoServicoDeleteView(ModernDeleteView):
 # TipoInstrumento
 class TipoInstrumentoListView(ModernListView):
     model = TipoInstrumento
+    template_name = 'core/tipoinstrumento_list.html'
     icon = "bi bi-file-earmark"
     create_url = 'tipoinstrumento_create'
 
@@ -88,6 +92,7 @@ class TipoInstrumentoDeleteView(ModernDeleteView):
 # TipoObrigacao
 class TipoObrigacaoListView(ModernListView):
     model = TipoObrigacao
+    template_name = 'core/tipoobrigacao_list.html'
     icon = "bi bi-list-check"
     create_url = 'tipoobrigacao_create'
 
@@ -108,6 +113,7 @@ class TipoObrigacaoDeleteView(ModernDeleteView):
 # TipoAcao
 class TipoAcaoListView(ModernListView):
     model = TipoAcao
+    template_name = 'core/tipoacao_list.html'
     icon = "bi bi-lightning"
     create_url = 'tipoacao_create'
 
