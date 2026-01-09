@@ -41,7 +41,14 @@ class ModernCreateView(LoginRequiredMixin, CreateView):
         context['form_title'] = f'Adicionar {self.model._meta.verbose_name.title()}'
         context['icon'] = getattr(self, 'icon', 'bi bi-plus-circle')
         context['module_name'] = self.model._meta.verbose_name_plural.title()
-        context['list_url'] = reverse_lazy(f'{self.model._meta.model_name}_list')
+        
+        # Prioriza list_url definido na View, senão tenta adivinhar
+        list_url_attr = getattr(self, 'list_url', None)
+        if list_url_attr:
+            context['list_url'] = list_url_attr
+        else:
+            context['list_url'] = reverse_lazy(f'{self.model._meta.model_name}_list')
+            
         return context
     
     def form_valid(self, form):
@@ -58,8 +65,20 @@ class ModernUpdateView(LoginRequiredMixin, UpdateView):
         context['form_title'] = f'Editar {self.model._meta.verbose_name.title()}'
         context['icon'] = getattr(self, 'icon', 'bi bi-pencil')
         context['module_name'] = self.model._meta.verbose_name_plural.title()
-        context['list_url'] = reverse_lazy(f'{self.model._meta.model_name}_list')
-        context['delete_url'] = reverse_lazy(f'{self.model._meta.model_name}_delete', args=[self.object.pk])
+        
+        # Prioriza list_url definido na View
+        list_url_attr = getattr(self, 'list_url', None)
+        if list_url_attr:
+            context['list_url'] = list_url_attr
+        else:
+            context['list_url'] = reverse_lazy(f'{self.model._meta.model_name}_list')
+            
+        # Prioriza delete_url definido na View
+        delete_url_attr = getattr(self, 'delete_url', None)
+        if delete_url_attr:
+            context['delete_url'] = delete_url_attr
+        else:
+            context['delete_url'] = reverse_lazy(f'{self.model._meta.model_name}_delete', args=[self.object.pk])
 
         return context
     
@@ -77,7 +96,14 @@ class ModernDeleteView(LoginRequiredMixin, DeleteView):
         context['title'] = f'Excluir {self.model._meta.verbose_name.title()}'
         context['icon'] = 'bi bi-trash'
         context['module_name'] = self.model._meta.verbose_name_plural.title()
-        context['list_url'] = reverse_lazy(f'{self.model._meta.model_name}_list')
+        
+        # Prioriza list_url definido na View
+        list_url_attr = getattr(self, 'list_url', None)
+        if list_url_attr:
+            context['list_url'] = list_url_attr
+        else:
+            context['list_url'] = reverse_lazy(f'{self.model._meta.model_name}_list')
+            
         return context
     
     def delete(self, request, *args, **kwargs):

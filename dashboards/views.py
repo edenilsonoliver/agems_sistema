@@ -8,32 +8,22 @@ from datetime import timedelta
 from instrumentos.models import Instrumento, Obrigacao
 from indicadores.models import IndicadorContratual, ValorIndicador
 from entidades.models import Entidade
-
-# Aliases para compatibilidade
-Contrato = Instrumento
-ObrigacaoContratual = Obrigacao
-Concessionaria = Entidade
+from acoes.models import Acao
 
 
 @login_required
 def dashboard_principal(request):
     """
-    Dashboard principal do sistema.
-    
-    CONFIGURAÇÃO ATUAL: Mostra TODAS as tarefas do sistema (visão geral)
-    
-    Para mudar para visão individual do usuário, substitua este arquivo por:
-    views_OPCAO2_tarefas_usuario.py
+    Dashboard principal do sistema (Versão Unificada 4 Níveis).
+    Exibe dados consolidados de Instrumentos, Obrigações e Ações.
     """
-    from acoes.models import Acao, Tarefa
-    
     usuario = request.user
     hoje = timezone.now().date()
 
     # Instrumentos vigentes
     total_instrumentos = Instrumento.objects.filter(status='vigente').count()
 
-    # --- Distribuição de Instrumentos por Tipo ---
+    # Distribuição de Instrumentos por Tipo
     instrumentos_por_tipo = list(
         Instrumento.objects
         .values('tipo_instrumento__nome')
@@ -41,62 +31,51 @@ def dashboard_principal(request):
         .order_by('tipo_instrumento__nome')
     )
 
-    # ✅ CORREÇÃO: Total de obrigações do SISTEMA (não apenas do usuário)
+    # Total de obrigações do sistema
     total_obrigacoes = Obrigacao.objects.count()
 
-    # ✅ CORREÇÃO: TODAS as tarefas do sistema (não filtrar por usuário)
-    tarefas = Tarefa.objects.all()
+    # Ações (Antigas tarefas) - Agora são o nível principal de execução
+    acoes = Acao.objects.all()
 
-    tarefas_vencidas = tarefas.filter(
-        data_fim__lt=hoje, status__in=['a_iniciar', 'em_andamento']
+    acoes_vencidas = acoes.filter(
+        data_fim__lt=hoje, status__in=['a_iniciar', 'em_andamento', 'atrasado']
     ).count()
 
-    tarefas_a_vencer = tarefas.filter(
+    acoes_a_vencer = acoes.filter(
         data_fim__gte=hoje, data_fim__lte=hoje + timedelta(days=7),
         status__in=['a_iniciar', 'em_andamento']
     ).count()
 
-    # ✅ TODAS as obrigações do sistema (visão geral)
-    obrigacoes_usuario = Obrigacao.objects.select_related(
+    # Obrigações recentes
+    obrigacoes_recentes = Obrigacao.objects.select_related(
         'instrumento',
         'tipo_obrigacao'
     ).prefetch_related(
         'acoes'
     ).order_by('-data_vencimento')[:10]
     
-    # Ações recentes
+    # Ações recentes (Antigas Tarefas)
     acoes_recentes = Acao.objects.select_related(
         'obrigacao', 'tipo_acao', 'responsavel'
     ).order_by('-data_cadastro')[:10]
 
-    # Tarefas por status
-    tarefas_por_status = list(
-        tarefas.values('status')
+    # Distribuição de Ações por status
+    acoes_por_status = list(
+        acoes.values('status')
         .annotate(total=Count('id'))
         .order_by('status')
     )
-
-    # ✅ LOG para debug
-    print(f"=== DEBUG DASHBOARD (TODAS AS TAREFAS DO SISTEMA) ===")
-    print(f"Total de tarefas: {tarefas.count()}")
-    print(f"Tarefas por status: {tarefas_por_status}")
-    print(f"Tarefas vencidas: {tarefas_vencidas}")
-    print(f"Tarefas a vencer: {tarefas_a_vencer}")
-    print(f"Total de obrigações: {total_obrigacoes}")
-    print(f"Instrumentos por tipo: {instrumentos_por_tipo}")
-    print(f"======================================================")
 
     context = {
         'usuario': usuario,
         'total_instrumentos': total_instrumentos,
         'total_obrigacoes': total_obrigacoes,
         'instrumentos_por_tipo': json.dumps(instrumentos_por_tipo),
-        'tarefas_por_status': json.dumps(tarefas_por_status),
-        'tarefas_a_vencer': tarefas_a_vencer,
-        'tarefas_vencidas': tarefas_vencidas,
-        'obrigacoes_usuario': obrigacoes_usuario,  # ✅ Nova variável
+        'tarefas_por_status': json.dumps(acoes_por_status), # Mantendo nome p/ compatibilidade JS no dashboard
+        'tarefas_a_vencer': acoes_a_vencer,
+        'tarefas_vencidas': acoes_vencidas,
+        'obrigacoes_usuario': obrigacoes_recentes,
         'acoes_recentes': acoes_recentes,
     }
 
     return render(request, 'dashboards/dashboard_modern.html', context)
-

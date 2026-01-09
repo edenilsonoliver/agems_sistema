@@ -1,57 +1,23 @@
 # acoes/forms.py
 from django import forms
-from .models import Acao, Tarefa, ChecklistItem
+from .models import Acao, ChecklistItem
 from usuarios.models import Usuario
 from django.forms import inlineformset_factory
 
 
 class AcaoForm(forms.ModelForm):
+    """
+    Formulário unificado para Ação (substitui Acao e Tarefa antigos).
+    """
+    
     class Meta:
         model = Acao
         fields = [
-            'nome', 'descricao','instrumento', 'obrigacao', 'tipo_acao',
-            'responsavel', 'status', 'percentual_cumprido',
-            'periodicidade', 'data_inicio', 'data_fim_prevista', 'data_fim_real',
-            'dias_antecedencia_alerta', 'observacoes'
-        ]
-        widgets = {
-            'descricao': forms.Textarea(attrs={'rows': 3}),
-            'observacoes': forms.Textarea(attrs={'rows': 3}),
-        }
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        # Personaliza o campo responsável
-        usuarios = Usuario.objects.select_related('subunidade__diretoria').all()
-        self.fields['responsavel'].queryset = usuarios
-        self.fields['responsavel'].label_from_instance = self.formatar_responsavel
-        self.fields['descricao'].required = False  # 🔹 torna o campo opcional
-
-    def formatar_responsavel(self, usuario):
-        # Tenta usar o nome completo, se existir, ou combina nome e sobrenome, ou usa username
-        nome = getattr(usuario, 'nome_completo', None) \
-            or getattr(usuario, 'nome', None) \
-            or f"{getattr(usuario, 'first_name', '')} {getattr(usuario, 'last_name', '')}".strip() \
-            or getattr(usuario, 'username', 'Sem nome')
-
-        sub = getattr(usuario.subunidade, 'nome', 'Sem subunidade') if hasattr(usuario, 'subunidade') else 'Sem subunidade'
-        dir = getattr(usuario.subunidade.diretoria, 'sigla', 'Sem diretoria') \
-            if hasattr(usuario, 'subunidade') and hasattr(usuario.subunidade, 'diretoria') else 'Sem diretoria'
-
-        return f"{nome} | {sub} | {dir}"
-
-
-class TarefaForm(forms.ModelForm):
-    """Formulário para criação e edição de tarefas"""
-    
-    class Meta:
-        model = Tarefa
-        fields = [
-            'nome', 'descricao', 'acao',
-            'responsavel', 'executores',
-            'status', 'percentual_cumprido',
+            'nome', 'descricao', 'obrigacao', 'tipo_acao',
+            'responsavel', 'executores', 'status', 'percentual_cumprido',
             'data_inicio', 'data_fim', 'data_conclusao',
-            'tarefas_predecessoras', 'prioridade', 'observacoes'
+            'prioridade', 'periodicidade', 'dias_antecedencia_alerta',
+            'acoes_predecessoras', 'observacoes'
         ]
         widgets = {
             'descricao': forms.Textarea(attrs={'rows': 3}),
@@ -78,7 +44,6 @@ class TarefaForm(forms.ModelForm):
                     'maxlength': '10'
                 }
             ),
-            # Widget para seleção múltipla de executores
             'executores': forms.SelectMultiple(attrs={
                 'class': 'form-control',
                 'size': '5'
@@ -93,14 +58,12 @@ class TarefaForm(forms.ModelForm):
         self.fields['data_fim'].input_formats = ['%d/%m/%Y', '%Y-%m-%d']
         self.fields['data_conclusao'].input_formats = ['%d/%m/%Y', '%Y-%m-%d']
         
-        # Buscar todos os usuários com suas relações
+        # Buscar usuários com relações
         usuarios = Usuario.objects.select_related('subunidade__diretoria').all()
         
-        # Configurar campo Responsável (ForeignKey - apenas 1)
+        # Configurar campos de usuários
         self.fields['responsavel'].queryset = usuarios
         self.fields['responsavel'].label_from_instance = self.formatar_usuario
-        
-        # Configurar campo Executores (ManyToMany - vários)
         self.fields['executores'].queryset = usuarios
         self.fields['executores'].label_from_instance = self.formatar_usuario
         
@@ -108,8 +71,9 @@ class TarefaForm(forms.ModelForm):
         self.fields['descricao'].required = False
         self.fields['data_conclusao'].required = False
         self.fields['observacoes'].required = False
+        self.fields['tipo_acao'].required = False
         
-        # Converter valores de data para formato brasileiro (dd/mm/yyyy) para exibição
+        # Conversão para formato brasileiro na exibição
         if self.instance and self.instance.pk:
             if self.instance.data_inicio:
                 self.initial['data_inicio'] = self.instance.data_inicio.strftime('%d/%m/%Y')
@@ -119,21 +83,12 @@ class TarefaForm(forms.ModelForm):
                 self.initial['data_conclusao'] = self.instance.data_conclusao.strftime('%d/%m/%Y')
 
     def formatar_usuario(self, usuario):
-        """
-        Formata a exibição do usuário no select
-        Formato: Nome Completo | Subunidade | Diretoria
-        """
-        # Nome do usuário
+        """Formata a exibição do usuário no select"""
         nome = getattr(usuario, 'nome_completo', None) \
-            or getattr(usuario, 'nome', None) \
             or f"{getattr(usuario, 'first_name', '')} {getattr(usuario, 'last_name', '')}".strip() \
             or getattr(usuario, 'username', 'Sem nome')
 
-        # Subunidade
-        sub = getattr(usuario.subunidade, 'nome', 'Sem subunidade') \
-            if hasattr(usuario, 'subunidade') and usuario.subunidade else 'Sem subunidade'
-        
-        # Diretoria
+        sub = getattr(usuario.subunidade, 'nome', 'Sem subunidade') if hasattr(usuario, 'subunidade') and usuario.subunidade else 'Sem subunidade'
         dir = getattr(usuario.subunidade.diretoria, 'sigla', 'Sem diretoria') \
             if hasattr(usuario, 'subunidade') and usuario.subunidade and hasattr(usuario.subunidade, 'diretoria') and usuario.subunidade.diretoria \
             else 'Sem diretoria'
@@ -141,8 +96,9 @@ class TarefaForm(forms.ModelForm):
         return f"{nome} | {sub} | {dir}"
 
 
+# Formset para o Checklist (Sub-tarefas da Ação)
 ChecklistItemFormSet = inlineformset_factory(
-    Tarefa,
+    Acao,
     ChecklistItem,
     fields=['nome', 'concluido'],
     extra=1,
@@ -158,7 +114,6 @@ ChecklistItemFormSet = inlineformset_factory(
     }
 )
 
-# Permite que formulários vazios sejam ignorados (não geram erro de validação)
+# Ajuste global para tornar campos do checklist opcionais na validação de formulário novo
 for field in ChecklistItemFormSet.form.base_fields.values():
     field.required = False
-

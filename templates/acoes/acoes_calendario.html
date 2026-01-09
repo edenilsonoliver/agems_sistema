@@ -1,0 +1,112 @@
+{% extends 'base_modern.html' %}
+{% load static %}
+
+{% block title %}Calendário de Ações - AGEMS{% endblock %}
+
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.css" rel="stylesheet">
+<style>
+    #calendar {
+        max-width: 100%;
+        background: white;
+        border-radius: 12px;
+        padding: 25px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        border: none;
+    }
+
+    .fc-event {
+        cursor: pointer;
+        padding: 2px 5px;
+        font-size: 0.85em;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="page-title">
+            <i class="bi bi-calendar3 me-2 text-primary"></i>
+            Cronograma de Ações
+        </h1>
+        <p class="page-subtitle text-muted">Acompanhe prazos e execuções no calendário</p>
+    </div>
+
+    <div class="d-flex gap-2">
+        <a href="{% url 'acao_list' %}" class="btn btn-outline-primary">
+            <i class="bi bi-list-task me-1"></i> Ver Lista
+        </a>
+        <a href="{% url 'acao_kanban' %}" class="btn btn-outline-success">
+            <i class="bi bi-kanban me-1"></i> Ver Kanban
+        </a>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm p-3">
+    <div id="calendar"></div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- FullCalendar Core e Locale -->
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/locales/pt-br.global.min.js"></script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var calendarEl = document.getElementById('calendar');
+
+        var calendar = new FullCalendar.Calendar(calendarEl, {
+            locale: 'pt-br',
+            initialView: 'dayGridMonth',
+            headerToolbar: {
+                left: 'prev,next today',
+                center: 'title',
+                right: 'dayGridMonth,timeGridWeek,listWeek'
+            },
+            buttonText: {
+                today: 'Hoje',
+                month: 'Mês',
+                week: 'Semana',
+                list: 'Lista'
+            },
+            events: '{% url "acoes_json" %}',
+            eventDisplay: 'block',
+
+            eventClick: function (info) {
+                const acao = info.event.extendedProps;
+                const detalhes = `
+        <div class="p-2">
+            <h6 class="fw-bold text-primary mb-3">${info.event.title}</h6>
+            <p class="mb-2"><strong>Obrigação:</strong> ${acao.obrigacao}</p>
+            <p class="mb-2"><strong>Responsável:</strong> ${acao.responsavel}</p>
+            <p class="mb-0"><strong>Status:</strong> ${acao.status}</p>
+        </div>
+      `;
+                const modal = new bootstrap.Modal(document.getElementById('modalDetalhes'));
+                document.getElementById('detalhesAcao').innerHTML = detalhes;
+                modal.show();
+            }
+        });
+
+        calendar.render();
+    });
+</script>
+
+<!-- Modal de Detalhes -->
+<div class="modal fade" id="modalDetalhes" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-light">
+                <h5 class="modal-title fw-bold">Detalhes da Ação</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+            </div>
+            <div class="modal-body" id="detalhesAcao"></div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

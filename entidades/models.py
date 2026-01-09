@@ -58,7 +58,7 @@ class Entidade(models.Model):
     
     # Representante Legal
     representante_legal = models.CharField('Representante Legal', max_length=200)
-    cpf_representante = models.CharField('CPF do Representante', max_length=14)
+    cpf_representante = models.CharField('CPF do Representante', max_length=14, blank=True, null=True)
     email_representante = models.EmailField('E-mail do Representante', blank=True)
     telefone_representante = models.CharField('Telefone do Representante', max_length=20, blank=True)
     

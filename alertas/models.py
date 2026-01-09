@@ -7,23 +7,17 @@ from django.utils import timezone
 class Notificacao(models.Model):
     """
     Modelo para persistir notificações no banco
-    
-    Permite:
-    - Marcar como lida
-    - Histórico de notificações
-    - Notificações customizadas
-    - Diferentes tipos de alertas
     """
     
     TIPOS = [
-        ('tarefa_atrasada', 'Tarefa Atrasada'),
-        ('tarefa_vencendo_hoje', 'Tarefa Vencendo Hoje'),
-        ('tarefa_a_vencer', 'Tarefa a Vencer'),
-        ('tarefa_nova', 'Nova Tarefa'),
+        ('acao_atrasada', 'Ação Atrasada'),
+        ('acao_vencendo_hoje', 'Ação Vencendo Hoje'),
+        ('acao_a_vencer', 'Ação a Vencer'),
+        ('acao_nova', 'Nova Ação'),
         ('obrigacao_vencendo', 'Obrigação Vencendo'),
         ('instrumento_expirando', 'Instrumento Expirando'),
         ('comentario', 'Novo Comentário'),
-        ('atribuicao', 'Tarefa Atribuída'),
+        ('atribuicao', 'Ação Atribuída'),
         ('mudanca_status', 'Mudança de Status'),
     ]
     
@@ -75,10 +69,10 @@ class Notificacao(models.Model):
     )
     
     # IDs das entidades relacionadas (para facilitar queries)
-    tarefa_id = models.IntegerField(
+    acao_id = models.IntegerField(
         null=True,
         blank=True,
-        verbose_name='ID da Tarefa'
+        verbose_name='ID da Ação'
     )
     
     obrigacao_id = models.IntegerField(
@@ -132,14 +126,12 @@ class Notificacao(models.Model):
         return f"{self.usuario.username} - {self.titulo}"
     
     def marcar_como_lida(self):
-        """Marca notificação como lida"""
         if not self.lida:
             self.lida = True
             self.data_leitura = timezone.now()
             self.save(update_fields=['lida', 'data_leitura'])
     
     def marcar_como_nao_lida(self):
-        """Marca notificação como não lida"""
         if self.lida:
             self.lida = False
             self.data_leitura = None
@@ -147,20 +139,10 @@ class Notificacao(models.Model):
     
     @classmethod
     def criar_notificacao(cls, usuario, tipo, titulo, mensagem, link, **kwargs):
-        """
-        Método helper para criar notificações
-        
-        Uso:
-            Notificacao.criar_notificacao(
-                usuario=user,
-                tipo='tarefa_atrasada',
-                titulo='Tarefa atrasada!',
-                mensagem='A tarefa X está atrasada',
-                link='/tarefas/1/editar/',
-                tarefa_id=1,
-                prioridade='alta'
-            )
-        """
+        # Mapeamento para garantir compatibilidade caso alguém use tarefa_id
+        if 'tarefa_id' in kwargs:
+            kwargs['acao_id'] = kwargs.pop('tarefa_id')
+            
         return cls.objects.create(
             usuario=usuario,
             tipo=tipo,
@@ -172,7 +154,6 @@ class Notificacao(models.Model):
     
     @classmethod
     def limpar_expiradas(cls):
-        """Remove notificações expiradas"""
         agora = timezone.now()
         return cls.objects.filter(
             data_expiracao__lt=agora
@@ -180,7 +161,6 @@ class Notificacao(models.Model):
     
     @classmethod
     def limpar_antigas_lidas(cls, dias=30):
-        """Remove notificações lidas há mais de X dias"""
         data_limite = timezone.now() - timezone.timedelta(days=dias)
         return cls.objects.filter(
             lida=True,
@@ -191,11 +171,6 @@ class Notificacao(models.Model):
 class PreferenciaNotificacao(models.Model):
     """
     Preferências de notificação do usuário
-    
-    Permite que usuário configure:
-    - Quais tipos de notificação quer receber
-    - Se quer receber por e-mail
-    - Frequência de e-mails
     """
     
     usuario = models.OneToOneField(
@@ -205,20 +180,19 @@ class PreferenciaNotificacao(models.Model):
         verbose_name='Usuário'
     )
     
-    # Tipos de notificação habilitados
-    notificar_tarefa_atrasada = models.BooleanField(
+    notificar_acao_atrasada = models.BooleanField(
         default=True,
-        verbose_name='Notificar Tarefa Atrasada'
+        verbose_name='Notificar Ação Atrasada'
     )
     
-    notificar_tarefa_vencendo = models.BooleanField(
+    notificar_acao_vencendo = models.BooleanField(
         default=True,
-        verbose_name='Notificar Tarefa Vencendo'
+        verbose_name='Notificar Ação Vencendo'
     )
     
-    notificar_tarefa_nova = models.BooleanField(
+    notificar_acao_nova = models.BooleanField(
         default=True,
-        verbose_name='Notificar Nova Tarefa'
+        verbose_name='Notificar Nova Ação'
     )
     
     notificar_obrigacao = models.BooleanField(
@@ -231,7 +205,6 @@ class PreferenciaNotificacao(models.Model):
         verbose_name='Notificar Comentário'
     )
     
-    # E-mail
     enviar_email = models.BooleanField(
         default=False,
         verbose_name='Enviar E-mail',
@@ -251,7 +224,6 @@ class PreferenciaNotificacao(models.Model):
         verbose_name='Frequência de E-mail'
     )
     
-    # Sons e notificações visuais
     tocar_som = models.BooleanField(
         default=True,
         verbose_name='Tocar Som',
@@ -270,4 +242,3 @@ class PreferenciaNotificacao(models.Model):
     
     def __str__(self):
         return f"Preferências de {self.usuario.username}"
-

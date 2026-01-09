@@ -44,7 +44,7 @@ class NotificacaoAdmin(admin.ModelAdmin):
             'fields': ('tipo', 'prioridade', 'titulo', 'mensagem', 'link')
         }),
         ('Entidades Relacionadas', {
-            'fields': ('tarefa_id', 'obrigacao_id', 'instrumento_id'),
+            'fields': ('acao_id', 'obrigacao_id', 'instrumento_id'),
             'classes': ('collapse',)
         }),
         ('Estado', {
@@ -60,10 +60,10 @@ class NotificacaoAdmin(admin.ModelAdmin):
     
     def tipo_badge(self, obj):
         cores = {
-            'tarefa_atrasada': 'danger',
-            'tarefa_vencendo_hoje': 'warning',
-            'tarefa_a_vencer': 'info',
-            'tarefa_nova': 'primary',
+            'acao_atrasada': 'danger',
+            'acao_vencendo_hoje': 'warning',
+            'acao_a_vencer': 'info',
+            'acao_nova': 'primary',
             'obrigacao_vencendo': 'warning',
         }
         cor = cores.get(obj.tipo, 'secondary')
@@ -102,25 +102,20 @@ class NotificacaoAdmin(admin.ModelAdmin):
     titulo_truncado.short_description = 'Título'
     
     def marcar_como_lida(self, request, queryset):
-        count = 0
         for notif in queryset:
             notif.marcar_como_lida()
-            count += 1
-        self.message_user(request, f'{count} notificações marcadas como lidas.')
+        self.message_user(request, f'Notificações marcadas como lidas.')
     marcar_como_lida.short_description = 'Marcar como lida'
     
     def marcar_como_nao_lida(self, request, queryset):
-        count = 0
         for notif in queryset:
             notif.marcar_como_nao_lida()
-            count += 1
-        self.message_user(request, f'{count} notificações marcadas como não lidas.')
+        self.message_user(request, f'Notificações marcadas como não lidas.')
     marcar_como_nao_lida.short_description = 'Marcar como não lida'
     
     def excluir_selecionadas(self, request, queryset):
-        count = queryset.count()
         queryset.delete()
-        self.message_user(request, f'{count} notificações excluídas.')
+        self.message_user(request, f'Notificações excluídas.')
     excluir_selecionadas.short_description = 'Excluir selecionadas'
 
 
@@ -128,8 +123,8 @@ class NotificacaoAdmin(admin.ModelAdmin):
 class PreferenciaNotificacaoAdmin(admin.ModelAdmin):
     list_display = [
         'usuario',
-        'notificar_tarefa_atrasada',
-        'notificar_tarefa_vencendo',
+        'notificar_acao_atrasada',
+        'notificar_acao_vencendo',
         'notificar_obrigacao',
         'enviar_email',
         'tocar_som',
@@ -154,9 +149,9 @@ class PreferenciaNotificacaoAdmin(admin.ModelAdmin):
         }),
         ('Tipos de Notificação', {
             'fields': (
-                'notificar_tarefa_atrasada',
-                'notificar_tarefa_vencendo',
-                'notificar_tarefa_nova',
+                'notificar_acao_atrasada',
+                'notificar_acao_vencendo',
+                'notificar_acao_nova',
                 'notificar_obrigacao',
                 'notificar_comentario',
             )
@@ -168,4 +163,3 @@ class PreferenciaNotificacaoAdmin(admin.ModelAdmin):
             'fields': ('tocar_som', 'mostrar_toast')
         }),
     )
-

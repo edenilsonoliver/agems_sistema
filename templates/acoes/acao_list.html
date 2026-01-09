@@ -1,10 +1,71 @@
-{% extends 'components/list_view.html' %}
+﻿{% extends 'components/list_view.html' %}
+
+{% block header_actions %}
+<a href="{% url 'acao_calendario' %}" class="btn btn-outline-primary me-2">
+    <i class="bi bi-calendar3"></i> Ver Calendário
+</a>
+<a href="{% url 'acao_kanban' %}" class="btn btn-outline-success">
+    <i class="bi bi-kanban"></i> Ver Kanban
+</a>
+{% endblock %}
+
+{% block extra_filters %}
+<div class="col-md-3">
+    <select name="instrumento" id="instrumento" class="form-select" style="height: 40px;">
+        <option value=""> Filtrar por Instrumento...</option>
+        {% for inst in instrumentos %}
+        <option value="{{ inst.id }}" {% if instrumento_selecionado == inst.id %}selected{% endif %}>
+            {{ inst }}
+        </option>
+        {% endfor %}
+    </select>
+</div>
+
+<div class="col-md-3">
+    <select name="obrigacao" id="obrigacao" class="form-select" style="height: 40px;">
+        <option value=""> Filtrar por Obrigação...</option>
+        {% for obrigacao in obrigacoes %}
+        <option value="{{ obrigacao.id }}" {% if obrigacao_selecionada == obrigacao.id %}selected{% endif %}>
+            {{ obrigacao.titulo }}
+        </option>
+        {% endfor %}
+    </select>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const instrumentoSelect = document.getElementById("instrumento");
+        const obrigacaoSelect = document.getElementById("obrigacao");
+
+        instrumentoSelect.addEventListener("change", async function () {
+            const instrumentoId = this.value;
+            obrigacaoSelect.innerHTML = '<option value="">Carregando...</option>';
+
+            if (!instrumentoId) {
+                obrigacaoSelect.innerHTML = '<option value=""> Filtrar por Obrigação...</option>';
+                return;
+            }
+
+            const response = await fetch(`/acoes/obrigacoes/?instrumento_id=${instrumentoId}`);
+            const data = await response.json();
+
+            obrigacaoSelect.innerHTML = '<option value=""> Filtrar por Obrigação...</option>';
+            data.obrigacoes.forEach(o => {
+                const opt = document.createElement('option');
+                opt.value = o.id;
+                opt.textContent = o.titulo;
+                obrigacaoSelect.appendChild(opt);
+            });
+        });
+    });
+</script>
+{% endblock %}
 
 {% block table_headers %}
-<th>Nome</th>
+<th>Nome da Ação</th>
 <th>Obrigação</th>
-<th>Tipo</th>
 <th>Responsável</th>
+<th>Período</th>
 <th>Progresso</th>
 <th>Status</th>
 {% endblock %}
@@ -13,14 +74,43 @@
 {% for acao in object_list %}
 <tr>
     <td>
-        <div class="fw-semibold">{{ acao.nome }}</div>
-        <small class="text-muted">{{ acao.descricao|truncatewords:10 }}</small>
+        <!-- Nome da Ação (clicável para expandir checklist) -->
+        <div class="fw-semibold toggle-checklist" data-acao="{{ acao.id }}" style="cursor:pointer;">
+            {{ acao.nome }}
+        </div>
+        <small class="text-muted">
+            <i class="bi bi-flag me-1"></i>
+            {{ acao.get_prioridade_display }}
+        </small>
+
+        <!-- Checklist oculto -->
+        <div class="checklist collapse mt-2" id="checklist-{{ acao.id }}">
+            <div class="card card-body py-2 bg-light border-0 shadow-none">
+                <h6 class="small fw-bold mb-2">Checklist de Tarefas:</h6>
+                {% if acao.checklist_itens.exists %}
+                {% for item in acao.checklist_itens.all %}
+                <div class="d-flex align-items-center mb-1">
+                    <input type="checkbox" {% if item.concluido %}checked{% endif %} disabled
+                        class="form-check-input form-check-input-sm me-2">
+                    <small class="{% if item.concluido %}text-decoration-line-through text-muted{% endif %}">{{
+                        item.nome }}</small>
+                </div>
+                {% endfor %}
+                {% else %}
+                <small class="text-muted">Nenhuma tarefa operativa definida.</small>
+                {% endif %}
+            </div>
+        </div>
     </td>
+
     <td><small>{{ acao.obrigacao.titulo }}</small></td>
-    <td><span class="badge bg-primary">{{ acao.tipo_acao }}</span></td>
     <td><small>{{ acao.responsavel.get_full_name|default:acao.responsavel.username }}</small></td>
     <td>
-        <div class="progress" style="height: 20px;">
+        <small><i class="bi bi-calendar me-1"></i>
+            {{ acao.data_inicio|date:"d/m/Y" }} - {{ acao.data_fim|date:"d/m/Y" }}</small>
+    </td>
+    <td>
+        <div class="progress" style="height: 12px; border-radius: 6px;">
             <div class="progress-bar" role="progressbar" style="width: {{ acao.percentual_cumprido }}%">
                 {{ acao.percentual_cumprido }}%
             </div>
@@ -28,13 +118,14 @@
     </td>
     <td>
         {% if acao.status == 'finalizado' %}
-            <span class="badge bg-success">Finalizado</span>
+        <span class="badge rounded-pill bg-success-subtle text-success border border-success">Finalizado</span>
         {% elif acao.status == 'em_andamento' %}
-            <span class="badge bg-primary">Em Andamento</span>
+        <span class="badge rounded-pill bg-primary-subtle text-primary border border-primary">Em Andamento</span>
         {% elif acao.status == 'atrasado' %}
-            <span class="badge bg-danger">Atrasado</span>
+        <span class="badge rounded-pill bg-danger-subtle text-danger border border-danger">Atrasado</span>
         {% else %}
-            <span class="badge bg-secondary">{{ acao.get_status_display }}</span>
+        <span class="badge rounded-pill bg-secondary-subtle text-secondary border border-secondary">{{
+            acao.get_status_display }}</span>
         {% endif %}
     </td>
     <td>
@@ -49,4 +140,16 @@
     </td>
 </tr>
 {% endfor %}
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        document.querySelectorAll('.toggle-checklist').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const id = btn.getAttribute('data-acao');
+                const checklist = document.getElementById(`checklist-${id}`);
+                checklist.classList.toggle('show');
+            });
+        });
+    });
+</script>
 {% endblock %}
