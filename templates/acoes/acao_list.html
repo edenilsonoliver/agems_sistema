@@ -92,8 +92,7 @@
                 <div class="d-flex align-items-center mb-1">
                     <input type="checkbox" {% if item.concluido %}checked{% endif %} disabled
                         class="form-check-input form-check-input-sm me-2">
-                    <small class="{% if item.concluido %}text-decoration-line-through text-muted{% endif %}">{{
-                        item.nome }}</small>
+                    <small class="{% if item.concluido %}text-decoration-line-through text-muted{% endif %}">{{ item.nome }}</small>
                 </div>
                 {% endfor %}
                 {% else %}
@@ -124,8 +123,7 @@
         {% elif acao.status == 'atrasado' %}
         <span class="badge rounded-pill bg-danger-subtle text-danger border border-danger">Atrasado</span>
         {% else %}
-        <span class="badge rounded-pill bg-secondary-subtle text-secondary border border-secondary">{{
-            acao.get_status_display }}</span>
+        <span class="badge rounded-pill bg-secondary-subtle text-secondary border border-secondary">{{ acao.get_status_display }}</span>
         {% endif %}
     </td>
     <td>
