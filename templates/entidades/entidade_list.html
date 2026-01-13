@@ -14,9 +14,11 @@
     <td>
         <div class="d-flex align-items-center">
             {% if entidade.logo %}
-            <img src="{{ entidade.logo.url }}" class="rounded me-2" width="40" height="40" style="object-fit: cover;">
+            <img src="{{ entidade.logo.url }}" class="rounded me-2" height="40"
+                style="max-width: 120px; object-fit: contain;">
             {% else %}
-            <div class="bg-light rounded me-2 d-flex align-items-center justify-content-center" style="width:40px; height:40px;">
+            <div class="bg-light rounded me-2 d-flex align-items-center justify-content-center"
+                style="width:40px; height:40px;">
                 <i class="bi bi-building text-muted"></i>
             </div>
             {% endif %}
@@ -31,9 +33,9 @@
     <td><span class="badge bg-secondary">{{ entidade.tipo_servico }}</span></td>
     <td>
         {% if entidade.status == 'ativa' %}
-            <span class="badge bg-success">Ativa</span>
+        <span class="badge bg-success">Ativa</span>
         {% else %}
-            <span class="badge bg-secondary">{{ entidade.get_status_display }}</span>
+        <span class="badge bg-secondary">{{ entidade.get_status_display }}</span>
         {% endif %}
     </td>
     <td>
