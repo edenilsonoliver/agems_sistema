@@ -34,9 +34,13 @@ class Entidade(models.Model):
     )
     
     # Logo
+    def upload_logo_path(instance, filename):
+        # Garante que o arquivo seja salvo exatamente em entidades/logos/
+        return f"entidades/logos/{filename}"
+
     logo = models.ImageField(
         'Logo da Entidade',
-        upload_to='entidades/logos/',
+        upload_to=upload_logo_path,
         blank=True,
         null=True,
         help_text='Upload do logo da entidade (PNG, JPG)'

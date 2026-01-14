@@ -425,6 +425,40 @@
             display: block;
             font-size: 0.75rem;
         }
+
+        /* --- Preview de imagens em formulários (Django/Crispy) --- */
+        .clearablefileinput {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .clearablefileinput a img {
+            max-width: 150px;
+            max-height: 60px;
+            object-fit: contain;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 5px;
+            background: white;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        /* Ajuste para inputs de arquivo */
+        input[type="file"]::file-selector-button {
+            background-color: #f8f9fa;
+            color: #495057;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            border: 1px solid #dee2e6;
+            margin-right: 1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        input[type="file"]::file-selector-button:hover {
+            background-color: #e9ecef;
+        }
     </style>
 
 
@@ -570,6 +604,25 @@
                 setTimeout(() => {
                     el.classList.add('fade-in');
                 }, index * 100);
+            });
+        });
+
+        // Melhora a visualização de campos de imagem em formulários (Previews)
+        document.addEventListener('DOMContentLoaded', function () {
+            const fileLinks = document.querySelectorAll('.clearablefileinput a, .form-text a');
+            fileLinks.forEach(link => {
+                const href = link.getAttribute('href');
+                if (href && (href.match(/\.(jpg|jpeg|png|gif|webp|svg)$/i))) {
+                    // Se o link já não contém uma imagem
+                    if (!link.querySelector('img')) {
+                        const img = document.createElement('img');
+                        img.src = href;
+                        img.alt = 'Preview';
+                        // O CSS adicionado anteriormente cuidará do resto
+                        link.innerHTML = '';
+                        link.appendChild(img);
+                    }
+                }
             });
         });
     </script>

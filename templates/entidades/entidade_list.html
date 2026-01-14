@@ -1,53 +1,46 @@
 {% extends 'components/list_view.html' %}
 
 {% block table_headers %}
-<th>Razão Social</th>
-<th>CNPJ</th>
-<th>Tipo</th>
-<th>Serviço</th>
-<th>Status</th>
+<th style="width: 130px; text-align: center;">Logo</th>
+<th style="text-align: left;">Razão Social</th>
+<th style="width: 140px;">CNPJ</th>
+<th style="width: 110px;">Tipo</th>
+<th style="width: 180px;">Serviço</th>
+<th style="width: 100px;">Status</th>
 {% endblock %}
 
 {% block table_rows %}
 {% for entidade in object_list %}
 <tr>
-    <td>
-        <div class="d-flex align-items-center">
-            {% if entidade.logo %}
-            <img src="{{ entidade.logo.url }}" class="rounded me-2" height="40"
-                style="max-width: 120px; object-fit: contain;">
-            {% else %}
-            <div class="bg-light rounded me-2 d-flex align-items-center justify-content-center"
-                style="width:40px; height:40px;">
-                <i class="bi bi-building text-muted"></i>
-            </div>
-            {% endif %}
-            <div>
-                <div class="fw-semibold">{{ entidade.razao_social }}</div>
-                <small class="text-muted">{{ entidade.nome_fantasia }}</small>
-            </div>
-        </div>
-    </td>
-    <td><small>{{ entidade.cnpj }}</small></td>
-    <td><span class="badge bg-info">{{ entidade.tipo_entidade }}</span></td>
-    <td><span class="badge bg-secondary">{{ entidade.tipo_servico }}</span></td>
-    <td>
-        {% if entidade.status == 'ativa' %}
-        <span class="badge bg-success">Ativa</span>
-        {% else %}
-        <span class="badge bg-secondary">{{ entidade.get_status_display }}</span>
-        {% endif %}
-    </td>
-    <td>
-        <div class="btn-group btn-group-sm">
-            <a href="{% url 'entidade_edit' entidade.pk %}" class="btn btn-outline-primary" title="Editar">
-                <i class="bi bi-pencil"></i>
-            </a>
-            <a href="{% url 'entidade_delete' entidade.pk %}" class="btn btn-outline-danger" title="Excluir">
-                <i class="bi bi-trash"></i>
-            </a>
-        </div>
-    </td>
+<td class="align-middle text-center" style="width: 130px; padding: 10px 0;">
+<div style="width: 120px; height: 50px; display: flex; align-items: center; justify-content: center; margin: 0 auto;">
+{% if entidade.logo %}
+<img src="{{ entidade.logo.url }}" alt="{{ entidade.razao_social }}" style="max-height: 50px; max-width: 120px; width: auto; height: auto; object-fit: contain; display: block;">
+{% else %}
+<div class="bg-light rounded d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;"><i class="bi bi-building text-muted" style="font-size: 1.2rem;"></i></div>
+{% endif %}
+</div>
+</td>
+<td class="align-middle" style="text-align: left;">
+<div class="fw-semibold text-dark" style="line-height: 1.2;">{{ entidade.razao_social }}</div>
+<small class="text-muted">{{ entidade.nome_fantasia }}</small>
+</td>
+<td class="align-middle"><small class="text-secondary">{{ entidade.cnpj }}</small></td>
+<td class="align-middle"><span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25" style="white-space: normal; display: inline-block; width: 100%;">{{ entidade.tipo_entidade }}</span></td>
+<td class="align-middle"><span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25" style="white-space: normal; display: inline-block; text-align: left; width: 100%;">{{ entidade.tipo_servico }}</span></td>
+<td class="align-middle">
+{% if entidade.status == 'ativa' %}
+<span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25">Ativa</span>
+{% else %}
+<span class="badge bg-light text-dark border">{{ entidade.get_status_display }}</span>
+{% endif %}
+</td>
+<td class="align-middle text-end">
+<div class="btn-group btn-group-sm">
+<a href="{% url 'entidade_edit' entidade.pk %}" class="btn btn-light border" title="Editar"><i class="bi bi-pencil text-primary"></i></a>
+<a href="{% url 'entidade_delete' entidade.pk %}" class="btn btn-light border" title="Excluir"><i class="bi bi-trash text-danger"></i></a>
+</div>
+</td>
 </tr>
 {% endfor %}
 {% endblock %}
