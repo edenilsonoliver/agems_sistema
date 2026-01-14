@@ -87,7 +87,7 @@
 
 <!-- Tables Row -->
 <div class="row g-4">
-    <div class="col-12 col-xl-6">
+    <div class="col-12 mb-4">
         <div class="card border-0 shadow-sm">
             <div class="card-header bg-white border-0 py-3">
                 <h5 class="card-title mb-0">
@@ -100,9 +100,9 @@
                     <table class="table table-hover mb-0">
                         <thead>
                             <tr>
-                                <th>Instrumento da Ação</th>
-                                <th>Ação</th>
-                                <th>Obrigação</th>
+                                <th style="width: 80px;">Inst.</th>
+                                <th style="min-width: 200px;">Ação</th>
+                                <th style="min-width: 200px;">Obrigação</th>
                                 <th>Vencimento</th>
                                 <th>Status</th>
                             </tr>
@@ -116,7 +116,7 @@
                                 <td>
                                     {% with acao=obrigacao.acoes.first %}
                                     {% if acao %}
-                                        <div class="fw-semibold">{{ acao.nome }}</div>
+                                        <div class="fw-semibold" style="white-space: normal; line-height: 1.2;">{{ acao.nome }}</div>
                                         <small class="text-muted">{{ acao.tipo_acao }}</small>
                                     {% else %}
                                         <small class="text-muted">-</small>
@@ -124,7 +124,7 @@
                                     {% endwith %}
                                 </td>
                                 <td>
-                                    <div class="fw-semibold">{{ obrigacao.titulo }}</div>
+                                    <div class="fw-semibold" style="white-space: normal; line-height: 1.2;">{{ obrigacao.titulo }}</div>
                                     <small class="text-muted">{{ obrigacao.tipo_obrigacao }}</small>
                                 </td>
                                 <td>
@@ -166,7 +166,7 @@
         </div>
     </div>
     
-    <div class="col-12 col-xl-6">
+    <div class="col-12">
         <div class="card border-0 shadow-sm">
             <div class="card-header bg-white border-0 py-3">
                 <h5 class="card-title mb-0">
@@ -179,7 +179,7 @@
                     <table class="table table-hover mb-0">
                         <thead>
                             <tr>
-                                <th>Ação</th>
+                                <th style="min-width: 200px;">Ação</th>
                                 <th>Responsável</th>
                                 <th>Progresso</th>
                                 <th>Status</th>
@@ -189,7 +189,7 @@
                             {% for acao in acoes_recentes %}
                             <tr>
                                 <td>
-                                    <div class="fw-semibold">{{ acao.nome }}</div>
+                                    <div class="fw-semibold" style="white-space: normal; line-height: 1.2;">{{ acao.nome }}</div>
                                     <small class="text-muted">{{ acao.tipo_acao }}</small>
                                 </td>
                                 <td>
