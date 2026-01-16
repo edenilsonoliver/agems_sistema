@@ -63,26 +63,25 @@ O pacote inclui scripts PowerShell para facilitar o gerenciamento:
 ## 📦 Funcionalidades Implementadas
 
 ### ✅ **Módulos Completos**
-- **Dashboard Executivo** - Visão geral com estatísticas e gráficos
-- **Instrumentos** - Gestão de contratos, convênios e acordos
-- **Obrigações** - Cadastro inline junto com instrumentos
-- **Entidades** - Concessionárias, órgãos públicos e empresas
-- **Ações** - Fiscalizações, análises, projetos e averiguações
-- **Tarefas** - Gestão com responsáveis e executores
-- **Indicadores** - Metas, valores ideais e conformidade
-- **Documentos** - Upload múltiplo de arquivos
-- **Alertas** - Sistema de notificações
-- **Configurações** - Tipos, diretorias e serviços
+- **Dashboard Executivo** - Visão geral com estatísticas e gráficos dinâmicos
+- **Entidades** - Concessionárias, órgãos públicos e empresas com gestão de logos
+- **Instrumentos** - Gestão de contratos, convênios e acordos (NUP E-MS)
+- **Obrigações** - Cadastro inline integrado aos instrumentos
+- **Ações** - Nível executivo vinculado às obrigações (Fiscalizações, análises, projetos)
+- **Checklist/Tarefas** - Reordenamento dinâmico (Drag-and-Drop) dentro das ações
+- **Indicadores** - Metas, valores ideais e conformidade contratual
+- **Documentos** - Upload múltiplo e gestão de arquivos por instrumento
+- **Alertas** - Sistema de notificações automáticas
+- **Configurações** - Gestão de tipos, diretorias e subunidades
 
 ### ✅ **Recursos Avançados**
-- ✨ CRUD inline de tipos (criar/editar sem sair da tela)
-- ✨ Sistema de abas (Dados Gerais, Obrigações, Arquivos)
-- ✨ Upload múltiplo de arquivos
-- ✨ Busca e filtros em todas as listagens
-- ✨ Badges coloridos para status
-- ✨ Interface moderna e responsiva
-- ✨ Identidade visual AGEMS (azul #0066B3)
-- ✨ Logo institucional
+- ✨ **Estrutura em 4 Níveis:** Instrumento -> Obrigação -> Ação -> Checklist
+- ✨ **Drag-and-Drop:** Reordenamento visual de itens de checklist
+- ✨ **Design Moderno:** Interface premium com gradientes e micro-animações
+- ✨ **Padronização Visual:** Status "Em Andamento" em **Dourado Metálico** e "Encerrada" em **Vermelho**
+- ✨ **Mascaramento Inteligente:** Campos de CNPJ e CEP com formatação automática
+- ✨ **CRUD Inline:** Criação de tipos sem sair da tela principal
+- ✨ **Identidade Visual MS:** Cores oficiais e logo institucional AGEMS
 
 ---
 
@@ -127,30 +126,27 @@ ports:
 
 ```
 agems_regulatorio/
-├── 📄 iniciar.ps1              # Script principal de inicialização
-├── 📄 parar.ps1                # Para o sistema
-├── 📄 reiniciar.ps1            # Reinicia o sistema
-├── 📄 logs.ps1                 # Visualiza logs
-├── 📄 backup.ps1               # Cria backup do banco
-├── 📄 docker-compose.yml       # Configuração Docker
-├── 📄 Dockerfile               # Imagem Docker
-├── 📄 docker-entrypoint.sh     # Script de inicialização
-├── 📄 requirements.txt         # Dependências Python
-├── 📄 manage.py                # Django management
-├── 📄 db.sqlite3               # Banco de dados (com admin criado)
-├── 📂 config/                  # Configurações Django
-├── 📂 core/                    # App principal
-├── 📂 usuarios/                # Módulo de usuários
-├── 📂 instrumentos/            # Módulo de instrumentos
-├── 📂 entidades/               # Módulo de entidades
-├── 📂 obrigacoes/              # Módulo de obrigações
-├── 📂 acoes/                   # Módulo de ações
-├── 📂 indicadores/             # Módulo de indicadores
-├── 📂 alertas/                 # Módulo de alertas
-├── 📂 documentos/              # Módulo de documentos
-├── 📂 dashboards/              # Módulo de dashboards
-├── 📂 templates/               # Templates HTML
-└── 📂 static/                  # Arquivos estáticos (CSS, JS, imagens)
+├── 📄 iniciar.ps1              # Script de inicialização automática
+├── 📄 parar.ps1                # Script para desligar o sistema
+├── 📄 reiniciar.ps1            # Script para reinicialização rápida
+├── 📄 logs.ps1                 # Visualização de logs em tempo real
+├── 📄 backup.ps1               # Script de backup de banco de dados
+├── 📄 docker-compose.yml       # Orquestração de containers
+├── 📄 Dockerfile               # Configuração da imagem Python 3.13
+├── 📄 db.sqlite3               # Banco de dados principal
+├── 📂 config/                  # Ajustes de sistema e segurança (Django)
+├── 📂 core/                    # Núcleo da interface e views modernas
+├── 📂 usuarios/                # Gestão de acessos e perfis
+├── 📂 instrumentos/            # Contratos e Obrigações (Inlines)
+├── 📂 acoes/                   # Execução, Checklist e Kanban
+├── 📂 entidades/               # Concessionárias e Logos
+├── 📂 indicadores/             # Gestão de metas e resultados
+├── 📂 alertas/                 # Motor de notificações
+├── 📂 documentos/              # Gestão documental
+├── 📂 dashboards/              # Visões estatísticas
+├── 📂 templates/               # Arquivos HTML (layout moderno)
+├── 📂 static/                  # CSS (Metallic UI), JS e Imagens
+└── 📂 backups/                 # Repositório de snapshots do banco
 ```
 
 ---
@@ -188,9 +184,18 @@ Para problemas técnicos:
 
 ---
 
-## 📄 Licença
+## 📊 Tecnologias Utilizadas
 
-Sistema desenvolvido exclusivamente para a **AGEMS - Agência de Regulação de Serviços Públicos de Mato Grosso do Sul**.
+| Tecnologia | Versão | Uso |
+|------------|--------|-----|
+| **Python** | 3.13 | Backend / Runtime |
+| **Django** | 5.1.2 | Framework Web |
+| **SQLite** | 3 | Banco de dados (Dev) |
+| **PostgreSQL** | 16 | Banco de dados (Prod) |
+| **Docker** | Latest | Containerização |
+| **Bootstrap** | 5.3 | Frontend / UI |
+| **Redis** | 5.0 | Cache & Mensageria |
+| **Celery** | 5.4 | Tarefas em Segundo Plano |
 
 ---
 

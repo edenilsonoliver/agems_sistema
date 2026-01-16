@@ -211,6 +211,11 @@ docker-compose build --no-cache
 docker-compose up -d
 ```
 
+### **Limpeza de Cache (Se o layout parecer quebrado)**
+Se após uma atualização as cores ou o layout não mudarem:
+1. Pressione `Ctrl + F5` no seu navegador.
+2. Isso forçará a limpeza do cache de CSS/JS e carregará as novas definições "Metallic Gold".
+
 ---
 
 ## 🐛 Solução de Problemas Comuns

@@ -55,7 +55,6 @@ INSTALLED_APPS = [
     'acoes',
     'indicadores',
     'alertas',
-    'fiscalizacao',
     'documentos',
     'dashboards',
 ]
@@ -152,8 +151,6 @@ STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-import os
-
 # Static files configuration
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_DIRS = [BASE_DIR / 'static']
@@ -211,11 +208,4 @@ CSRF_TRUSTED_ORIGINS = [
     'https://*.onrender.com',
     'https://*.fly.dev',
 ]
-
-
-
-# Login/Logout URLs
-LOGIN_URL = 'login'
-LOGIN_REDIRECT_URL = 'dashboard'
-LOGOUT_REDIRECT_URL = 'login'
 

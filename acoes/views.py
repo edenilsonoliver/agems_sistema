@@ -1,6 +1,6 @@
 from core.views import ModernListView, ModernCreateView, ModernUpdateView, ModernDeleteView
 from django.shortcuts import render, get_object_or_404, redirect
-from django.views.generic import ListView, CreateView, UpdateView, DeleteView, TemplateView
+from django.views.generic import TemplateView
 from .models import Acao, ChecklistItem
 from django.urls import reverse_lazy
 from .forms import AcaoForm, ChecklistItemFormSet

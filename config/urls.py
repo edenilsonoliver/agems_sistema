@@ -45,19 +45,6 @@ from indicadores.views import (
     IndicadorListView, IndicadorCreateView, IndicadorUpdateView, IndicadorDeleteView
 )
 
-# Core
-from core.views import ModernListView
-from core.models import Diretoria, TipoEntidade, TipoServico, TipoInstrumento
-
-# ✅ Importa novamente as views do core
-from core.core_views import (
-    DiretoriaListView, DiretoriaCreateView, DiretoriaUpdateView, DiretoriaDeleteView,
-    TipoEntidadeListView, TipoEntidadeCreateView, TipoEntidadeUpdateView, TipoEntidadeDeleteView,
-    TipoServicoListView, TipoServicoCreateView, TipoServicoUpdateView, TipoServicoDeleteView,
-    TipoInstrumentoListView, TipoInstrumentoCreateView, TipoInstrumentoUpdateView, TipoInstrumentoDeleteView,
-    TipoObrigacaoListView, TipoObrigacaoCreateView, TipoObrigacaoUpdateView, TipoObrigacaoDeleteView,
-    TipoAcaoListView, TipoAcaoCreateView, TipoAcaoUpdateView, TipoAcaoDeleteView
-)
 
 # 🚫 Bloqueia o acesso direto ao Django Admin
 def redirect_to_login(request):

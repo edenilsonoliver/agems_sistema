@@ -1,9 +1,6 @@
 from .views import ModernListView, ModernCreateView, ModernUpdateView, ModernDeleteView
-from .models import Diretoria, TipoEntidade, TipoServico, TipoInstrumento, TipoObrigacao, TipoAcao
+from .models import Diretoria, TipoEntidade, TipoServico, TipoInstrumento, TipoObrigacao, TipoAcao, Subunidade
 from django.urls import reverse_lazy
-from django.urls import reverse_lazy
-from core.models import Subunidade
-from core.views import ModernListView, ModernCreateView, ModernUpdateView, ModernDeleteView
 
 # Diretoria
 class DiretoriaListView(ModernListView):
