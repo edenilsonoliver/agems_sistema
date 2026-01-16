@@ -57,7 +57,7 @@
 <!-- Charts Row -->
 <div class="row g-4 mb-4">
     <div class="col-12 col-lg-8">
-        <div class="card border-0 shadow-sm">
+        <div class="card border-0 shadow-sm h-100">
             <div class="card-header bg-white border-0 py-3">
                 <h5 class="card-title mb-0">
                     <i class="bi bi-graph-up me-2"></i>
@@ -65,13 +65,15 @@
                 </h5>
             </div>
             <div class="card-body">
-                <canvas id="tarefasChart"></canvas>
+                <div style="height: 300px;">
+                    <canvas id="tarefasChart"></canvas>
+                </div>
             </div>
         </div>
     </div>
 
     <div class="col-12 col-lg-4">
-        <div class="card border-0 shadow-sm">
+        <div class="card border-0 shadow-sm h-100">
             <div class="card-header bg-white border-0 py-3">
                 <h5 class="card-title mb-0">
                     <i class="bi bi-pie-chart me-2"></i>
@@ -79,7 +81,9 @@
                 </h5>
             </div>
             <div class="card-body">
-                <canvas id="tiposChart"></canvas>
+                <div style="height: 300px;">
+                    <canvas id="tiposChart"></canvas>
+                </div>
             </div>
         </div>
     </div>
@@ -140,7 +144,7 @@
                                     {% endif %}
                                 </td>
                                 <td>
-                                    {% if  obrigacao.status  ==  'pendente' %}
+                                    {% if obrigacao.status == 'pendente' %}
                                     <span class="badge bg-warning">Pendente</span>
                                     {% elif obrigacao.status == 'em_andamento' %}
                                     <span class="badge bg-info">Em Andamento</span>
@@ -209,7 +213,7 @@
                                     <small class="text-muted fw-medium">{{acao.percentual_cumprido}}%</small>
                                 </td>
                                 <td>
-                                    {% if  acao.status  ==  'finalizado' %}
+                                    {% if acao.status == 'finalizado' %}
                                     <span class="badge bg-success">Finalizado</span>
                                     {% elif acao.status == 'em_andamento' %}
                                     <span class="badge bg-primary">Em Andamento</span>
@@ -302,7 +306,7 @@
                 },
                 options: {
                     responsive: true,
-                    maintainAspectRatio: true,
+                    maintainAspectRatio: false,
                     plugins: {
                         legend: { display: false }
                     },
@@ -383,7 +387,7 @@
                 },
                 options: {
                     responsive: true,
-                    maintainAspectRatio: true,
+                    maintainAspectRatio: false,
                     plugins: {
                         legend: {
                             position: 'bottom',
