@@ -26,12 +26,12 @@ class InstrumentoForm(forms.ModelForm):
             'entidades': forms.SelectMultiple(attrs={'class': 'form-select', 'size': '5'}),
             'objeto': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
             'nup': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: 12345.678901/2024-00'}),
-            'data_assinatura': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-            'data_inicio': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-            'data_fim': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'data_assinatura': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}, format='%Y-%m-%d'),
+            'data_inicio': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}, format='%Y-%m-%d'),
+            'data_fim': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}, format='%Y-%m-%d'),
             'status': forms.Select(attrs={'class': 'form-select'}),
             'periodicidade_revisao_tarifaria': forms.NumberInput(attrs={'class': 'form-control'}),
-            'data_proxima_revisao': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'data_proxima_revisao': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}, format='%Y-%m-%d'),
             'observacoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
         }
 
@@ -47,7 +47,7 @@ class ObrigacaoForm(forms.ModelForm):
             'descricao': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
             'tipo_obrigacao': forms.Select(attrs={'class': 'form-select'}),
             'clausula_referencia': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: Cláusula 5.2'}),
-            'data_vencimento': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'data_vencimento': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}, format='%Y-%m-%d'),
             'status': forms.Select(attrs={'class': 'form-select'}),
             'recorrente': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }

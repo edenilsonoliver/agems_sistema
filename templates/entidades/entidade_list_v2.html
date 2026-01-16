@@ -1,4 +1,4 @@
-{% extends 'components/list_view.html' %}
+﻿{% extends 'components/list_view.html' %}
 
 {% block table_headers %}
 <th style="width: 130px; text-align: center;">Logo</th>
@@ -48,7 +48,7 @@
         {% endif %}
     </td>
     <td class="align-middle">
-        {% if entidade.status == 'ativa' %}
+        {% if  entidade.status  ==  'ativa' %}
         <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25">Ativa</span>
         {% else %}
         <span class="badge bg-light text-dark border">{{entidade.get_status_display}}</span>

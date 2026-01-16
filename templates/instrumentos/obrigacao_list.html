@@ -1,4 +1,4 @@
-{% extends 'components/list_view.html' %}
+﻿{% extends 'components/list_view.html' %}
 
 {% block table_headers %}
 <th>Título</th>
@@ -33,7 +33,7 @@
         {% endif %}
     </td>
     <td>
-        {% if obrigacao.status == 'cumprida' %}
+        {% if  obrigacao.status  ==  'cumprida' %}
             <span class="badge bg-success">Cumprida</span>
         {% elif obrigacao.status == 'em_andamento' %}
             <span class="badge bg-primary">Em Andamento</span>

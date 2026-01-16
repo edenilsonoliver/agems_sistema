@@ -1,4 +1,4 @@
-{% extends 'components/list_view.html' %}
+﻿{% extends 'components/list_view.html' %}
 
 {% block table_headers %}
 <th>Número</th>
@@ -27,7 +27,7 @@
         <small>{{instrumento.data_inicio|date:"d/m/Y"}} - {{instrumento.data_fim|date:"d/m/Y"}}</small>
     </td>
     <td>
-        {% if instrumento.status == 'vigente' %}
+        {% if  instrumento.status  ==  'vigente' %}
             <span class="badge bg-success">Vigente</span>
         {% elif instrumento.status == 'encerrado' %}
             <span class="badge bg-secondary">Encerrado</span>

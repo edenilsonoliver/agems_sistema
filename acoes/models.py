@@ -140,10 +140,22 @@ class Acao(models.Model):
             novo_status = 'finalizado'
             if not nova_data_conclusao:
                 nova_data_conclusao = hoje
-        elif self.data_fim < hoje and novo_status != 'finalizado':
-            novo_status = 'atrasado'
-        elif novo_status == 'a_iniciar' and novo_percentual > 0:
-            novo_status = 'em_andamento'
+        else:
+            # Se baixou de 100%, não pode ser finalizado
+            if novo_status == 'finalizado':
+                nova_data_conclusao = None
+                if self.data_fim < hoje:
+                    novo_status = 'atrasado'
+                elif novo_percentual > 0:
+                    novo_status = 'em_andamento'
+                else:
+                    novo_status = 'a_iniciar'
+            
+            # Outras atualizações automáticas
+            if self.data_fim < hoje and novo_status != 'finalizado':
+                novo_status = 'atrasado'
+            elif novo_status == 'a_iniciar' and novo_percentual > 0:
+                novo_status = 'em_andamento'
             
         # Usar update para evitar disparar sinais novamente e garantir persistência direta
         Acao.objects.filter(pk=self.pk).update(

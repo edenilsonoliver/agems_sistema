@@ -1,4 +1,4 @@
-{% extends 'base_modern.html' %}
+﻿{% extends 'base_modern.html' %}
 {% load static %}
 
 {% block title %}{% if object %}Editar{% else %}Adicionar{% endif %} Instrumento - AGEMS{% endblock %}
@@ -421,18 +421,18 @@ function removerObrigacao(btn) {
     const deleteInput = formDiv.querySelector('input[name$="-DELETE"]');
 
     if (deleteInput) {
-        // 🔹 Marca o campo DELETE como "checked" e "on"
+        // ðŸ”¹ Marca o campo DELETE como "checked" e "on"
         deleteInput.checked = true;
         deleteInput.value = 'on';
 
-        // 🔹 Esconde o bloco da tela
+        // ðŸ”¹ Esconde o bloco da tela
         formDiv.style.display = 'none';
 
-        console.log(`🗑️ Obrigação marcada para exclusão: ${deleteInput.name}`);
+        console.log(`ðŸ—‘ï¸ Obrigação marcada para exclusão: ${deleteInput.name}`);
     } else {
-        // 🔹 Se for uma obrigação nova, remove completamente do DOM
+        // ðŸ”¹ Se for uma obrigação nova, remove completamente do DOM
         formDiv.remove();
-        console.log('🆕 Obrigação removida antes de ser salva.');
+        console.log('ðŸ†• Obrigação removida antes de ser salva.');
     }
 
     // Atualiza contador visual
@@ -493,7 +493,7 @@ function excluirArquivo(id) {
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('✅ SCRIPT DE DATAS INICIADO');
+    console.log('âœ… SCRIPT DE DATAS INICIADO');
 
     const inputs = document.querySelectorAll('input[type="date"]');
     console.log('Campos de data detectados:', inputs.length);
@@ -507,16 +507,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 const novoValor = `${ano}-${mes.padStart(2, '0')}-${dia.padStart(2, '0')}`;
                 input.value = novoValor;
                 input.setAttribute('value', novoValor);
-                console.log(`✔️ Corrigido: ${val} → ${novoValor}`);
+                console.log(`âœ”ï¸ Corrigido: ${val} â†’ ${novoValor}`);
             }
         }
     });
 
-    // ✅ Agora o formulário pode ser enviado normalmente
+    // âœ… Agora o formulário pode ser enviado normalmente
     const form = document.getElementById('formInstrumento');
     if (form) {
         form.addEventListener('submit', function() {
-            console.log('🚀 Enviando formulário Instrumento...');
+            console.log('ðŸš€ Enviando formulário Instrumento...');
         });
     }
 });

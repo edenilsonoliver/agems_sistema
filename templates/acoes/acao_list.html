@@ -1,4 +1,4 @@
-{% extends 'components/list_view.html' %}
+﻿{% extends 'components/list_view.html' %}
 {% block header_actions %}
 <a href="{% url 'acao_calendario' %}" class="btn btn-outline-primary me-2"><i class="bi bi-calendar3"></i> Ver
     Calendário</a>
@@ -9,7 +9,7 @@
     <select name="instrumento" id="instrumento" class="form-select" style="height: 40px;">
         <option value=""> Filtrar por Instrumento...</option>
         {% for inst in instrumentos %}
-        <option value="{{inst.id}}" {% if instrumento_selecionado == inst.id %}selected{% endif %}>{{inst}}</option>
+        <option value="{{inst.id}}" {% if  instrumento_selecionado  ==  inst.id %}selected{% endif %}>{{inst}}</option>
         {% endfor %}
     </select>
 </div>
@@ -17,7 +17,7 @@
     <select name="obrigacao" id="obrigacao" class="form-select" style="height: 40px;">
         <option value=""> Filtrar por Obrigação...</option>
         {% for obrigacao in obrigacoes %}
-        <option value="{{obrigacao.id}}" {% if obrigacao_selecionada == obrigacao.id %}selected{% endif %}>
+        <option value="{{obrigacao.id}}" {% if  obrigacao_selecionada  ==  obrigacao.id %}selected{% endif %}>
             {{obrigacao.titulo}}</option>
         {% endfor %}
     </select>
@@ -93,7 +93,7 @@
         <small class="text-muted fw-medium">{{acao.percentual_cumprido}}%</small>
     </td>
     <td>
-        {% if acao.status == 'finalizado' %}<span
+        {% if  acao.status  ==  'finalizado' %}<span
             class="badge rounded-pill bg-success-subtle text-success border border-success">Finalizado</span>
         {% elif acao.status == 'em_andamento' %}<span
             class="badge rounded-pill bg-primary-subtle text-primary border border-primary">Em Andamento</span>

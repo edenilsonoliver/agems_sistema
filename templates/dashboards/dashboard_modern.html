@@ -1,4 +1,4 @@
-{% extends 'base_modern.html' %}
+﻿{% extends 'base_modern.html' %}
 
 {% block title %}Dashboard - AGEMS{% endblock %}
 
@@ -140,7 +140,7 @@
                                     {% endif %}
                                 </td>
                                 <td>
-                                    {% if obrigacao.status == 'pendente' %}
+                                    {% if  obrigacao.status  ==  'pendente' %}
                                     <span class="badge bg-warning">Pendente</span>
                                     {% elif obrigacao.status == 'em_andamento' %}
                                     <span class="badge bg-info">Em Andamento</span>
@@ -209,7 +209,7 @@
                                     <small class="text-muted fw-medium">{{acao.percentual_cumprido}}%</small>
                                 </td>
                                 <td>
-                                    {% if acao.status == 'finalizado' %}
+                                    {% if  acao.status  ==  'finalizado' %}
                                     <span class="badge bg-success">Finalizado</span>
                                     {% elif acao.status == 'em_andamento' %}
                                     <span class="badge bg-primary">Em Andamento</span>
@@ -254,7 +254,7 @@
 
         const tarefasCtx = document.getElementById('tarefasChart');
 
-        // ✅ Mapa de cores por status (CORRETO!)
+        // âœ… Mapa de cores por status (CORRETO!)
         const colorMap = {
             "a_iniciar": {
                 bg: 'rgba(108, 117, 125, 0.8)',  // CINZA
@@ -278,12 +278,12 @@
             }
         };
 
-        // ✅ TRATAMENTO: Verificar se há dados antes de criar o gráfico
+        // âœ… TRATAMENTO: Verificar se há dados antes de criar o gráfico
         if (tarefasCtx && tarefasData && tarefasData.length > 0) {
             const labels = tarefasData.map(t => labelMap[t.status] || t.status);
             const valores = tarefasData.map(t => t.total);
 
-            // ✅ Mapear cores corretamente para cada status
+            // âœ… Mapear cores corretamente para cada status
             const backgroundColors = tarefasData.map(t => colorMap[t.status]?.bg || 'rgba(108, 117, 125, 0.8)');
             const borderColors = tarefasData.map(t => colorMap[t.status]?.border || 'rgb(108, 117, 125)');
 
@@ -310,8 +310,8 @@
                         y: {
                             beginAtZero: true,
                             ticks: {
-                                stepSize: 1,  // ✅ Força incrementos de 1 em 1
-                                precision: 0   // ✅ Sem casas decimais
+                                stepSize: 1,  // âœ… Força incrementos de 1 em 1
+                                precision: 0   // âœ… Sem casas decimais
                             },
                             grid: { display: true, drawBorder: false }
                         },
@@ -322,7 +322,7 @@
                 }
             });
         } else {
-            // ✅ TRATAMENTO: Mostrar mensagem quando não há ações
+            // âœ… TRATAMENTO: Mostrar mensagem quando não há ações
             console.warn('Nenhuma ação encontrada para o gráfico');
             if (tarefasCtx) {
                 const parent = tarefasCtx.parentElement;
@@ -359,7 +359,7 @@
 
         const tiposCtx = document.getElementById('tiposChart');
 
-        // ✅ TRATAMENTO: Verificar se há dados antes de criar o gráfico
+        // âœ… TRATAMENTO: Verificar se há dados antes de criar o gráfico
         if (tiposCtx && tiposData && tiposData.length > 0) {
             const tipoLabels = tiposData.map(t => t.tipo_instrumento__nome || 'Sem tipo');
             const tipoValores = tiposData.map(t => t.total);
@@ -394,7 +394,7 @@
                 }
             });
         } else {
-            // ✅ TRATAMENTO: Mostrar mensagem quando não há instrumentos
+            // âœ… TRATAMENTO: Mostrar mensagem quando não há instrumentos
             console.warn('Nenhum instrumento encontrado para o gráfico');
             if (tiposCtx) {
                 const parent = tiposCtx.parentElement;

@@ -22,13 +22,14 @@ class AcaoForm(forms.ModelForm):
         widgets = {
             'descricao': forms.Textarea(attrs={'rows': 3}),
             'observacoes': forms.Textarea(attrs={'rows': 3}),
-            'data_inicio': forms.DateInput(attrs={'type': 'date'}),
-            'data_fim': forms.DateInput(attrs={'type': 'date'}),
-            'data_conclusao': forms.DateInput(attrs={'type': 'date'}),
+            'data_inicio': forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d'),
+            'data_fim': forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d'),
+            'data_conclusao': forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d'),
             'executores': forms.SelectMultiple(attrs={
                 'class': 'form-control',
                 'size': '5'
             }),
+            'acoes_predecessoras': forms.CheckboxSelectMultiple(),
         }
 
     def __init__(self, *args, **kwargs):
@@ -48,6 +49,12 @@ class AcaoForm(forms.ModelForm):
         self.fields['data_conclusao'].required = False
         self.fields['observacoes'].required = False
         self.fields['tipo_acao'].required = False
+        
+        # Remover 'Finalizado' das opções manuais (será automático pelo checklist)
+        self.fields['status'].choices = [
+            choice for choice in self.fields['status'].choices 
+            if choice[0] != 'finalizado'
+        ]
         
 
 

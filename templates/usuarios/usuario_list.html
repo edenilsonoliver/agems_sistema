@@ -37,20 +37,20 @@
             <div class="col-md-3">
                 <select name="perfil" class="form-select">
                     <option value="">Todos os perfis</option>
-                    <option value="0" {% if request.GET.perfil == '0' %}selected{% endif %}>Admin</option>
-                    <option value="1" {% if request.GET.perfil == '1' %}selected{% endif %}>Diretoria</option>
-                    <option value="2" {% if request.GET.perfil == '2' %}selected{% endif %}>Assessoria</option>
-                    <option value="3" {% if request.GET.perfil == '3' %}selected{% endif %}>Coordenação</option>
-                    <option value="4" {% if request.GET.perfil == '4' %}selected{% endif %}>Usuário Comum</option>
-                    <option value="5" {% if request.GET.perfil == '5' %}selected{% endif %}>Visualizador</option>
+                    <option value="0" {% if  request.GET.perfil  ==  '0' %}selected{% endif %}>Admin</option>
+                    <option value="1" {% if  request.GET.perfil  ==  '1' %}selected{% endif %}>Diretoria</option>
+                    <option value="2" {% if  request.GET.perfil  ==  '2' %}selected{% endif %}>Assessoria</option>
+                    <option value="3" {% if  request.GET.perfil  ==  '3' %}selected{% endif %}>Coordenação</option>
+                    <option value="4" {% if  request.GET.perfil  ==  '4' %}selected{% endif %}>Usuário Comum</option>
+                    <option value="5" {% if  request.GET.perfil  ==  '5' %}selected{% endif %}>Visualizador</option>
                 </select>
             </div>
 
             <div class="col-md-3">
                 <select name="status" class="form-select">
                     <option value="">Todos os status</option>
-                    <option value="ativo" {% if request.GET.status == 'ativo' %}selected{% endif %}>Ativos</option>
-                    <option value="inativo" {% if request.GET.status == 'inativo' %}selected{% endif %}>Inativos</option>
+                    <option value="ativo" {% if  request.GET.status  ==  'ativo' %}selected{% endif %}>Ativos</option>
+                    <option value="inativo" {% if  request.GET.status  ==  'inativo' %}selected{% endif %}>Inativos</option>
                 </select>
             </div>
 
@@ -112,7 +112,7 @@
                             {% endif %}
                         </td>
                         <td>
-                            {% if usuario.perfil == 0 %}
+                            {% if  usuario.perfil  ==  0 %}
                             <span class="badge bg-danger">
                                 <i class="bi bi-shield-fill-check me-1"></i>
                                 Admin
@@ -195,7 +195,7 @@
                                 </a>
                                 {% endif %}
 
-                                {% if user.perfil == 0 and usuario.pk != user.pk %}
+                                {% if  user.perfil  ==  0 and usuario.pk != user.pk %}
                                 <a href="{% url 'usuario_delete' usuario.pk %}" class="btn btn-outline-danger"
                                     title="Excluir">
                                     <i class="bi bi-trash"></i>

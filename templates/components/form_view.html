@@ -1,4 +1,4 @@
-{% extends 'base_modern.html' %}
+﻿{% extends 'base_modern.html' %}
 {% load crispy_forms_tags %}
 
 {% block content %}
@@ -75,6 +75,23 @@
 
                             const prefix = totalFormsInput.name.replace("-TOTAL_FORMS", "");
 
+                            function updateCheckboxStatus(itemDiv) {
+                                const textInput = itemDiv.querySelector('input[type="text"]');
+                                const checkbox = itemDiv.querySelector('input[type="checkbox"]');
+                                if (textInput && checkbox) {
+                                    const hasValue = textInput.value.trim().length > 0;
+                                    checkbox.disabled = !hasValue;
+                                    if (!hasValue) checkbox.checked = false;
+                                }
+                            }
+
+                            // Event delegation for new and existing items
+                            container.addEventListener("input", function (e) {
+                                if (e.target.type === "text") {
+                                    updateCheckboxStatus(e.target.closest(".checklist-item"));
+                                }
+                            });
+
                             addButton.addEventListener("click", function () {
                                 const index = parseInt(totalFormsInput.value);
 
@@ -92,8 +109,12 @@
                                     `;
 
                                 container.appendChild(newItem);
+                                updateCheckboxStatus(newItem);
                                 totalFormsInput.value = index + 1;
                             });
+
+                            // Initialize existing ones
+                            container.querySelectorAll(".checklist-item").forEach(updateCheckboxStatus);
                         });
                     </script>
                     {% endif %}
