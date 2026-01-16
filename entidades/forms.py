@@ -7,5 +7,5 @@ class EntidadeForm(forms.ModelForm):
         fields = '__all__'
         widgets = {
             'cnpj': forms.TextInput(attrs={'placeholder': '00.000.000/0000-00'}),
-            'cep': forms.TextInput(attrs={'placeholder': '00.000-000'}),
+            'cep': forms.TextInput(attrs={'placeholder': '00000-000'}),
         }

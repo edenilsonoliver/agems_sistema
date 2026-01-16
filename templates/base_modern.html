@@ -29,6 +29,7 @@
             --danger-color: #dc3545;
             --warning-color: #ffc107;
             --info-color: #0dcaf0;
+            --gold-color: #FFC300;
             --dark-color: #212529;
             --light-color: #f8f9fa;
             --sidebar-width: 260px;
@@ -249,11 +250,11 @@
 
         /* Content Area */
         .content-area {
-            padding: 2rem;
+            padding: 0 1.5rem;
         }
 
         .page-header {
-            margin-bottom: 2rem;
+            margin-bottom: 1rem;
         }
 
         .page-title {
@@ -312,6 +313,13 @@
         .stat-icon.danger {
             background: rgba(220, 53, 69, 0.1);
             color: var(--danger-color);
+        }
+
+        /* Status Colors */
+        .bg-gold {
+            background: linear-gradient(135deg, #FFC300 0%, #EAB126 100%) !important;
+            color: #fff !important;
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
 
         .stat-value {

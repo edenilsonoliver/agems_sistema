@@ -76,7 +76,7 @@ class AcaoForm(forms.ModelForm):
 ChecklistItemFormSet = inlineformset_factory(
     Acao,
     ChecklistItem,
-    fields=['nome', 'concluido'],
+    fields=['nome', 'concluido', 'ordem'],
     extra=1,
     can_delete=True,
     widgets={
@@ -86,6 +86,9 @@ ChecklistItemFormSet = inlineformset_factory(
         }),
         'concluido': forms.CheckboxInput(attrs={
             'class': 'form-check-input'
+        }),
+        'ordem': forms.HiddenInput(attrs={
+            'class': 'checklist-order-field'
         }),
     }
 )

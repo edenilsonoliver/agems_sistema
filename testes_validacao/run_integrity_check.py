@@ -15,10 +15,9 @@ def main():
     print("="*60)
     
     # 1. Auto-correção preventiva
-    print("1. Verificando sintaxe de templates (Auto-fix)... ", end="")
-    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    fixed_count = fix_django_template_spaces(base_dir)
-    print(f"OK ({fixed_count} correções feitas)")
+    # print("1. Verificando sintaxe de templates (Auto-fix)... ", end="", flush=True)
+    # count = fix_django_template_spaces(base_dir)
+    # print(f"OK ({count} correções feitas)")
     print("-" * 60)
 
     # 2. Validação de Páginas

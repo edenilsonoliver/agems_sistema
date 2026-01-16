@@ -188,6 +188,12 @@ class ChecklistItem(models.Model):
     acao = models.ForeignKey(Acao, related_name='checklist_itens', on_delete=models.CASCADE)
     nome = models.CharField(max_length=255)
     concluido = models.BooleanField(default=False)
+    ordem = models.IntegerField(default=0)
+
+    class Meta:
+        ordering = ['ordem', 'id']
+        verbose_name = 'Item de Checklist'
+        verbose_name_plural = 'Itens de Checklist'
 
     def __str__(self):
         return self.nome

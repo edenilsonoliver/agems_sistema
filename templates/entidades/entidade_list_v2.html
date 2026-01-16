@@ -49,8 +49,10 @@
     <td class="align-middle">
         {% if entidade.status == 'ativa' %}
         <span class="badge bg-success">Ativa</span>
+        {% elif entidade.status == 'encerrada' %}
+        <span class="badge bg-danger">Encerrada</span>
         {% else %}
-        <span class="badge bg-secondary">{{entidade.get_status_display}}</span>
+        <span class="badge bg-warning text-dark">{{entidade.get_status_display}}</span>
         {% endif %}
     </td>
     <td class="align-middle text-end">

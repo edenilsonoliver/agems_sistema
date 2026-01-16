@@ -27,12 +27,12 @@
         <small>{{instrumento.data_inicio|date:"d/m/Y"}} - {{instrumento.data_fim|date:"d/m/Y"}}</small>
     </td>
     <td>
-        {% if  instrumento.status  ==  'vigente' %}
-            <span class="badge bg-success">Vigente</span>
+        {% if instrumento.status == 'vigente' %}
+        <span class="badge bg-success">Vigente</span>
         {% elif instrumento.status == 'encerrado' %}
-            <span class="badge bg-secondary">Encerrado</span>
+        <span class="badge bg-danger">Encerrado</span>
         {% else %}
-            <span class="badge bg-warning">{{instrumento.get_status_display}}</span>
+        <span class="badge bg-warning">{{instrumento.get_status_display}}</span>
         {% endif %}
     </td>
     <td>

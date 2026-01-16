@@ -91,7 +91,7 @@
 
 <!-- Tables Row -->
 <div class="row g-4">
-    <div class="col-12 mb-4">
+    <div class="col-12">
         <div class="card border-0 shadow-sm">
             <div class="card-header bg-white border-0 py-3">
                 <h5 class="card-title mb-0">
@@ -147,7 +147,7 @@
                                     {% if obrigacao.status == 'pendente' %}
                                     <span class="badge bg-warning">Pendente</span>
                                     {% elif obrigacao.status == 'em_andamento' %}
-                                    <span class="badge bg-info">Em Andamento</span>
+                                    <span class="badge bg-gold">Em Andamento</span>
                                     {% elif obrigacao.status == 'cumprida' %}
                                     <span class="badge bg-success">Cumprida</span>
                                     {% elif obrigacao.status == 'vencida' %}
@@ -216,7 +216,7 @@
                                     {% if acao.status == 'finalizado' %}
                                     <span class="badge bg-success">Finalizado</span>
                                     {% elif acao.status == 'em_andamento' %}
-                                    <span class="badge bg-primary">Em Andamento</span>
+                                    <span class="badge bg-gold">Em Andamento</span>
                                     {% elif acao.status == 'atrasado' %}
                                     <span class="badge bg-danger">Atrasado</span>
                                     {% else %}
@@ -265,8 +265,8 @@
                 border: 'rgb(108, 117, 125)'
             },
             "em_andamento": {
-                bg: 'rgba(13, 110, 253, 0.8)',   // AZUL
-                border: 'rgb(13, 110, 253)'
+                bg: 'rgba(255, 195, 0, 0.8)',   // METALLIC GOLD
+                border: 'rgb(255, 195, 0)'
             },
             "atrasado": {
                 bg: 'rgba(220, 53, 69, 0.8)',    // VERMELHO
