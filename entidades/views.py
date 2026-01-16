@@ -1,5 +1,6 @@
 from core.views import ModernListView, ModernCreateView, ModernUpdateView, ModernDeleteView
 from .models import Entidade
+from .forms import EntidadeForm
 from django.urls import reverse_lazy
 
 
@@ -13,15 +14,15 @@ class EntidadeListView(ModernListView):
 
 class EntidadeCreateView(ModernCreateView):
     model = Entidade
+    form_class = EntidadeForm
     template_name = 'entidades/entidade_form.html'
-    fields = '__all__'
     success_url = reverse_lazy('entidade_list')
 
 
 class EntidadeUpdateView(ModernUpdateView):
     model = Entidade
+    form_class = EntidadeForm
     template_name = 'entidades/entidade_form.html'
-    fields = '__all__'
     success_url = reverse_lazy('entidade_list')
 
 

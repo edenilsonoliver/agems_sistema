@@ -54,6 +54,7 @@ def run_tests():
     urls_to_test = [
         'dashboard',
         'entidade_list',
+        'entidade_create',
         'instrumento_list',
         'acao_list',
         'indicador_list',
