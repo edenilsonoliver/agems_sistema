@@ -35,8 +35,7 @@
         <small class="text-muted">{{entidade.nome_fantasia}}</small>
     </td>
     <td class="align-middle"><small class="text-secondary">{{entidade.cnpj}}</small></td>
-    <td class="align-middle"><span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25"
-            style="white-space: normal; display: inline-block; width: 100%;">{{entidade.tipo_entidade}}</span></td>
+    <td class="align-middle"><span class="badge bg-primary">{{entidade.tipo_entidade}}</span></td>
     <td class="align-middle">
         {% if entidade.tipo_servico %}
         <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25"
@@ -48,18 +47,20 @@
         {% endif %}
     </td>
     <td class="align-middle">
-        {% if  entidade.status  ==  'ativa' %}
-        <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25">Ativa</span>
+        {% if entidade.status == 'ativa' %}
+        <span class="badge bg-success">Ativa</span>
         {% else %}
-        <span class="badge bg-light text-dark border">{{entidade.get_status_display}}</span>
+        <span class="badge bg-secondary">{{entidade.get_status_display}}</span>
         {% endif %}
     </td>
     <td class="align-middle text-end">
         <div class="btn-group btn-group-sm">
-            <a href="{% url 'entidade_edit' entidade.pk %}" class="btn btn-light border" title="Editar"><i
-                    class="bi bi-pencil text-primary"></i></a>
-            <a href="{% url 'entidade_delete' entidade.pk %}" class="btn btn-light border" title="Excluir"><i
-                    class="bi bi-trash text-danger"></i></a>
+            <a href="{% url 'entidade_edit' entidade.pk %}" class="btn btn-outline-primary" title="Editar">
+                <i class="bi bi-pencil"></i>
+            </a>
+            <a href="{% url 'entidade_delete' entidade.pk %}" class="btn btn-outline-danger" title="Excluir">
+                <i class="bi bi-trash"></i>
+            </a>
         </div>
     </td>
 </tr>
