@@ -5,7 +5,7 @@ from django.urls import reverse_lazy
 
 class EntidadeListView(ModernListView):
     model = Entidade
-    template_name = 'entidades/entidade_list.html'  # Template específico
+    template_name = 'entidades/entidade_list_v2.html'  # Template específico (v2)
     icon = "bi bi-building"
     create_url = 'entidade_create'
     search_fields = ['razao_social', 'nome_fantasia', 'cnpj']
@@ -13,12 +13,14 @@ class EntidadeListView(ModernListView):
 
 class EntidadeCreateView(ModernCreateView):
     model = Entidade
+    template_name = 'entidades/entidade_form.html'
     fields = '__all__'
     success_url = reverse_lazy('entidade_list')
 
 
 class EntidadeUpdateView(ModernUpdateView):
     model = Entidade
+    template_name = 'entidades/entidade_form.html'
     fields = '__all__'
     success_url = reverse_lazy('entidade_list')
 

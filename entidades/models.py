@@ -50,8 +50,8 @@ class Entidade(models.Model):
     status = models.CharField('Status', max_length=10, choices=STATUS_CHOICES, default='ativa')
     
     # Contato
-    email = models.EmailField('E-mail Principal')
-    telefone = models.CharField('Telefone', max_length=20)
+    email = models.EmailField('E-mail Principal', blank=True)
+    telefone = models.CharField('Telefone', max_length=20, blank=True)
     site = models.URLField('Website', blank=True)
     
     # Endereço
@@ -61,10 +61,7 @@ class Entidade(models.Model):
     cep = models.CharField('CEP', max_length=10)
     
     # Representante Legal
-    representante_legal = models.CharField('Representante Legal', max_length=200)
-    cpf_representante = models.CharField('CPF do Representante', max_length=14, blank=True, null=True)
-    email_representante = models.EmailField('E-mail do Representante', blank=True)
-    telefone_representante = models.CharField('Telefone do Representante', max_length=20, blank=True)
+    representante_legal = models.CharField('Representante Legal', max_length=200, blank=True)
     
     # Observações e Metadados
     observacoes = models.TextField('Observações', blank=True)

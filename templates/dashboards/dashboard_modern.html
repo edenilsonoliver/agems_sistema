@@ -22,7 +22,7 @@
             <div class="stat-label">Instrumentos Vigentes</div>
         </div>
     </div>
-    
+
     <div class="col-12 col-sm-6 col-xl-3">
         <div class="stat-card">
             <div class="stat-icon success">
@@ -32,24 +32,24 @@
             <div class="stat-label">Obrigações</div>
         </div>
     </div>
-    
+
     <div class="col-12 col-sm-6 col-xl-3">
         <div class="stat-card">
             <div class="stat-icon warning">
                 <i class="bi bi-hourglass-split"></i>
             </div>
             <div class="stat-value">{{ tarefas_a_vencer }}</div>
-            <div class="stat-label">Tarefas a Vencer</div>
+            <div class="stat-label">Ações a Vencer</div>
         </div>
     </div>
-    
+
     <div class="col-12 col-sm-6 col-xl-3">
         <div class="stat-card">
             <div class="stat-icon danger">
                 <i class="bi bi-clock-history"></i>
             </div>
             <div class="stat-value">{{ tarefas_vencidas }}</div>
-            <div class="stat-label">Tarefas Vencidas</div>
+            <div class="stat-label">Ações Vencidas</div>
         </div>
     </div>
 </div>
@@ -61,15 +61,15 @@
             <div class="card-header bg-white border-0 py-3">
                 <h5 class="card-title mb-0">
                     <i class="bi bi-graph-up me-2"></i>
-                    Tarefas por Status
+                    Ações por Status
                 </h5>
             </div>
             <div class="card-body">
-                <canvas id="tarefasChart" height="80"></canvas>
+                <canvas id="tarefasChart" ></canvas>
             </div>
         </div>
     </div>
-    
+
     <div class="col-12 col-lg-4">
         <div class="card border-0 shadow-sm">
             <div class="card-header bg-white border-0 py-3">
@@ -116,10 +116,10 @@
                                 <td>
                                     {% with acao=obrigacao.acoes.first %}
                                     {% if acao %}
-                                        <div class="fw-semibold" style="white-space: normal; line-height: 1.2;">{{ acao.nome }}</div>
-                                        <small class="text-muted">{{ acao.tipo_acao }}</small>
+                                    <div class="fw-semibold" style="white-space: normal; line-height: 1.2;">{{ acao.nome }}</div>
+                                    <small class="text-muted">{{ acao.tipo_acao }}</small>
                                     {% else %}
-                                        <small class="text-muted">-</small>
+                                    <small class="text-muted">-</small>
                                     {% endif %}
                                     {% endwith %}
                                 </td>
@@ -139,15 +139,15 @@
                                 </td>
                                 <td>
                                     {% if obrigacao.status == 'pendente' %}
-                                        <span class="badge bg-warning">Pendente</span>
+                                    <span class="badge bg-warning">Pendente</span>
                                     {% elif obrigacao.status == 'em_andamento' %}
-                                        <span class="badge bg-info">Em Andamento</span>
+                                    <span class="badge bg-info">Em Andamento</span>
                                     {% elif obrigacao.status == 'cumprida' %}
-                                        <span class="badge bg-success">Cumprida</span>
+                                    <span class="badge bg-success">Cumprida</span>
                                     {% elif obrigacao.status == 'vencida' %}
-                                        <span class="badge bg-danger">Vencida</span>
+                                    <span class="badge bg-danger">Vencida</span>
                                     {% else %}
-                                        <span class="badge bg-secondary">{{ obrigacao.get_status_display }}</span>
+                                    <span class="badge bg-secondary">{{ obrigacao.get_status_display }}</span>
                                     {% endif %}
                                 </td>
                             </tr>
@@ -165,7 +165,7 @@
             </div>
         </div>
     </div>
-    
+
     <div class="col-12">
         <div class="card border-0 shadow-sm">
             <div class="card-header bg-white border-0 py-3">
@@ -197,22 +197,22 @@
                                 </td>
                                 <td>
                                     <div class="progress" style="height: 8px;">
-                                        <div class="progress-bar" role="progressbar" 
-                                             style="width: {{ acao.percentual_cumprido }}%"
-                                             aria-valuenow="{{ acao.percentual_cumprido }}" 
-                                             aria-valuemin="0" aria-valuemax="100"></div>
+                                        <div class="progress-bar" role="progressbar"
+                                            style="width: {{ acao.percentual_cumprido }}%"
+                                            aria-valuenow="{{ acao.percentual_cumprido }}" aria-valuemin="0"
+                                            aria-valuemax="100"></div>
                                     </div>
                                     <small class="text-muted">{{ acao.percentual_cumprido }}%</small>
                                 </td>
                                 <td>
                                     {% if acao.status == 'finalizado' %}
-                                        <span class="badge bg-success">Finalizado</span>
+                                    <span class="badge bg-success">Finalizado</span>
                                     {% elif acao.status == 'em_andamento' %}
-                                        <span class="badge bg-primary">Em Andamento</span>
+                                    <span class="badge bg-primary">Em Andamento</span>
                                     {% elif acao.status == 'atrasado' %}
-                                        <span class="badge bg-danger">Atrasado</span>
+                                    <span class="badge bg-danger">Atrasado</span>
                                     {% else %}
-                                        <span class="badge bg-secondary">{{ acao.get_status_display }}</span>
+                                    <span class="badge bg-secondary">{{ acao.get_status_display }}</span>
                                     {% endif %}
                                 </td>
                             </tr>
@@ -239,7 +239,7 @@
     try {
         const tarefasData = JSON.parse('{{ tarefas_por_status|safe|escapejs }}');
         console.log('Dados de tarefas:', tarefasData);
-        
+
         const labelMap = {
             "a_iniciar": "A Iniciar",
             "em_andamento": "Em Andamento",
@@ -249,7 +249,7 @@
         };
 
         const tarefasCtx = document.getElementById('tarefasChart');
-        
+
         // ✅ Mapa de cores por status (CORRETO!)
         const colorMap = {
             "a_iniciar": {
@@ -273,12 +273,12 @@
                 border: 'rgb(25, 135, 84)'
             }
         };
-        
+
         // ✅ TRATAMENTO: Verificar se há dados antes de criar o gráfico
         if (tarefasCtx && tarefasData && tarefasData.length > 0) {
             const labels = tarefasData.map(t => labelMap[t.status] || t.status);
             const valores = tarefasData.map(t => t.total);
-            
+
             // ✅ Mapear cores corretamente para cada status
             const backgroundColors = tarefasData.map(t => colorMap[t.status]?.bg || 'rgba(108, 117, 125, 0.8)');
             const borderColors = tarefasData.map(t => colorMap[t.status]?.border || 'rgb(108, 117, 125)');
@@ -288,7 +288,7 @@
                 data: {
                     labels: labels,
                     datasets: [{
-                        label: 'Quantidade de Tarefas',
+                        label: 'Quantidade de Ações',
                         data: valores,
                         backgroundColor: backgroundColors,
                         borderColor: borderColors,
@@ -318,21 +318,21 @@
                 }
             });
         } else {
-            // ✅ TRATAMENTO: Mostrar mensagem quando não há tarefas
-            console.warn('Nenhuma tarefa encontrada para o gráfico');
+            // ✅ TRATAMENTO: Mostrar mensagem quando não há ações
+            console.warn('Nenhuma ação encontrada para o gráfico');
             if (tarefasCtx) {
                 const parent = tarefasCtx.parentElement;
                 parent.innerHTML = `
                     <div class="text-center text-muted py-5">
                         <i class="bi bi-inbox fs-1 d-block mb-3"></i>
-                        <p class="mb-0">Nenhuma tarefa cadastrada ainda</p>
-                        <small class="text-muted">Crie tarefas para visualizar o gráfico</small>
+                        <p class="mb-0">Nenhuma ação cadastrada ainda</p>
+                        <small class="text-muted">Crie ações para visualizar o gráfico</small>
                     </div>
                 `;
             }
         }
     } catch (error) {
-        console.error('Erro ao criar gráfico de tarefas:', error);
+        console.error('Erro ao criar gráfico de ações:', error);
         const tarefasCtx = document.getElementById('tarefasChart');
         if (tarefasCtx) {
             const parent = tarefasCtx.parentElement;
@@ -352,9 +352,9 @@
     try {
         const tiposData = JSON.parse('{{ instrumentos_por_tipo|safe|escapejs }}');
         console.log('Dados de tipos:', tiposData);
-        
+
         const tiposCtx = document.getElementById('tiposChart');
-        
+
         // ✅ TRATAMENTO: Verificar se há dados antes de criar o gráfico
         if (tiposCtx && tiposData && tiposData.length > 0) {
             const tipoLabels = tiposData.map(t => t.tipo_instrumento__nome || 'Sem tipo');
@@ -417,4 +417,3 @@
     }
 </script>
 {% endblock %}
-

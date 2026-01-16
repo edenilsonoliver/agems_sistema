@@ -22,28 +22,6 @@ class AcaoForm(forms.ModelForm):
         widgets = {
             'descricao': forms.Textarea(attrs={'rows': 3}),
             'observacoes': forms.Textarea(attrs={'rows': 3}),
-            # Widgets de texto com máscara para campos de data (formato brasileiro)
-            'data_inicio': forms.TextInput(
-                attrs={
-                    'class': 'form-control date-mask',
-                    'placeholder': 'dd/mm/aaaa',
-                    'maxlength': '10'
-                }
-            ),
-            'data_fim': forms.TextInput(
-                attrs={
-                    'class': 'form-control date-mask',
-                    'placeholder': 'dd/mm/aaaa',
-                    'maxlength': '10'
-                }
-            ),
-            'data_conclusao': forms.TextInput(
-                attrs={
-                    'class': 'form-control date-mask',
-                    'placeholder': 'dd/mm/aaaa',
-                    'maxlength': '10'
-                }
-            ),
             'executores': forms.SelectMultiple(attrs={
                 'class': 'form-control',
                 'size': '5'
@@ -52,11 +30,6 @@ class AcaoForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        
-        # Configurar formato de entrada de data brasileiro
-        self.fields['data_inicio'].input_formats = ['%d/%m/%Y', '%Y-%m-%d']
-        self.fields['data_fim'].input_formats = ['%d/%m/%Y', '%Y-%m-%d']
-        self.fields['data_conclusao'].input_formats = ['%d/%m/%Y', '%Y-%m-%d']
         
         # Buscar usuários com relações
         usuarios = Usuario.objects.select_related('subunidade__diretoria').all()
@@ -73,14 +46,7 @@ class AcaoForm(forms.ModelForm):
         self.fields['observacoes'].required = False
         self.fields['tipo_acao'].required = False
         
-        # Conversão para formato brasileiro na exibição
-        if self.instance and self.instance.pk:
-            if self.instance.data_inicio:
-                self.initial['data_inicio'] = self.instance.data_inicio.strftime('%d/%m/%Y')
-            if self.instance.data_fim:
-                self.initial['data_fim'] = self.instance.data_fim.strftime('%d/%m/%Y')
-            if self.instance.data_conclusao:
-                self.initial['data_conclusao'] = self.instance.data_conclusao.strftime('%d/%m/%Y')
+
 
     def formatar_usuario(self, usuario):
         """Formata a exibição do usuário no select"""

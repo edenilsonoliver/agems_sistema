@@ -20,7 +20,7 @@ class EntidadeAdmin(admin.ModelAdmin):
             'fields': ('endereco', 'cidade', 'estado', 'cep')
         }),
         ('Representante Legal', {
-            'fields': ('representante_legal', 'cpf_representante', 'email_representante', 'telefone_representante')
+            'fields': ('representante_legal',)
         }),
         ('Observações', {
             'fields': ('observacoes',)
