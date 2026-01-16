@@ -257,12 +257,12 @@
 
 <div class="kanban-container">
     {% for status_id, status_label in status_choices %}
-    <div class="kanban-column" data-status="{{ status_id }}">
+    <div class="kanban-column" data-status="{{status_id}}">
         <div class="kanban-column-header">
-            <span class="kanban-column-title">{{ status_label }}</span>
-            <span class="kanban-column-count" id="count-{{ status_id }}">0</span>
+            <span class="kanban-column-title">{{status_label}}</span>
+            <span class="kanban-column-count" id="count-{{status_id}}">0</span>
         </div>
-        <div class="kanban-cards" id="cards-{{ status_id }}" data-status="{{ status_id }}">
+        <div class="kanban-cards" id="cards-{{status_id}}" data-status="{{status_id}}">
             <!-- JS Render -->
         </div>
     </div>
@@ -290,8 +290,8 @@
 {% block extra_js %}
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
 <script>
-    const acoesData = {{ tarefas_json| safe }};
-    const csrfToken = '{{ csrf_token }}';
+    const acoesData = {{tarefas_json| safe}};
+    const csrfToken = '{{csrf_token}}';
 
     document.addEventListener('DOMContentLoaded', function () {
         renderCards();

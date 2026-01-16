@@ -14,7 +14,7 @@ class AcaoForm(forms.ModelForm):
         model = Acao
         fields = [
             'nome', 'descricao', 'obrigacao', 'tipo_acao',
-            'responsavel', 'executores', 'status', 'percentual_cumprido',
+            'responsavel', 'executores', 'status',
             'data_inicio', 'data_fim', 'data_conclusao',
             'prioridade', 'periodicidade', 'dias_antecedencia_alerta',
             'acoes_predecessoras', 'observacoes'
@@ -22,6 +22,9 @@ class AcaoForm(forms.ModelForm):
         widgets = {
             'descricao': forms.Textarea(attrs={'rows': 3}),
             'observacoes': forms.Textarea(attrs={'rows': 3}),
+            'data_inicio': forms.DateInput(attrs={'type': 'date'}),
+            'data_fim': forms.DateInput(attrs={'type': 'date'}),
+            'data_conclusao': forms.DateInput(attrs={'type': 'date'}),
             'executores': forms.SelectMultiple(attrs={
                 'class': 'form-control',
                 'size': '5'

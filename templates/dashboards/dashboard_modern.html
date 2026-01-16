@@ -18,7 +18,7 @@
             <div class="stat-icon primary">
                 <i class="bi bi-file-earmark-text"></i>
             </div>
-            <div class="stat-value">{{ total_instrumentos }}</div>
+            <div class="stat-value">{{total_instrumentos}}</div>
             <div class="stat-label">Instrumentos Vigentes</div>
         </div>
     </div>
@@ -28,7 +28,7 @@
             <div class="stat-icon success">
                 <i class="bi bi-journal-check"></i>
             </div>
-            <div class="stat-value">{{ total_obrigacoes }}</div>
+            <div class="stat-value">{{total_obrigacoes}}</div>
             <div class="stat-label">Obrigações</div>
         </div>
     </div>
@@ -38,7 +38,7 @@
             <div class="stat-icon warning">
                 <i class="bi bi-hourglass-split"></i>
             </div>
-            <div class="stat-value">{{ tarefas_a_vencer }}</div>
+            <div class="stat-value">{{tarefas_a_vencer}}</div>
             <div class="stat-label">Ações a Vencer</div>
         </div>
     </div>
@@ -48,7 +48,7 @@
             <div class="stat-icon danger">
                 <i class="bi bi-clock-history"></i>
             </div>
-            <div class="stat-value">{{ tarefas_vencidas }}</div>
+            <div class="stat-value">{{tarefas_vencidas}}</div>
             <div class="stat-label">Ações Vencidas</div>
         </div>
     </div>
@@ -65,7 +65,7 @@
                 </h5>
             </div>
             <div class="card-body">
-                <canvas id="tarefasChart" ></canvas>
+                <canvas id="tarefasChart"></canvas>
             </div>
         </div>
     </div>
@@ -111,27 +111,29 @@
                             {% for obrigacao in obrigacoes_usuario %}
                             <tr>
                                 <td>
-                                    <small>{{ obrigacao.instrumento.numero }}</small>
+                                    <small>{{obrigacao.instrumento.numero}}</small>
                                 </td>
                                 <td>
                                     {% with acao=obrigacao.acoes.first %}
                                     {% if acao %}
-                                    <div class="fw-semibold" style="white-space: normal; line-height: 1.2;">{{ acao.nome }}</div>
-                                    <small class="text-muted">{{ acao.tipo_acao }}</small>
+                                    <div class="fw-semibold" style="white-space: normal; line-height: 1.2;">
+                                        {{acao.nome}}</div>
+                                    <small class="text-muted">{{acao.tipo_acao}}</small>
                                     {% else %}
                                     <small class="text-muted">-</small>
                                     {% endif %}
                                     {% endwith %}
                                 </td>
                                 <td>
-                                    <div class="fw-semibold" style="white-space: normal; line-height: 1.2;">{{ obrigacao.titulo }}</div>
-                                    <small class="text-muted">{{ obrigacao.tipo_obrigacao }}</small>
+                                    <div class="fw-semibold" style="white-space: normal; line-height: 1.2;">
+                                        {{obrigacao.titulo}}</div>
+                                    <small class="text-muted">{{obrigacao.tipo_obrigacao}}</small>
                                 </td>
                                 <td>
                                     {% if obrigacao.data_vencimento %}
                                     <small class="text-muted">
                                         <i class="bi bi-calendar me-1"></i>
-                                        {{ obrigacao.data_vencimento|date:"d/m/Y" }}
+                                        {{obrigacao.data_vencimento|date:"d/m/Y"}}
                                     </small>
                                     {% else %}
                                     <small class="text-muted">-</small>
@@ -147,7 +149,7 @@
                                     {% elif obrigacao.status == 'vencida' %}
                                     <span class="badge bg-danger">Vencida</span>
                                     {% else %}
-                                    <span class="badge bg-secondary">{{ obrigacao.get_status_display }}</span>
+                                    <span class="badge bg-secondary">{{obrigacao.get_status_display}}</span>
                                     {% endif %}
                                 </td>
                             </tr>
@@ -189,20 +191,22 @@
                             {% for acao in acoes_recentes %}
                             <tr>
                                 <td>
-                                    <div class="fw-semibold" style="white-space: normal; line-height: 1.2;">{{ acao.nome }}</div>
-                                    <small class="text-muted">{{ acao.tipo_acao }}</small>
+                                    <div class="fw-semibold" style="white-space: normal; line-height: 1.2;">
+                                        {{acao.nome}}</div>
+                                    <small class="text-muted">{{acao.tipo_acao}}</small>
                                 </td>
                                 <td>
-                                    <small>{{ acao.responsavel.get_full_name }}</small>
+                                    <small>{{acao.responsavel.get_full_name}}</small>
                                 </td>
                                 <td>
-                                    <div class="progress" style="height: 8px;">
+                                    <div class="progress mb-1"
+                                        style="height: 8px; border-radius: 4px; background-color: #e9ecef;">
                                         <div class="progress-bar" role="progressbar"
-                                            style="width: {{ acao.percentual_cumprido }}%"
-                                            aria-valuenow="{{ acao.percentual_cumprido }}" aria-valuemin="0"
+                                            style="width: {{acao.percentual_cumprido}}%; background: linear-gradient(90deg, #0066B3 0%, #004A8F 100%);"
+                                            aria-valuenow="{{acao.percentual_cumprido}}" aria-valuemin="0"
                                             aria-valuemax="100"></div>
                                     </div>
-                                    <small class="text-muted">{{ acao.percentual_cumprido }}%</small>
+                                    <small class="text-muted fw-medium">{{acao.percentual_cumprido}}%</small>
                                 </td>
                                 <td>
                                     {% if acao.status == 'finalizado' %}
@@ -212,7 +216,7 @@
                                     {% elif acao.status == 'atrasado' %}
                                     <span class="badge bg-danger">Atrasado</span>
                                     {% else %}
-                                    <span class="badge bg-secondary">{{ acao.get_status_display }}</span>
+                                    <span class="badge bg-secondary">{{acao.get_status_display}}</span>
                                     {% endif %}
                                 </td>
                             </tr>
@@ -237,7 +241,7 @@
 <script>
     // --- Gráfico de Tarefas por Status ---
     try {
-        const tarefasData = JSON.parse('{{ tarefas_por_status|safe|escapejs }}');
+        const tarefasData = JSON.parse('{{tarefas_por_status|safe|escapejs}}');
         console.log('Dados de tarefas:', tarefasData);
 
         const labelMap = {
@@ -350,7 +354,7 @@
 <script>
     // --- Gráfico de Instrumentos por Tipo ---
     try {
-        const tiposData = JSON.parse('{{ instrumentos_por_tipo|safe|escapejs }}');
+        const tiposData = JSON.parse('{{instrumentos_por_tipo|safe|escapejs}}');
         console.log('Dados de tipos:', tiposData);
 
         const tiposCtx = document.getElementById('tiposChart');

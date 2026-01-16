@@ -1,5 +1,7 @@
 from django.db import models
 from django.conf import settings
+from django.db.models.signals import post_save, post_delete
+from django.dispatch import receiver
 from core.models import TipoAcao
 from instrumentos.models import Instrumento, Obrigacao
 
@@ -120,21 +122,40 @@ class Acao(models.Model):
     def __str__(self):
         return f"{self.nome} - {self.obrigacao.titulo}"
 
-    def verificar_status_automatico(self):
-        """Atualiza o status com base nas datas e percentual"""
+    def atualizar_progresso(self):
+        """Calcula e atualiza o percentual cumprido com base no checklist"""
+        total = self.checklist_itens.count()
+        novo_percentual = 0
+        if total > 0:
+            concluidos = self.checklist_itens.filter(concluido=True).count()
+            novo_percentual = int((concluidos / total) * 100)
+        
+        # Aproveita para verificar o status
         from django.utils import timezone
         hoje = timezone.now().date()
+        novo_status = self.status
+        nova_data_conclusao = self.data_conclusao
         
-        if self.percentual_cumprido >= 100 and self.status != 'finalizado':
-            self.status = 'finalizado'
-            if not self.data_conclusao:
-                self.data_conclusao = hoje
-        elif self.data_fim < hoje and self.status != 'finalizado':
-            self.status = 'atrasado'
-        elif self.data_inicio <= hoje <= self.data_fim and self.status == 'a_iniciar':
-            self.status = 'em_andamento'
+        if novo_percentual >= 100:
+            novo_status = 'finalizado'
+            if not nova_data_conclusao:
+                nova_data_conclusao = hoje
+        elif self.data_fim < hoje and novo_status != 'finalizado':
+            novo_status = 'atrasado'
+        elif novo_status == 'a_iniciar' and novo_percentual > 0:
+            novo_status = 'em_andamento'
+            
+        # Usar update para evitar disparar sinais novamente e garantir persistência direta
+        Acao.objects.filter(pk=self.pk).update(
+            percentual_cumprido=novo_percentual,
+            status=novo_status,
+            data_conclusao=nova_data_conclusao
+        )
         
-        self.save()
+        # Atualizar o objeto em memória também
+        self.percentual_cumprido = novo_percentual
+        self.status = novo_status
+        self.data_conclusao = nova_data_conclusao
 
     def esta_atrasada(self):
         """Verifica se a ação está atrasada"""
@@ -158,3 +179,11 @@ class ChecklistItem(models.Model):
 
     def __str__(self):
         return self.nome
+
+
+@receiver(post_save, sender=ChecklistItem)
+@receiver(post_delete, sender=ChecklistItem)
+def checklist_item_changed(sender, instance, **kwargs):
+    """Sinal para atualizar o progresso da ação quando um item do checklist muda"""
+    if instance.acao:
+        instance.acao.atualizar_progresso()

@@ -25,13 +25,13 @@
         <li class="nav-item" role="presentation">
             <button class="nav-link" id="obrigacoes-tab" data-bs-toggle="tab" data-bs-target="#obrigacoes" type="button">
                 <i class="bi bi-list-check me-2"></i>Obrigações
-                <span class="badge bg-primary ms-1">{% if object %}{{ obrigacoes|length }}{% else %}0{% endif %}</span>
+                <span class="badge bg-primary ms-1">{% if object %}{{obrigacoes|length}}{% else %}0{% endif %}</span>
             </button>
         </li>
         <li class="nav-item" role="presentation">
             <button class="nav-link" id="arquivos-tab" data-bs-toggle="tab" data-bs-target="#arquivos" type="button">
                 <i class="bi bi-paperclip me-2"></i>Arquivos
-                <span class="badge bg-primary ms-1">{% if object %}{{ arquivos|length }}{% else %}0{% endif %}</span>
+                <span class="badge bg-primary ms-1">{% if object %}{{arquivos|length}}{% else %}0{% endif %}</span>
             </button>
         </li>
     </ul>
@@ -49,12 +49,12 @@
                     {% for field in form %}
                         {% if field.errors %}
                             {% for error in field.errors %}
-                                <li><strong>{{ field.label }}:</strong> {{ error }}</li>
+                                <li><strong>{{field.label}}:</strong> {{error}}</li>
                             {% endfor %}
                         {% endif %}
                     {% endfor %}
                     {% for error in form.non_field_errors %}
-                        <li>{{ error }}</li>
+                        <li>{{error}}</li>
                     {% endfor %}
                     </ul>
                     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
@@ -73,11 +73,11 @@
                                 <div class="row">
                                     <div class="col-md-6 mb-3">
                                         <label class="form-label">Número do Instrumento *</label>
-                                        {{ form.numero }}
+                                        {{form.numero}}
                                     </div>
                                     <div class="col-md-6 mb-3">
                                         <label class="form-label">NUP (E-MS)</label>
-                                        {{ form.nup }}
+                                        {{form.nup}}
                                         <small class="text-muted d-block">Número Único de Protocolo do sistema E-MS</small>
                                     </div>
                                 </div>
@@ -85,7 +85,7 @@
                                     <div class="col-md-6 mb-3">
                                         <label class="form-label">Tipo de Instrumento *</label>
                                         <div class="input-group">
-                                            {{ form.tipo_instrumento }}
+                                            {{form.tipo_instrumento}}
                                             <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modalTipoInstrumento">
                                                 <i class="bi bi-plus-circle"></i>
                                             </button>
@@ -94,7 +94,7 @@
                                     <div class="col-md-6 mb-3">
                                         <label class="form-label">Diretoria Responsável *</label>
                                         <div class="input-group">
-                                            {{ form.diretoria }}
+                                            {{form.diretoria}}
                                             <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modalDiretoria">
                                                 <i class="bi bi-plus-circle"></i>
                                             </button>
@@ -103,11 +103,11 @@
                                 </div>
                                 <div class="mb-3">
                                     <label class="form-label">Objeto do Instrumento *</label>
-                                    {{ form.objeto }}
+                                    {{form.objeto}}
                                 </div>
                                 <div class="mb-3">
                                     <label class="form-label">Entidades Vinculadas *</label>
-                                    {{ form.entidades }}
+                                    {{form.entidades}}
                                     <small class="text-muted d-block">Segure Ctrl (ou Cmd) para selecionar múltiplas entidades</small>
                                 </div>
                             </div>
@@ -122,15 +122,15 @@
                                 <div class="row">
                                     <div class="col-md-4 mb-3">
                                         <label class="form-label">Data de Assinatura *</label>
-                                        {{ form.data_assinatura }}
+                                        {{form.data_assinatura}}
                                     </div>
                                     <div class="col-md-4 mb-3">
                                         <label class="form-label">Data de Início *</label>
-                                        {{ form.data_inicio }}
+                                        {{form.data_inicio}}
                                     </div>
                                     <div class="col-md-4 mb-3">
                                         <label class="form-label">Data de Fim *</label>
-                                        {{ form.data_fim }}
+                                        {{form.data_fim}}
                                     </div>
                                 </div>
                             </div>
@@ -145,11 +145,11 @@
                                 <div class="row">
                                     <div class="col-md-6 mb-3">
                                         <label class="form-label">Periodicidade (meses)</label>
-                                        {{ form.periodicidade_revisao_tarifaria }}
+                                        {{form.periodicidade_revisao_tarifaria}}
                                     </div>
                                     <div class="col-md-6 mb-3">
                                         <label class="form-label">Próxima Revisão</label>
-                                        {{ form.data_proxima_revisao }}
+                                        {{form.data_proxima_revisao}}
                                     </div>
                                 </div>
                             </div>
@@ -161,7 +161,7 @@
                                 <h5 class="mb-0"><i class="bi bi-chat-left-text me-2"></i>Observações</h5>
                             </div>
                             <div class="card-body">
-                                {{ form.observacoes }}
+                                {{form.observacoes}}
                             </div>
                         </div>
                     </div>
@@ -175,7 +175,7 @@
                             </div>
                             <div class="card-body">
                                 <label class="form-label">Status do Instrumento *</label>
-                                {{ form.status }}
+                                {{form.status}}
                             </div>
                         </div>
 
@@ -201,7 +201,7 @@
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0"><i class="bi bi-list-check me-2"></i>Obrigações</h5>
                     {% if object %}
-                    <a href="{% url 'obrigacao_create' %}?instrumento={{ object.id }}" class="btn btn-primary btn-sm">
+                    <a href="{% url 'obrigacao_create' %}?instrumento={{object.id}}" class="btn btn-primary btn-sm">
                         <i class="bi bi-plus-circle"></i> Adicionar
                     </a>
                     {% endif %}
@@ -222,10 +222,10 @@
                                 <tbody>
                                     {% for obrigacao in obrigacoes %}
                                     <tr>
-                                        <td>{{ obrigacao.titulo }}</td>
-                                        <td>{{ obrigacao.tipo_obrigacao }}</td>
-                                        <td>{{ obrigacao.data_vencimento|date:"d/m/Y"|default:"-" }}</td>
-                                        <td><span class="badge bg-{{ obrigacao.get_status_color }}">{{ obrigacao.get_status_display }}</span></td>
+                                        <td>{{obrigacao.titulo}}</td>
+                                        <td>{{obrigacao.tipo_obrigacao}}</td>
+                                        <td>{{obrigacao.data_vencimento|date:"d/m/Y"|default:"-"}}</td>
+                                        <td><span class="badge bg-{{obrigacao.get_status_color}}">{{obrigacao.get_status_display}}</span></td>
                                         <td>
                                             <a href="{% url 'obrigacao_update' obrigacao.pk %}" class="btn btn-sm btn-outline-primary">
                                                 <i class="bi bi-pencil"></i>
@@ -294,13 +294,13 @@
                                 <tbody id="listaArquivos">
                                     {% for arquivo in arquivos %}
                                     <tr>
-                                        <td>{{ arquivo.nome_arquivo }}</td>
-                                        <td>{{ arquivo.data_upload|date:"d/m/Y H:i" }}</td>
+                                        <td>{{arquivo.nome_arquivo}}</td>
+                                        <td>{{arquivo.data_upload|date:"d/m/Y H:i"}}</td>
                                         <td>
-                                            <a href="{{ arquivo.arquivo.url }}" class="btn btn-sm btn-outline-primary" target="_blank">
+                                            <a href="{{arquivo.arquivo.url}}" class="btn btn-sm btn-outline-primary" target="_blank">
                                                 <i class="bi bi-download"></i>
                                             </a>
-                                            <button class="btn btn-sm btn-outline-danger" onclick="excluirArquivo({{ arquivo.id }})">
+                                            <button class="btn btn-sm btn-outline-danger" onclick="excluirArquivo({{arquivo.id}})">
                                                 <i class="bi bi-trash"></i>
                                             </button>
                                         </td>
@@ -338,7 +338,7 @@ document.getElementById('formUploadArquivo').addEventListener('submit', function
     const formData = new FormData();
     formData.append('arquivo', document.getElementById('arquivo').files[0]);
     formData.append('nome_arquivo', document.getElementById('nomeArquivo').value);
-    formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+    formData.append('csrfmiddlewaretoken', '{{csrf_token}}');
     
     fetch('{% url "arquivo_upload" object.id %}', {
         method: 'POST',
@@ -359,7 +359,7 @@ function excluirArquivo(id) {
         fetch(`/api/arquivo/${id}/excluir/`, {
             method: 'POST',
             headers: {
-                'X-CSRFToken': '{{ csrf_token }}'
+                'X-CSRFToken': '{{csrf_token}}'
             }
         })
         .then(response => response.json())

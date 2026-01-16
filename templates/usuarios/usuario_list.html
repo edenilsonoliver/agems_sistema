@@ -30,7 +30,7 @@
                         <i class="bi bi-search"></i>
                     </span>
                     <input type="text" name="q" class="form-control" placeholder="Buscar..."
-                        value="{{ request.GET.q }}">
+                        value="{{request.GET.q}}">
                 </div>
             </div>
 
@@ -59,7 +59,7 @@
                     <i class="bi bi-funnel me-2"></i>
                     Filtrar
                 </button>
-                <a href="{{ request.path }}" class="btn btn-outline-secondary">
+                <a href="{{request.path}}" class="btn btn-outline-secondary">
                     <i class="bi bi-x-circle me-2"></i>
                     Limpar
                 </a>
@@ -91,22 +91,21 @@
                         <td>
                             <div class="d-flex align-items-center">
                                 <div class="avatar-circle bg-primary text-white me-2">
-                                    {{ usuario.first_name|first|upper|default:"?" }}{{
-                                    usuario.last_name|first|upper|default:"?" }}
+                                    {{usuario.first_name|first|upper|default:"?"}}{{usuario.last_name|first|upper|default:"?"}}
                                 </div>
                                 <div>
-                                    <strong>{{ usuario.get_full_name|default:usuario.username }}</strong>
+                                    <strong>{{usuario.get_full_name|default:usuario.username}}</strong>
                                 </div>
                             </div>
                         </td>
                         <td>
-                            <code>{{ usuario.username }}</code>
+                            <code>{{usuario.username}}</code>
                         </td>
                         <td>
                             {% if usuario.email %}
-                            <a href="mailto:{{ usuario.email }}" class="text-decoration-none">
+                            <a href="mailto:{{usuario.email}}" class="text-decoration-none">
                                 <i class="bi bi-envelope me-1"></i>
-                                {{ usuario.email }}
+                                {{usuario.email}}
                             </a>
                             {% else %}
                             <span class="text-muted">-</span>
@@ -148,11 +147,11 @@
                         <td>
                             {% if usuario.diretoria %}
                             <span class="badge bg-light text-dark">
-                                {{ usuario.diretoria.sigla }}
+                                {{usuario.diretoria.sigla}}
                             </span>
                             {% elif usuario.subunidade.diretoria %}
                             <span class="badge bg-light text-dark">
-                                {{ usuario.subunidade.diretoria.sigla }}
+                                {{usuario.subunidade.diretoria.sigla}}
                             </span>
                             {% else %}
                             <span class="text-muted">-</span>
@@ -161,7 +160,7 @@
                         <td>
                             {% if usuario.subunidade %}
                             <span class="badge bg-light text-dark">
-                                {{ usuario.subunidade.sigla|default:usuario.subunidade.nome }}
+                                {{usuario.subunidade.sigla|default:usuario.subunidade.nome}}
                             </span>
                             {% else %}
                             <span class="text-muted">-</span>
@@ -228,22 +227,22 @@
                     <a class="page-link" href="?page=1">Primeira</a>
                 </li>
                 <li class="page-item">
-                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Anterior</a>
+                    <a class="page-link" href="?page={{page_obj.previous_page_number}}">Anterior</a>
                 </li>
                 {% endif %}
 
                 <li class="page-item active">
                     <span class="page-link">
-                        Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+                        Página {{page_obj.number}} de {{page_obj.paginator.num_pages}}
                     </span>
                 </li>
 
                 {% if page_obj.has_next %}
                 <li class="page-item">
-                    <a class="page-link" href="?page={{ page_obj.next_page_number }}">Próxima</a>
+                    <a class="page-link" href="?page={{page_obj.next_page_number}}">Próxima</a>
                 </li>
                 <li class="page-item">
-                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">Última</a>
+                    <a class="page-link" href="?page={{page_obj.paginator.num_pages}}">Última</a>
                 </li>
                 {% endif %}
             </ul>

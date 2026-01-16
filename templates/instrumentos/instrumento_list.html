@@ -13,18 +13,18 @@
 {% for instrumento in object_list %}
 <tr>
     <td>
-        <div class="fw-semibold">{{ instrumento.numero }}</div>
-        <small class="text-muted">{{ instrumento.objeto|truncatewords:8 }}</small>
+        <div class="fw-semibold">{{instrumento.numero}}</div>
+        <small class="text-muted">{{instrumento.objeto|truncatewords:8}}</small>
     </td>
     <td>
-        <span class="badge bg-primary">{{ instrumento.tipo_instrumento }}</span>
+        <span class="badge bg-primary">{{instrumento.tipo_instrumento}}</span>
     </td>
-    <td>{{ instrumento.diretoria.sigla }}</td>
+    <td>{{instrumento.diretoria.sigla}}</td>
     <td>
-        <small>{{ instrumento.entidades.count }} entidade(s)</small>
+        <small>{{instrumento.entidades.count}} entidade(s)</small>
     </td>
     <td>
-        <small>{{ instrumento.data_inicio|date:"d/m/Y" }} - {{ instrumento.data_fim|date:"d/m/Y" }}</small>
+        <small>{{instrumento.data_inicio|date:"d/m/Y"}} - {{instrumento.data_fim|date:"d/m/Y"}}</small>
     </td>
     <td>
         {% if instrumento.status == 'vigente' %}
@@ -32,7 +32,7 @@
         {% elif instrumento.status == 'encerrado' %}
             <span class="badge bg-secondary">Encerrado</span>
         {% else %}
-            <span class="badge bg-warning">{{ instrumento.get_status_display }}</span>
+            <span class="badge bg-warning">{{instrumento.get_status_display}}</span>
         {% endif %}
     </td>
     <td>

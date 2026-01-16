@@ -9,11 +9,11 @@
 {% for item in object_list %}
 <tr>
     <td>
-        <div class="fw-semibold">{{ item.nome }}</div>
+        <div class="fw-semibold">{{item.nome}}</div>
     </td>
     <td>
         {% if item.descricao %}
-        <small class="text-muted">{{ item.descricao|truncatewords:15 }}</small>
+        <small class="text-muted">{{item.descricao|truncatewords:15}}</small>
         {% else %}
         <small class="text-muted">-</small>
         {% endif %}

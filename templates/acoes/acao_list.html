@@ -1,6 +1,7 @@
 {% extends 'components/list_view.html' %}
 {% block header_actions %}
-<a href="{% url 'acao_calendario' %}" class="btn btn-outline-primary me-2"><i class="bi bi-calendar3"></i> Ver Calendário</a>
+<a href="{% url 'acao_calendario' %}" class="btn btn-outline-primary me-2"><i class="bi bi-calendar3"></i> Ver
+    Calendário</a>
 <a href="{% url 'acao_kanban' %}" class="btn btn-outline-success"><i class="bi bi-kanban"></i> Ver Kanban</a>
 {% endblock %}
 {% block extra_filters %}
@@ -8,7 +9,7 @@
     <select name="instrumento" id="instrumento" class="form-select" style="height: 40px;">
         <option value=""> Filtrar por Instrumento...</option>
         {% for inst in instrumentos %}
-        <option value="{{ inst.id }}" {% if instrumento_selecionado == inst.id %}selected{% endif %}>{{ inst }}</option>
+        <option value="{{inst.id}}" {% if instrumento_selecionado == inst.id %}selected{% endif %}>{{inst}}</option>
         {% endfor %}
     </select>
 </div>
@@ -16,7 +17,8 @@
     <select name="obrigacao" id="obrigacao" class="form-select" style="height: 40px;">
         <option value=""> Filtrar por Obrigação...</option>
         {% for obrigacao in obrigacoes %}
-        <option value="{{ obrigacao.id }}" {% if obrigacao_selecionada == obrigacao.id %}selected{% endif %}>{{ obrigacao.titulo }}</option>
+        <option value="{{obrigacao.id}}" {% if obrigacao_selecionada == obrigacao.id %}selected{% endif %}>
+            {{obrigacao.titulo}}</option>
         {% endfor %}
     </select>
 </div>
@@ -45,22 +47,30 @@
 </script>
 {% endblock %}
 {% block table_headers %}
-<th>Nome da Ação</th><th>Obrigação</th><th>Responsável</th><th>Período</th><th>Progresso</th><th>Status</th>
+<th>Nome da Ação</th>
+<th>Obrigação</th>
+<th>Responsável</th>
+<th>Período</th>
+<th>Progresso</th>
+<th>Status</th>
 {% endblock %}
 {% block table_rows %}
 {% for acao in object_list %}
 <tr>
     <td>
-        <div class="fw-semibold toggle-checklist" data-acao="{{ acao.id }}" style="cursor:pointer;">{{ acao.nome }}</div>
-        <small class="text-muted"><i class="bi bi-flag me-1"></i>{{ acao.get_prioridade_display }}</small>
-        <div class="checklist collapse mt-2" id="checklist-{{ acao.id }}">
+        <div class="fw-semibold toggle-checklist" data-acao="{{acao.id}}" style="cursor:pointer;">{{acao.nome}}
+        </div>
+        <small class="text-muted"><i class="bi bi-flag me-1"></i>{{acao.get_prioridade_display}}</small>
+        <div class="checklist collapse mt-2" id="checklist-{{acao.id}}">
             <div class="card card-body py-2 bg-light border-0 shadow-none">
                 <h6 class="small fw-bold mb-2">Checklist de Tarefas:</h6>
                 {% if acao.checklist_itens.exists %}
                 {% for item in acao.checklist_itens.all %}
                 <div class="d-flex align-items-center mb-1">
-                    <input type="checkbox" {% if item.concluido %}checked{% endif %} disabled class="form-check-input form-check-input-sm me-2">
-                    <small class="{% if item.concluido %}text-decoration-line-through text-muted{% endif %}">{{ item.nome }}</small>
+                    <input type="checkbox" {% if item.concluido %}checked{% endif %} disabled
+                        class="form-check-input form-check-input-sm me-2">
+                    <small
+                        class="{% if item.concluido %}text-decoration-line-through text-muted{% endif %}">{{item.nome}}</small>
                 </div>
                 {% endfor %}
                 {% else %}
@@ -69,24 +79,35 @@
             </div>
         </div>
     </td>
-    <td><small>{{ acao.obrigacao.titulo }}</small></td>
-    <td><small>{{ acao.responsavel.get_full_name|default:acao.responsavel.username }}</small></td>
-    <td><small><i class="bi bi-calendar me-1"></i>{{ acao.data_inicio|date:"d/m/Y" }} - {{ acao.data_fim|date:"d/m/Y" }}</small></td>
+    <td><small>{{acao.obrigacao.titulo}}</small></td>
+    <td><small>{{acao.responsavel.get_full_name|default:acao.responsavel.username}}</small></td>
+    <td><small><i class="bi bi-calendar me-1"></i>{{acao.data_inicio|date:"d/m/Y"}} -
+            {{acao.data_fim|date:"d/m/Y"}}</small></td>
     <td>
-        <div class="progress" style="height: 12px; border-radius: 6px;">
-            <div class="progress-bar" role="progressbar" style="width: {{ acao.percentual_cumprido }}%">{{ acao.percentual_cumprido }}%</div>
+        <div class="progress mb-1" style="height: 8px; border-radius: 4px; background-color: #e9ecef;">
+            <div class="progress-bar" role="progressbar"
+                style="width: {{acao.percentual_cumprido}}%; background: linear-gradient(90deg, #0066B3 0%, #004A8F 100%);"
+                aria-valuenow="{{acao.percentual_cumprido}}" aria-valuemin="0" aria-valuemax="100">
+            </div>
         </div>
+        <small class="text-muted fw-medium">{{acao.percentual_cumprido}}%</small>
     </td>
     <td>
-        {% if acao.status == 'finalizado' %}<span class="badge rounded-pill bg-success-subtle text-success border border-success">Finalizado</span>
-        {% elif acao.status == 'em_andamento' %}<span class="badge rounded-pill bg-primary-subtle text-primary border border-primary">Em Andamento</span>
-        {% elif acao.status == 'atrasado' %}<span class="badge rounded-pill bg-danger-subtle text-danger border border-danger">Atrasado</span>
-        {% else %}<span class="badge rounded-pill bg-secondary-subtle text-secondary border border-secondary">{{ acao.get_status_display }}</span>{% endif %}
+        {% if acao.status == 'finalizado' %}<span
+            class="badge rounded-pill bg-success-subtle text-success border border-success">Finalizado</span>
+        {% elif acao.status == 'em_andamento' %}<span
+            class="badge rounded-pill bg-primary-subtle text-primary border border-primary">Em Andamento</span>
+        {% elif acao.status == 'atrasado' %}<span
+            class="badge rounded-pill bg-danger-subtle text-danger border border-danger">Atrasado</span>
+        {% else %}<span
+            class="badge rounded-pill bg-secondary-subtle text-secondary border border-secondary">{{acao.get_status_display}}</span>{% endif %}
     </td>
     <td>
         <div class="btn-group btn-group-sm">
-            <a href="{% url 'acao_edit' acao.pk %}" class="btn btn-outline-primary" title="Editar"><i class="bi bi-pencil"></i></a>
-            <a href="{% url 'acao_delete' acao.pk %}" class="btn btn-outline-danger" title="Excluir"><i class="bi bi-trash"></i></a>
+            <a href="{% url 'acao_edit' acao.pk %}" class="btn btn-outline-primary" title="Editar"><i
+                    class="bi bi-pencil"></i></a>
+            <a href="{% url 'acao_delete' acao.pk %}" class="btn btn-outline-danger" title="Excluir"><i
+                    class="bi bi-trash"></i></a>
         </div>
     </td>
 </tr>

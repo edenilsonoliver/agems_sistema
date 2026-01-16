@@ -551,11 +551,11 @@
                 <div class="user-profile dropdown">
                     <div data-bs-toggle="dropdown">
                         <div class="user-avatar">
-                            {{ user.first_name|first|upper }}{{ user.last_name|first|upper }}
+                            {{user.first_name|first|upper}}{{user.last_name|first|upper}}
                         </div>
                         <div class="d-none d-md-block">
-                            <div class="fw-semibold">{{ user.get_full_name }}</div>
-                            <div class="small text-muted">{{ user.get_perfil_display }}</div>
+                            <div class="fw-semibold">{{user.get_full_name}}</div>
+                            <div class="small text-muted">{{user.get_perfil_display}}</div>
                         </div>
                     </div>
                     <ul class="dropdown-menu dropdown-menu-end">

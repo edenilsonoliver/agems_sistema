@@ -14,20 +14,20 @@
 {% for obrigacao in object_list %}
 <tr>
     <td>
-        <div class="fw-semibold">{{ obrigacao.titulo }}</div>
-        <small class="text-muted">{{ obrigacao.descricao|truncatewords:10 }}</small>
+        <div class="fw-semibold">{{obrigacao.titulo}}</div>
+        <small class="text-muted">{{obrigacao.descricao|truncatewords:10}}</small>
     </td>
     <td>
         <small class="text-primary">
             <i class="bi bi-file-earmark-text me-1"></i>
-            {{ obrigacao.instrumento.numero }}
+            {{obrigacao.instrumento.numero}}
         </small>
     </td>
-    <td><span class="badge bg-info">{{ obrigacao.tipo_obrigacao }}</span></td>
-    <td><small class="text-muted">{{ obrigacao.clausula_referencia|default:"—" }}</small></td>
+    <td><span class="badge bg-info">{{obrigacao.tipo_obrigacao}}</span></td>
+    <td><small class="text-muted">{{obrigacao.clausula_referencia|default:"—"}}</small></td>
     <td>
         {% if obrigacao.data_vencimento %}
-            <small>{{ obrigacao.data_vencimento|date:"d/m/Y" }}</small>
+            <small>{{obrigacao.data_vencimento|date:"d/m/Y"}}</small>
         {% else %}
             <small class="text-muted">—</small>
         {% endif %}

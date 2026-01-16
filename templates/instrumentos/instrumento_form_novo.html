@@ -26,19 +26,19 @@
                 {% for field in form %}
                 {% if field.errors %}
                 {% for error in field.errors %}
-                <li><strong>{{ field.label }}:</strong> {{ error }}</li>
+                <li><strong>{{field.label}}:</strong> {{error}}</li>
                 {% endfor %}
                 {% endif %}
                 {% endfor %}
                 {% for error in form.non_field_errors %}
-                <li>{{ error }}</li>
+                <li>{{error}}</li>
                 {% endfor %}
                 {% if formset %}
                 {% for form_obrig in formset %}
                 {% for field in form_obrig %}
                 {% if field.errors %}
                 {% for error in field.errors %}
-                <li><strong>Obrigação {{ forloop.parentloop.counter }} - {{ field.label }}:</strong> {{ error }}</li>
+                <li><strong>Obrigação {{forloop.parentloop.counter}} - {{field.label}}:</strong> {{error}}</li>
                 {% endfor %}
                 {% endif %}
                 {% endfor %}
@@ -68,7 +68,7 @@
                 <button class="nav-link" id="arquivos-tab" data-bs-toggle="tab" data-bs-target="#arquivos"
                     type="button">
                     <i class="bi bi-paperclip me-2"></i>Arquivos
-                    <span class="badge bg-primary ms-1">{% if object %}{{ arquivos|length }}{% else %}0{% endif %}</span>
+                    <span class="badge bg-primary ms-1">{% if object %}{{arquivos|length}}{% else %}0{% endif %}</span>
                 </button>
             </li>
         </ul>
@@ -77,31 +77,40 @@
             <!-- Aba Dados Gerais -->
             <div class="tab-pane fade show active" id="dados" role="tabpanel">
                 <div class="row">
-                    <!-- Coluna Principal -->
-                    <div class="col-lg-8">
+                    <!-- Coluna Única (Para largura uniforme) -->
+                    <div class="col-12">
                         <!-- Informações Básicas -->
-                        <div class="card mb-4">
+                        <div class="card mb-4 border-0 shadow-sm">
                             <div class="card-header bg-primary text-white">
                                 <h5 class="mb-0"><i class="bi bi-info-circle me-2"></i>Informações Básicas</h5>
                             </div>
-                            <div class="card-body">
+                            <div class="card-body p-4">
+                                <p class="small text-muted mb-4">
+                                    <i class="bi bi-info-circle me-1"></i>
+                                    Preencha todos os campos obrigatórios marcados com <span
+                                        class="text-danger">*</span>
+                                </p>
+
                                 <div class="row">
-                                    <div class="col-md-6 mb-3">
+                                    <div class="col-md-4 mb-3">
                                         <label class="form-label">Número do Instrumento *</label>
-                                        {{ form.numero }}
+                                        {{form.numero}}
                                     </div>
-                                    <div class="col-md-6 mb-3">
+                                    <div class="col-md-4 mb-3">
                                         <label class="form-label">NUP (E-MS)</label>
-                                        {{ form.nup }}
-                                        <small class="text-muted d-block">Número Único de Protocolo do sistema
-                                            E-MS</small>
+                                        {{form.nup}}
+                                        <small class="text-muted d-block">Protocolo do sistema E-MS</small>
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label">Status do Instrumento *</label>
+                                        {{form.status}}
                                     </div>
                                 </div>
                                 <div class="row">
                                     <div class="col-md-6 mb-3">
                                         <label class="form-label">Tipo de Instrumento *</label>
                                         <div class="input-group">
-                                            {{ form.tipo_instrumento }}
+                                            {{form.tipo_instrumento}}
                                             <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal"
                                                 data-bs-target="#modalTipoInstrumento">
                                                 <i class="bi bi-plus-circle"></i>
@@ -111,7 +120,7 @@
                                     <div class="col-md-6 mb-3">
                                         <label class="form-label">Diretoria Responsável *</label>
                                         <div class="input-group">
-                                            {{ form.diretoria }}
+                                            {{form.diretoria}}
                                             <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal"
                                                 data-bs-target="#modalDiretoria">
                                                 <i class="bi bi-plus-circle"></i>
@@ -121,11 +130,11 @@
                                 </div>
                                 <div class="mb-3">
                                     <label class="form-label">Objeto do Instrumento *</label>
-                                    {{ form.objeto }}
+                                    {{form.objeto}}
                                 </div>
                                 <div class="mb-3">
                                     <label class="form-label">Entidades Vinculadas *</label>
-                                    {{ form.entidades }}
+                                    {{form.entidades}}
                                     <small class="text-muted d-block">Segure Ctrl (ou Cmd) para selecionar múltiplas
                                         entidades</small>
                                 </div>
@@ -133,68 +142,54 @@
                         </div>
 
                         <!-- Vigência -->
-                        <div class="card mb-4">
+                        <div class="card mb-4 border-0 shadow-sm">
                             <div class="card-header bg-success text-white">
                                 <h5 class="mb-0"><i class="bi bi-calendar-range me-2"></i>Vigência</h5>
                             </div>
-                            <div class="card-body">
+                            <div class="card-body p-4">
                                 <div class="row">
                                     <div class="col-md-4 mb-3">
                                         <label class="form-label">Data de Assinatura *</label>
-                                        {{ form.data_assinatura }}
+                                        {{form.data_assinatura}}
                                     </div>
                                     <div class="col-md-4 mb-3">
                                         <label class="form-label">Data de Início *</label>
-                                        {{ form.data_inicio }}
+                                        {{form.data_inicio}}
                                     </div>
                                     <div class="col-md-4 mb-3">
                                         <label class="form-label">Data de Fim *</label>
-                                        {{ form.data_fim }}
+                                        {{form.data_fim}}
                                     </div>
                                 </div>
                             </div>
                         </div>
 
                         <!-- Revisão Tarifária -->
-                        <div class="card mb-4">
+                        <div class="card mb-4 border-0 shadow-sm">
                             <div class="card-header bg-warning text-dark">
                                 <h5 class="mb-0"><i class="bi bi-cash-coin me-2"></i>Revisão Tarifária (Opcional)</h5>
                             </div>
-                            <div class="card-body">
+                            <div class="card-body p-4">
                                 <div class="row">
                                     <div class="col-md-6 mb-3">
                                         <label class="form-label">Periodicidade (meses)</label>
-                                        {{ form.periodicidade_revisao_tarifaria }}
+                                        {{form.periodicidade_revisao_tarifaria}}
                                     </div>
                                     <div class="col-md-6 mb-3">
                                         <label class="form-label">Próxima Revisão</label>
-                                        {{ form.data_proxima_revisao }}
+                                        {{form.data_proxima_revisao}}
                                     </div>
                                 </div>
                             </div>
                         </div>
 
                         <!-- Observações -->
-                        <div class="card mb-4">
+                        <div class="card mb-4 border-0 shadow-sm">
                             <div class="card-header">
                                 <h5 class="mb-0"><i class="bi bi-chat-left-text me-2"></i>Observações</h5>
                             </div>
-                            <div class="card-body">
-                                {{ form.observacoes }}
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Coluna Lateral -->
-                    <div class="col-lg-4">
-                        <!-- Status -->
-                        <div class="card mb-4">
-                            <div class="card-header">
-                                <h5 class="mb-0"><i class="bi bi-info-circle me-2"></i>Status</h5>
-                            </div>
-                            <div class="card-body">
-                                <label class="form-label">Status do Instrumento *</label>
-                                {{ form.status }}
+                            <div class="card-body p-4">
+                                {{form.observacoes}}
                             </div>
                         </div>
                     </div>
@@ -203,65 +198,65 @@
 
             <!-- Aba Obrigações -->
             <div class="tab-pane fade" id="obrigacoes" role="tabpanel">
-                <div class="card">
+                <div class="card border-0 shadow-sm">
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <h5 class="mb-0"><i class="bi bi-list-check me-2"></i>Obrigações do Instrumento</h5>
                         <button type="button" class="btn btn-primary btn-sm" onclick="adicionarObrigacao()">
                             <i class="bi bi-plus-circle"></i> Adicionar Obrigação
                         </button>
                     </div>
-                    <div class="card-body">
-                        {{ formset.management_form }}
+                    <div class="card-body p-4">
+                        {{formset.management_form}}
 
                         <div id="obrigacoes-container">
                             {% for form_obrig in formset %}
-                            <div class="obrigacao-form card mb-3" data-form-idx="{{ forloop.counter0 }}">
+                            <div class="obrigacao-form card mb-3" data-form-idx="{{forloop.counter0}}">
                                 <div class="card-header bg-light d-flex justify-content-between align-items-center">
-                                    <h6 class="mb-0">Obrigação #<span class="obrig-number">{{ forloop.counter }}</span>
+                                    <h6 class="mb-0">Obrigação #<span class="obrig-number">{{forloop.counter}}</span>
                                     </h6>
                                     <button type="button" class="btn btn-sm btn-outline-danger"
                                         onclick="removerObrigacao(this)">
                                         <i class="bi bi-trash"></i> Remover
                                     </button>
                                 </div>
-                                <div class="card-body">
-                                    {{ form_obrig.id }}
-                                    {{ form_obrig.DELETE }}
+                                <div class="card-body p-4">
+                                    {{form_obrig.id}}
+                                    {{form_obrig.DELETE}}
 
                                     <div class="row">
                                         <div class="col-md-8 mb-3">
                                             <label class="form-label">Título *</label>
-                                            {{ form_obrig.titulo }}
+                                            {{form_obrig.titulo}}
                                         </div>
                                         <div class="col-md-4 mb-3">
                                             <label class="form-label">Tipo *</label>
-                                            {{ form_obrig.tipo_obrigacao }}
+                                            {{form_obrig.tipo_obrigacao}}
                                         </div>
                                     </div>
 
                                     <div class="mb-3">
                                         <label class="form-label">Descrição *</label>
-                                        {{ form_obrig.descricao }}
+                                        {{form_obrig.descricao}}
                                     </div>
 
                                     <div class="row">
                                         <div class="col-md-4 mb-3">
                                             <label class="form-label">Cláusula</label>
-                                            {{ form_obrig.clausula_referencia }}
+                                            {{form_obrig.clausula_referencia}}
                                         </div>
                                         <div class="col-md-4 mb-3">
                                             <label class="form-label">Vencimento</label>
-                                            {{ form_obrig.data_vencimento }}
+                                            {{form_obrig.data_vencimento}}
                                         </div>
                                         <div class="col-md-4 mb-3">
                                             <label class="form-label">Status *</label>
-                                            {{ form_obrig.status }}
+                                            {{form_obrig.status}}
                                         </div>
                                     </div>
 
                                     <div class="form-check">
-                                        {{ form_obrig.recorrente }}
-                                        <label class="form-check-label" for="{{ form_obrig.recorrente.id_for_label }}">
+                                        {{form_obrig.recorrente}}
+                                        <label class="form-check-label" for="{{form_obrig.recorrente.id_for_label}}">
                                             Obrigação Recorrente
                                         </label>
                                     </div>
@@ -281,11 +276,11 @@
 
             <!-- Aba Arquivos -->
             <div class="tab-pane fade" id="arquivos" role="tabpanel">
-                <div class="card">
+                <div class="card border-0 shadow-sm">
                     <div class="card-header">
                         <h5 class="mb-0"><i class="bi bi-paperclip me-2"></i>Arquivos</h5>
                     </div>
-                    <div class="card-body">
+                    <div class="card-body p-4">
                         {% if object %}
                         <div class="mb-4">
                             <h6>Adicionar Arquivo</h6>
@@ -320,15 +315,15 @@
                             <tbody>
                                 {% for arquivo in arquivos %}
                                 <tr>
-                                    <td>{{ arquivo.nome_arquivo }}</td>
-                                    <td>{{ arquivo.data_upload|date:"d/m/Y H:i" }}</td>
+                                    <td>{{arquivo.nome_arquivo}}</td>
+                                    <td>{{arquivo.data_upload|date:"d/m/Y H:i"}}</td>
                                     <td>
-                                        <a href="{{ arquivo.arquivo.url }}" class="btn btn-sm btn-outline-primary"
+                                        <a href="{{arquivo.arquivo.url}}" class="btn btn-sm btn-outline-primary"
                                             target="_blank">
                                             <i class="bi bi-download"></i>
                                         </a>
                                         <button class="btn btn-sm btn-outline-danger"
-                                            onclick="excluirArquivo({{ arquivo.id }})">
+                                            onclick="excluirArquivo({{arquivo.id}})">
                                             <i class="bi bi-trash"></i>
                                         </button>
                                     </td>
@@ -374,11 +369,11 @@
 
 <!-- Template vazio para nova obrigação -->
 <div id="empty-form-template" style="display: none;">
-    {{ formset.empty_form }}
+    {{formset.empty_form}}
 </div>
 
 <script>
-    let formIdx = {{ formset.total_form_count }};
+    let formIdx = {{formset.total_form_count}};
 
     function atualizarContador() {
         const count = document.querySelectorAll('.obrigacao-form:not([style*="display: none"])').length;
@@ -416,7 +411,7 @@
                 <i class="bi bi-trash"></i> Remover
             </button>
         </div>
-        <div class="card-body">
+        <div class="card-body p-4">
             ${newForm}
         </div>
     `;
@@ -435,21 +430,13 @@
         const deleteInput = formDiv.querySelector('input[name$="-DELETE"]');
 
         if (deleteInput) {
-            // 🔹 Marca o campo DELETE como "checked" e "on"
             deleteInput.checked = true;
             deleteInput.value = 'on';
-
-            // 🔹 Esconde o bloco da tela
             formDiv.style.display = 'none';
-
-            console.log(`🗑️ Obrigação marcada para exclusão: ${deleteInput.name}`);
         } else {
-            // 🔹 Se for uma obrigação nova, remove completamente do DOM
             formDiv.remove();
-            console.log('🆕 Obrigação removida antes de ser salva.');
         }
 
-        // Atualiza contador visual
         atualizarContador();
     }
 
@@ -466,7 +453,7 @@
         const formData = new FormData();
         formData.append('arquivo', document.getElementById('arquivo').files[0]);
         formData.append('nome_arquivo', document.getElementById('nomeArquivo').value);
-        formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+        formData.append('csrfmiddlewaretoken', '{{csrf_token}}');
 
         fetch('{% url "arquivo_upload" object.id %}', {
             method: 'POST',
@@ -487,7 +474,7 @@
             fetch(`/api/arquivo/${id}/excluir/`, {
                 method: 'POST',
                 headers: {
-                    'X-CSRFToken': '{{ csrf_token }}'
+                    'X-CSRFToken': '{{csrf_token}}'
                 }
             })
                 .then(response => response.json())
@@ -507,11 +494,8 @@
 {% block extra_js %}
 <script>
     document.addEventListener('DOMContentLoaded', function () {
-        console.log('✅ SCRIPT DE DATAS INICIADO');
-
         // === Corrige datas ===
         const inputs = document.querySelectorAll('input[type="date"]');
-        console.log('Campos de data detectados:', inputs.length);
         inputs.forEach(function (input) {
             const val = input.getAttribute('value') || input.value;
             if (val && val.includes('/')) {
@@ -521,18 +505,9 @@
                     const novoValor = `${ano}-${mes.padStart(2, '0')}-${dia.padStart(2, '0')}`;
                     input.value = novoValor;
                     input.setAttribute('value', novoValor);
-                    console.log(`✔️ Corrigido: ${val} → ${novoValor}`);
                 }
             }
         });
-
-        // === Garante envio do formulário ===
-        const form = document.getElementById('formInstrumento');
-        if (form) {
-            form.addEventListener('submit', function () {
-                console.log('🚀 Enviando formulário Instrumento...');
-            });
-        }
 
         // === Corrige o escopo da função removerObrigacao ===
         window.removerObrigacao = function (btn) {
@@ -543,18 +518,14 @@
                 deleteInput.checked = true;
                 deleteInput.value = 'on';
                 formDiv.style.display = 'none';
-                console.log(`🗑️ Obrigação marcada para exclusão: ${deleteInput.name}`);
             } else {
                 formDiv.remove();
-                console.log('🆕 Obrigação removida antes de ser salva.');
             }
 
             if (typeof atualizarContador === 'function') {
                 atualizarContador();
             }
         };
-
-        console.log('✅ Função removerObrigacao registrada no escopo global.');
     });
 </script>
 {% endblock %}

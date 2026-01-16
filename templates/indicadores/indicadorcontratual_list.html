@@ -12,12 +12,12 @@
 {% for indicador in object_list %}
 <tr>
     <td>
-        <div class="fw-semibold">{{ indicador.nome }}</div>
-        <small class="text-muted">{{ indicador.descricao|truncatewords:10 }}</small>
+        <div class="fw-semibold">{{indicador.nome}}</div>
+        <small class="text-muted">{{indicador.descricao|truncatewords:10}}</small>
     </td>
-    <td><span class="badge bg-info">{{ indicador.get_tipo_display }}</span></td>
-    <td>{{ indicador.unidade_medida }}</td>
-    <td><span class="badge bg-secondary">{{ indicador.get_periodicidade_display }}</span></td>
+    <td><span class="badge bg-info">{{indicador.get_tipo_display}}</span></td>
+    <td>{{indicador.unidade_medida}}</td>
+    <td><span class="badge bg-secondary">{{indicador.get_periodicidade_display}}</span></td>
     <td>
         {% if indicador.ativo %}
             <span class="badge bg-success">Ativo</span>

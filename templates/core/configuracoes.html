@@ -35,11 +35,11 @@
                 <div class="row text-center">
                     <div class="col-6">
                         <div class="text-muted small">Total</div>
-                        <div class="h4 mb-0">{{ total_usuarios|default:0 }}</div>
+                        <div class="h4 mb-0">{{total_usuarios|default:0}}</div>
                     </div>
                     <div class="col-6">
                         <div class="text-muted small">Ativos</div>
-                        <div class="h4 mb-0 text-success">{{ usuarios_ativos|default:0 }}</div>
+                        <div class="h4 mb-0 text-success">{{usuarios_ativos|default:0}}</div>
                     </div>
                 </div>
             </div>
@@ -60,7 +60,7 @@
                     {% for dir in diretorias %}
                     <div class="list-group-item d-flex justify-content-between align-items-center">
                         <div>
-                            <strong>{{ dir.sigla }}</strong> - {{ dir.nome }}
+                            <strong>{{dir.sigla}}</strong> - {{dir.nome}}
                         </div>
                         <div class="btn-group btn-group-sm">
                             <a href="{% url 'diretoria_edit' dir.pk %}" class="btn btn-outline-primary">
@@ -92,7 +92,7 @@
                 <div class="list-group list-group-flush">
                     {% for tipo in tipos_entidade %}
                     <div class="list-group-item d-flex justify-content-between align-items-center">
-                        {{ tipo.nome }}
+                        {{tipo.nome}}
                         <a href="{% url 'tipoentidade_edit' tipo.pk %}" class="btn btn-sm btn-outline-info">
                             <i class="bi bi-pencil"></i>
                         </a>
@@ -121,7 +121,7 @@
                 <div class="list-group list-group-flush">
                     {% for tipo in tipos_servico %}
                     <div class="list-group-item d-flex justify-content-between align-items-center">
-                        {{ tipo.nome }}
+                        {{tipo.nome}}
                         <a href="{% url 'tiposervico_edit' tipo.pk %}" class="btn btn-sm btn-outline-secondary">
                             <i class="bi bi-pencil"></i>
                         </a>
@@ -150,7 +150,7 @@
                 <div class="list-group list-group-flush">
                     {% for tipo in tipos_instrumento %}
                     <div class="list-group-item d-flex justify-content-between align-items-center">
-                        {{ tipo.nome }}
+                        {{tipo.nome}}
                         <a href="{% url 'tipoinstrumento_edit' tipo.pk %}" class="btn btn-sm btn-outline-success">
                             <i class="bi bi-pencil"></i>
                         </a>
@@ -179,7 +179,7 @@
                 <div class="list-group list-group-flush">
                     {% for tipo in tipos_obrigacao %}
                     <div class="list-group-item d-flex justify-content-between align-items-center">
-                        {{ tipo.nome }}
+                        {{tipo.nome}}
                         <a href="{% url 'tipoobrigacao_edit' tipo.pk %}" class="btn btn-sm btn-outline-warning">
                             <i class="bi bi-pencil"></i>
                         </a>
@@ -208,7 +208,7 @@
                 <div class="list-group list-group-flush">
                     {% for tipo in tipos_acao %}
                     <div class="list-group-item d-flex justify-content-between align-items-center">
-                        {{ tipo.nome }}
+                        {{tipo.nome}}
                         <a href="{% url 'tipoacao_edit' tipo.pk %}" class="btn btn-sm btn-outline-danger">
                             <i class="bi bi-pencil"></i>
                         </a>

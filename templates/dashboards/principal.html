@@ -8,7 +8,7 @@
     <div class="btn-toolbar mb-2 mb-md-0">
         <div class="btn-group me-2">
             <button type="button" class="btn btn-sm btn-outline-secondary">
-                <i class="bi bi-calendar"></i> Hoje: {{ "now"|date:"d/m/Y" }}
+                <i class="bi bi-calendar"></i> Hoje: {{"now"|date:"d/m/Y"}}
             </button>
         </div>
     </div>
@@ -22,7 +22,7 @@
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
                         <h6 class="text-muted mb-2">Contratos Vigentes</h6>
-                        <h2 class="mb-0">{{ total_contratos }}</h2>
+                        <h2 class="mb-0">{{total_contratos}}</h2>
                     </div>
                     <div class="text-primary">
                         <i class="bi bi-file-earmark-text" style="font-size: 2.5rem;"></i>
@@ -38,7 +38,7 @@
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
                         <h6 class="text-muted mb-2">Concessionárias Ativas</h6>
-                        <h2 class="mb-0">{{ total_concessionarias }}</h2>
+                        <h2 class="mb-0">{{total_concessionarias}}</h2>
                     </div>
                     <div class="text-success">
                         <i class="bi bi-building" style="font-size: 2.5rem;"></i>
@@ -54,7 +54,7 @@
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
                         <h6 class="text-muted mb-2">Indicadores Ativos</h6>
-                        <h2 class="mb-0">{{ total_indicadores }}</h2>
+                        <h2 class="mb-0">{{total_indicadores}}</h2>
                     </div>
                     <div class="text-info">
                         <i class="bi bi-graph-up" style="font-size: 2.5rem;"></i>
@@ -70,7 +70,7 @@
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
                         <h6 class="text-muted mb-2">Obrigações Vencidas</h6>
-                        <h2 class="mb-0 text-danger">{{ obrigacoes_vencidas }}</h2>
+                        <h2 class="mb-0 text-danger">{{obrigacoes_vencidas}}</h2>
                     </div>
                     <div class="text-danger">
                         <i class="bi bi-exclamation-triangle" style="font-size: 2.5rem;"></i>
@@ -102,9 +102,9 @@
                         <tbody>
                             {% for obrigacao in obrigacoes_pendentes %}
                             <tr>
-                                <td>{{ obrigacao.contrato.numero }}</td>
-                                <td><span class="badge bg-secondary">{{ obrigacao.get_tipo_display }}</span></td>
-                                <td>{{ obrigacao.data_vencimento|date:"d/m/Y" }}</td>
+                                <td>{{obrigacao.contrato.numero}}</td>
+                                <td><span class="badge bg-secondary">{{obrigacao.get_tipo_display}}</span></td>
+                                <td>{{obrigacao.data_vencimento|date:"d/m/Y"}}</td>
                             </tr>
                             {% endfor %}
                         </tbody>
@@ -137,9 +137,9 @@
                         <tbody>
                             {% for contrato in contratos_vencimento %}
                             <tr>
-                                <td>{{ contrato.numero }}</td>
-                                <td>{{ contrato.concessionaria.razao_social|truncatewords:3 }}</td>
-                                <td>{{ contrato.data_fim|date:"d/m/Y" }}</td>
+                                <td>{{contrato.numero}}</td>
+                                <td>{{contrato.concessionaria.razao_social|truncatewords:3}}</td>
+                                <td>{{contrato.data_fim|date:"d/m/Y"}}</td>
                             </tr>
                             {% endfor %}
                         </tbody>
@@ -178,18 +178,18 @@
                         <tbody>
                             {% for valor in indicadores_recentes %}
                             <tr>
-                                <td>{{ valor.indicador.nome }}</td>
-                                <td>{{ valor.contrato.numero }}</td>
-                                <td>{{ valor.periodo_referencia|date:"m/Y" }}</td>
-                                <td>{{ valor.valor }} {{ valor.indicador.unidade_medida }}</td>
+                                <td>{{valor.indicador.nome}}</td>
+                                <td>{{valor.contrato.numero}}</td>
+                                <td>{{valor.periodo_referencia|date:"m/Y"}}</td>
+                                <td>{{valor.valor}} {{valor.indicador.unidade_medida}}</td>
                                 <td>
                                     {% if valor.valor_meta %}
-                                        {{ valor.valor_meta }} {{ valor.indicador.unidade_medida }}
+                                        {{valor.valor_meta}} {{valor.indicador.unidade_medida}}
                                     {% else %}
                                         -
                                     {% endif %}
                                 </td>
-                                <td>{{ valor.data_coleta|date:"d/m/Y H:i" }}</td>
+                                <td>{{valor.data_coleta|date:"d/m/Y H:i"}}</td>
                             </tr>
                             {% endfor %}
                         </tbody>

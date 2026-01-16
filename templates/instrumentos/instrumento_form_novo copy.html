@@ -25,19 +25,19 @@
             {% for field in form %}
                 {% if field.errors %}
                     {% for error in field.errors %}
-                        <li><strong>{{ field.label }}:</strong> {{ error }}</li>
+                        <li><strong>{{field.label}}:</strong> {{error}}</li>
                     {% endfor %}
                 {% endif %}
             {% endfor %}
             {% for error in form.non_field_errors %}
-                <li>{{ error }}</li>
+                <li>{{error}}</li>
             {% endfor %}
             {% if formset %}
                 {% for form_obrig in formset %}
                     {% for field in form_obrig %}
                         {% if field.errors %}
                             {% for error in field.errors %}
-                                <li><strong>Obrigação {{ forloop.parentloop.counter }} - {{ field.label }}:</strong> {{ error }}</li>
+                                <li><strong>Obrigação {{forloop.parentloop.counter}} - {{field.label}}:</strong> {{error}}</li>
                             {% endfor %}
                         {% endif %}
                     {% endfor %}
@@ -64,7 +64,7 @@
             <li class="nav-item" role="presentation">
                 <button class="nav-link" id="arquivos-tab" data-bs-toggle="tab" data-bs-target="#arquivos" type="button">
                     <i class="bi bi-paperclip me-2"></i>Arquivos
-                    <span class="badge bg-primary ms-1">{% if object %}{{ arquivos|length }}{% else %}0{% endif %}</span>
+                    <span class="badge bg-primary ms-1">{% if object %}{{arquivos|length}}{% else %}0{% endif %}</span>
                 </button>
             </li>
         </ul>
@@ -84,11 +84,11 @@
                                 <div class="row">
                                     <div class="col-md-6 mb-3">
                                         <label class="form-label">Número do Instrumento *</label>
-                                        {{ form.numero }}
+                                        {{form.numero}}
                                     </div>
                                     <div class="col-md-6 mb-3">
                                         <label class="form-label">NUP (E-MS)</label>
-                                        {{ form.nup }}
+                                        {{form.nup}}
                                         <small class="text-muted d-block">Número Único de Protocolo do sistema E-MS</small>
                                     </div>
                                 </div>
@@ -96,7 +96,7 @@
                                     <div class="col-md-6 mb-3">
                                         <label class="form-label">Tipo de Instrumento *</label>
                                         <div class="input-group">
-                                            {{ form.tipo_instrumento }}
+                                            {{form.tipo_instrumento}}
                                             <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modalTipoInstrumento">
                                                 <i class="bi bi-plus-circle"></i>
                                             </button>
@@ -105,7 +105,7 @@
                                     <div class="col-md-6 mb-3">
                                         <label class="form-label">Diretoria Responsável *</label>
                                         <div class="input-group">
-                                            {{ form.diretoria }}
+                                            {{form.diretoria}}
                                             <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modalDiretoria">
                                                 <i class="bi bi-plus-circle"></i>
                                             </button>
@@ -114,11 +114,11 @@
                                 </div>
                                 <div class="mb-3">
                                     <label class="form-label">Objeto do Instrumento *</label>
-                                    {{ form.objeto }}
+                                    {{form.objeto}}
                                 </div>
                                 <div class="mb-3">
                                     <label class="form-label">Entidades Vinculadas *</label>
-                                    {{ form.entidades }}
+                                    {{form.entidades}}
                                     <small class="text-muted d-block">Segure Ctrl (ou Cmd) para selecionar múltiplas entidades</small>
                                 </div>
                             </div>
@@ -133,15 +133,15 @@
                                 <div class="row">
                                     <div class="col-md-4 mb-3">
                                         <label class="form-label">Data de Assinatura *</label>
-                                        {{ form.data_assinatura }}
+                                        {{form.data_assinatura}}
                                     </div>
                                     <div class="col-md-4 mb-3">
                                         <label class="form-label">Data de Início *</label>
-                                        {{ form.data_inicio }}
+                                        {{form.data_inicio}}
                                     </div>
                                     <div class="col-md-4 mb-3">
                                         <label class="form-label">Data de Fim *</label>
-                                        {{ form.data_fim }}
+                                        {{form.data_fim}}
                                     </div>
                                 </div>
                             </div>
@@ -156,11 +156,11 @@
                                 <div class="row">
                                     <div class="col-md-6 mb-3">
                                         <label class="form-label">Periodicidade (meses)</label>
-                                        {{ form.periodicidade_revisao_tarifaria }}
+                                        {{form.periodicidade_revisao_tarifaria}}
                                     </div>
                                     <div class="col-md-6 mb-3">
                                         <label class="form-label">Próxima Revisão</label>
-                                        {{ form.data_proxima_revisao }}
+                                        {{form.data_proxima_revisao}}
                                     </div>
                                 </div>
                             </div>
@@ -172,7 +172,7 @@
                                 <h5 class="mb-0"><i class="bi bi-chat-left-text me-2"></i>Observações</h5>
                             </div>
                             <div class="card-body">
-                                {{ form.observacoes }}
+                                {{form.observacoes}}
                             </div>
                         </div>
                     </div>
@@ -186,7 +186,7 @@
                             </div>
                             <div class="card-body">
                                 <label class="form-label">Status do Instrumento *</label>
-                                {{ form.status }}
+                                {{form.status}}
                             </div>
                         </div>
                     </div>
@@ -203,55 +203,55 @@
                         </button>
                     </div>
                     <div class="card-body">
-                        {{ formset.management_form }}
+                        {{formset.management_form}}
                         
                         <div id="obrigacoes-container">
                             {% for form_obrig in formset %}
-                            <div class="obrigacao-form card mb-3" data-form-idx="{{ forloop.counter0 }}">
+                            <div class="obrigacao-form card mb-3" data-form-idx="{{forloop.counter0}}">
                                 <div class="card-header bg-light d-flex justify-content-between align-items-center">
-                                    <h6 class="mb-0">Obrigação #<span class="obrig-number">{{ forloop.counter }}</span></h6>
+                                    <h6 class="mb-0">Obrigação #<span class="obrig-number">{{forloop.counter}}</span></h6>
                                     <button type="button" class="btn btn-sm btn-outline-danger" onclick="removerObrigacao(this)">
                                         <i class="bi bi-trash"></i> Remover
                                     </button>
                                 </div>
                                 <div class="card-body">
-                                    {{ form_obrig.id }}
-                                    {{ form_obrig.DELETE }}
+                                    {{form_obrig.id}}
+                                    {{form_obrig.DELETE}}
                                     
                                     <div class="row">
                                         <div class="col-md-8 mb-3">
                                             <label class="form-label">Título *</label>
-                                            {{ form_obrig.titulo }}
+                                            {{form_obrig.titulo}}
                                         </div>
                                         <div class="col-md-4 mb-3">
                                             <label class="form-label">Tipo *</label>
-                                            {{ form_obrig.tipo_obrigacao }}
+                                            {{form_obrig.tipo_obrigacao}}
                                         </div>
                                     </div>
                                     
                                     <div class="mb-3">
                                         <label class="form-label">Descrição *</label>
-                                        {{ form_obrig.descricao }}
+                                        {{form_obrig.descricao}}
                                     </div>
                                     
                                     <div class="row">
                                         <div class="col-md-4 mb-3">
                                             <label class="form-label">Cláusula</label>
-                                            {{ form_obrig.clausula_referencia }}
+                                            {{form_obrig.clausula_referencia}}
                                         </div>
                                         <div class="col-md-4 mb-3">
                                             <label class="form-label">Vencimento</label>
-                                            {{ form_obrig.data_vencimento }}
+                                            {{form_obrig.data_vencimento}}
                                         </div>
                                         <div class="col-md-4 mb-3">
                                             <label class="form-label">Status *</label>
-                                            {{ form_obrig.status }}
+                                            {{form_obrig.status}}
                                         </div>
                                     </div>
                                     
                                     <div class="form-check">
-                                        {{ form_obrig.recorrente }}
-                                        <label class="form-check-label" for="{{ form_obrig.recorrente.id_for_label }}">
+                                        {{form_obrig.recorrente}}
+                                        <label class="form-check-label" for="{{form_obrig.recorrente.id_for_label}}">
                                             Obrigação Recorrente
                                         </label>
                                     </div>
@@ -308,13 +308,13 @@
                                     <tbody>
                                         {% for arquivo in arquivos %}
                                         <tr>
-                                            <td>{{ arquivo.nome_arquivo }}</td>
-                                            <td>{{ arquivo.data_upload|date:"d/m/Y H:i" }}</td>
+                                            <td>{{arquivo.nome_arquivo}}</td>
+                                            <td>{{arquivo.data_upload|date:"d/m/Y H:i"}}</td>
                                             <td>
-                                                <a href="{{ arquivo.arquivo.url }}" class="btn btn-sm btn-outline-primary" target="_blank">
+                                                <a href="{{arquivo.arquivo.url}}" class="btn btn-sm btn-outline-primary" target="_blank">
                                                     <i class="bi bi-download"></i>
                                                 </a>
-                                                <button class="btn btn-sm btn-outline-danger" onclick="excluirArquivo({{ arquivo.id }})">
+                                                <button class="btn btn-sm btn-outline-danger" onclick="excluirArquivo({{arquivo.id}})">
                                                     <i class="bi bi-trash"></i>
                                                 </button>
                                             </td>
@@ -360,11 +360,11 @@
 
 <!-- Template vazio para nova obrigação -->
 <div id="empty-form-template" style="display: none;">
-    {{ formset.empty_form }}
+    {{formset.empty_form}}
 </div>
 
 <script>
-let formIdx = {{ formset.total_form_count }};
+let formIdx = {{formset.total_form_count}};
 
 function atualizarContador() {
     const count = document.querySelectorAll('.obrigacao-form:not([style*="display: none"])').length;
@@ -452,7 +452,7 @@ document.getElementById('formUploadArquivo').addEventListener('submit', function
     const formData = new FormData();
     formData.append('arquivo', document.getElementById('arquivo').files[0]);
     formData.append('nome_arquivo', document.getElementById('nomeArquivo').value);
-    formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+    formData.append('csrfmiddlewaretoken', '{{csrf_token}}');
     
     fetch('{% url "arquivo_upload" object.id %}', {
         method: 'POST',
@@ -473,7 +473,7 @@ function excluirArquivo(id) {
         fetch(`/api/arquivo/${id}/excluir/`, {
             method: 'POST',
             headers: {
-                'X-CSRFToken': '{{ csrf_token }}'
+                'X-CSRFToken': '{{csrf_token}}'
             }
         })
         .then(response => response.json())

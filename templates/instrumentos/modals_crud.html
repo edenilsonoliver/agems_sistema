@@ -53,7 +53,7 @@ function adicionarTipoInstrumento() {
         method: 'POST',
         headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
-            'X-CSRFToken': '{{ csrf_token }}'
+            'X-CSRFToken': '{{csrf_token}}'
         },
         body: 'nome=' + encodeURIComponent(nome)
     })
@@ -84,7 +84,7 @@ function adicionarDiretoria() {
         method: 'POST',
         headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
-            'X-CSRFToken': '{{ csrf_token }}'
+            'X-CSRFToken': '{{csrf_token}}'
         },
         body: 'sigla=' + encodeURIComponent(sigla) + '&nome=' + encodeURIComponent(nome)
     })

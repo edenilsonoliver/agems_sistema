@@ -6,23 +6,23 @@
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
             <li class="breadcrumb-item"><a href="/">Dashboard</a></li>
-            <li class="breadcrumb-item"><a href="{{ list_url }}">{{ module_name }}</a></li>
-            <li class="breadcrumb-item active">{{ form_title }}</li>
+            <li class="breadcrumb-item"><a href="{{list_url}}">{{module_name}}</a></li>
+            <li class="breadcrumb-item active">{{form_title}}</li>
         </ol>
     </nav>
     <h1 class="page-title">
-        <i class="{{ icon }} me-2"></i>
-        {{ form_title }}
+        <i class="{{icon}} me-2"></i>
+        {{form_title}}
     </h1>
 </div>
 
 <div class="row">
-    <div class="col-lg-8">
+    <div class="col-12">
         <div class="card border-0 shadow-sm">
             <div class="card-body p-4">
                 <form method="post" enctype="multipart/form-data" novalidate>
                     {% csrf_token %}
-                    
+
                     {% if form.errors %}
                     <div class="alert alert-danger alert-dismissible fade show" role="alert">
                         <i class="bi bi-exclamation-triangle me-2"></i>
@@ -30,53 +30,57 @@
                         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                     </div>
                     {% endif %}
-                    
+
+                    <div class="mb-4">
+                        {% block sidebar_info %}
+                        <p class="small text-muted mb-0">
+                            <i class="bi bi-info-circle me-1"></i>
+                            Preencha todos os campos obrigatórios marcados com <span class="text-danger">*</span>
+                        </p>
+                        {% endblock %}
+                    </div>
+
                     {% block form_content %}
-                    {{ form|crispy }}
+                    {{form|crispy}}
                     {% if checklist_formset %}
-                        <hr class="my-4">
-                        <h5 class="mt-3">
-                            <i class="bi bi-list-check me-2"></i> Checklist da Tarefa
-                        </h5>
-                        <div id="checklist-container">
-                            {{ checklist_formset.management_form }}
-                            {% for form in checklist_formset %}
-                                <div class="checklist-item mb-2 d-flex align-items-center">
-                                    <input type="text"
-                                        name="{{ form.nome.name }}"
-                                        value="{{ form.nome.value|default:'' }}"
-                                        class="form-control me-2"
-                                        placeholder="Novo item">
-                                    <input type="checkbox"
-                                        name="{{ form.concluido.name }}"
-                                        {% if form.concluido.value %}checked{% endif %}>
-                                </div>
-                            {% empty %}
-                                <div class="text-muted small">Nenhum item ainda.</div>
-                            {% endfor %}
+                    <hr class="my-4">
+                    <h5 class="mt-3">
+                        <i class="bi bi-list-check me-2"></i> Checklist da Tarefa
+                    </h5>
+                    <div id="checklist-container">
+                        {{checklist_formset.management_form}}
+                        {% for form_item in checklist_formset %}
+                        <div class="checklist-item mb-2 d-flex align-items-center">
+                            <input type="text" name="{{form_item.nome.html_name}}"
+                                value="{{form_item.nome.value|default:''}}" class="form-control me-2"
+                                placeholder="Novo item">
+                            <input type="checkbox" name="{{form_item.concluido.html_name}}" {% if form_item.concluido.value %}checked{% endif %}>
                         </div>
+                        {% empty %}
+                        <div class="text-muted small">Nenhum item ainda.</div>
+                        {% endfor %}
+                    </div>
 
-                        <button type="button" class="btn btn-sm btn-outline-success mt-2" id="add-checklist-item">
-                            <i class="bi bi-plus-circle"></i> Adicionar item
-                        </button>
+                    <button type="button" class="btn btn-sm btn-outline-success mt-2" id="add-checklist-item">
+                        <i class="bi bi-plus-circle"></i> Adicionar item
+                    </button>
 
-                        <script>
-                            document.addEventListener("DOMContentLoaded", function() {
-                                const addButton = document.getElementById("add-checklist-item");
-                                const container = document.getElementById("checklist-container");
-                                const totalFormsInput = document.querySelector("input[name$='-TOTAL_FORMS']");
+                    <script>
+                        document.addEventListener("DOMContentLoaded", function () {
+                            const addButton = document.getElementById("add-checklist-item");
+                            const container = document.getElementById("checklist-container");
+                            const totalFormsInput = document.querySelector("input[name$='-TOTAL_FORMS']");
 
-                                if (!addButton || !container || !totalFormsInput) return;
+                            if (!addButton || !container || !totalFormsInput) return;
 
-                                // Obtém o prefixo dinamicamente, removendo "-TOTAL_FORMS"
-                                const prefix = totalFormsInput.name.replace("-TOTAL_FORMS", "");
+                            const prefix = totalFormsInput.name.replace("-TOTAL_FORMS", "");
 
-                                addButton.addEventListener("click", function() {
-                                    const index = parseInt(totalFormsInput.value);
+                            addButton.addEventListener("click", function () {
+                                const index = parseInt(totalFormsInput.value);
 
-                                    const newItem = document.createElement("div");
-                                    newItem.classList.add("checklist-item", "mb-2", "d-flex", "align-items-center");
-                                    newItem.innerHTML = `
+                                const newItem = document.createElement("div");
+                                newItem.classList.add("checklist-item", "mb-2", "d-flex", "align-items-center");
+                                newItem.innerHTML = `
                                         <input type="text"
                                             id="id_${prefix}-${index}-nome"
                                             name="${prefix}-${index}-nome"
@@ -87,18 +91,18 @@
                                             name="${prefix}-${index}-concluido">
                                     `;
 
-                                    container.appendChild(newItem);
-                                    totalFormsInput.value = index + 1;
-                                });
+                                container.appendChild(newItem);
+                                totalFormsInput.value = index + 1;
                             });
-                            </script>
+                        });
+                    </script>
                     {% endif %}
                     {% endblock %}
 
+                    {% block sidebar_extra %}{% endblock %}
 
-                    
                     <hr class="my-4">
-                    
+
                     <div class="d-flex gap-2">
                         <button type="submit" class="btn btn-primary">
                             <i class="bi bi-check-circle me-2"></i>
@@ -109,7 +113,8 @@
                             Cancelar
                         </button>
                         {% if object %}
-                        <button type="button" class="btn btn-outline-danger ms-auto" data-bs-toggle="modal" data-bs-target="#deleteModal">
+                        <button type="button" class="btn btn-outline-danger ms-auto" data-bs-toggle="modal"
+                            data-bs-target="#deleteModal">
                             <i class="bi bi-trash me-2"></i>
                             Excluir
                         </button>
@@ -118,25 +123,6 @@
                 </form>
             </div>
         </div>
-    </div>
-    
-    <div class="col-lg-4">
-        <div class="card border-0 shadow-sm mb-3">
-            <div class="card-body">
-                <h6 class="card-title">
-                    <i class="bi bi-info-circle me-2"></i>
-                    Informações
-                </h6>
-                <hr>
-                {% block sidebar_info %}
-                <p class="small text-muted mb-0">
-                    Preencha todos os campos obrigatórios marcados com <span class="text-danger">*</span>
-                </p>
-                {% endblock %}
-            </div>
-        </div>
-        
-        {% block sidebar_extra %}{% endblock %}
     </div>
 </div>
 
@@ -155,7 +141,7 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                <form method="post" action="{{ delete_url }}" class="d-inline">
+                <form method="post" action="{{delete_url}}" class="d-inline">
                     {% csrf_token %}
                     <button type="submit" class="btn btn-danger">Excluir</button>
                 </form>
