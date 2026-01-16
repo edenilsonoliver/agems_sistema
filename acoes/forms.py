@@ -55,6 +55,16 @@ class AcaoForm(forms.ModelForm):
             choice for choice in self.fields['status'].choices 
             if choice[0] != 'finalizado'
         ]
+
+    def clean(self):
+        cleaned_data = super().clean()
+        data_inicio = cleaned_data.get('data_inicio')
+        data_fim = cleaned_data.get('data_fim')
+
+        if data_inicio and data_fim and data_fim < data_inicio:
+            self.add_error('data_fim', "A data de fim não pode ser anterior à data de início.")
+        
+        return cleaned_data
         
 
 

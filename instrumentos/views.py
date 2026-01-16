@@ -35,6 +35,16 @@ class InstrumentoForm(forms.ModelForm):
             'observacoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
         }
 
+    def clean(self):
+        cleaned_data = super().clean()
+        data_inicio = cleaned_data.get('data_inicio')
+        data_fim = cleaned_data.get('data_fim')
+
+        if data_inicio and data_fim and data_fim < data_inicio:
+            self.add_error('data_fim', "A data de fim não pode ser anterior à data de início.")
+        
+        return cleaned_data
+
 
 class ObrigacaoForm(forms.ModelForm):
     """Formulário para Obrigação inline (sem campo instrumento)"""

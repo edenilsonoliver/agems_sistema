@@ -148,6 +148,47 @@
 </div>
 {% endif %}
 
+<!-- Modal de Validação de Datas -->
+<div class="modal fade" id="dateValidationModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header text-white bg-danger">
+                <h5 class="modal-title"><i class="bi bi-exclamation-triangle-fill me-2"></i>Atenção</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-0 fw-bold">Não é possível salvar com DATA DE FIM anterior a DATA DE INÍCIO.</p>
+                <p class="text-muted small mt-2">Por favor, corrija as datas e tente novamente.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Entendi</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const form = document.getElementById('acao-form');
+        const modalEl = document.getElementById('dateValidationModal');
+        const modal = new bootstrap.Modal(modalEl);
+
+        if (form) {
+            form.addEventListener('submit', function (event) {
+                const dataInicio = document.getElementById('id_data_inicio')?.value;
+                const dataFim = document.getElementById('id_data_fim')?.value;
+
+                if (dataInicio && dataFim) {
+                    if (new Date(dataFim) < new Date(dataInicio)) {
+                        event.preventDefault();
+                        modal.show();
+                    }
+                }
+            });
+        }
+    });
+</script>
+
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         console.log('Checklist JS initializing...');
