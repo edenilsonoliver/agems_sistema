@@ -23,7 +23,7 @@ from core.core_views import (
 # Instrumentos
 from instrumentos.views import (
     InstrumentoListView, InstrumentoCreateView, InstrumentoUpdateView, InstrumentoDeleteView,
-    tipo_instrumento_create, diretoria_create, arquivo_upload
+    tipo_instrumento_create, diretoria_create, arquivo_upload, arquivo_delete
 )
 
 # Entidades
@@ -71,6 +71,7 @@ urlpatterns = [
     path('api/tipo-instrumento/criar/', tipo_instrumento_create, name='tipo_instrumento_create'),
     path('api/diretoria/criar/', diretoria_create, name='diretoria_create'),
     path('api/instrumento/<int:instrumento_id>/arquivo/upload/', arquivo_upload, name='arquivo_upload'),
+    path('api/arquivo/<int:arquivo_id>/excluir/', arquivo_delete, name='arquivo_delete'),
 
     # Entidades
     path('entidades/', EntidadeListView.as_view(), name='entidade_list'),

@@ -14,3 +14,8 @@ Thumbs.db
 # Local config and temp
 *.log
 *.sqlite3
+
+# Informações de DB
+agems_database_der.png
+ESTRUTURA_BANCO_DADOS.md
+sistema DGE AGEMS.pptx

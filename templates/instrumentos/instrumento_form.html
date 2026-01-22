@@ -7,7 +7,8 @@
 <div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
-            <h2><i class="bi bi-file-earmark-text me-2"></i>{% if object %}Editar{% else %}Adicionar{% endif %} Instrumento</h2>
+            <h2><i class="bi bi-file-earmark-text me-2"></i>{% if object %}Editar{% else %}Adicionar{% endif %}
+                Instrumento</h2>
             <p class="text-muted">Gestão de instrumentos jurídicos (Contratos, Convênios, Acordos)</p>
         </div>
         <a href="{% url 'instrumento_list' %}" class="btn btn-outline-secondary">
@@ -15,70 +16,93 @@
         </a>
     </div>
 
-    <!-- Abas -->
-    <ul class="nav nav-tabs mb-4" role="tablist">
-        <li class="nav-item" role="presentation">
-            <button class="nav-link active" id="dados-tab" data-bs-toggle="tab" data-bs-target="#dados" type="button">
-                <i class="bi bi-file-text me-2"></i>Dados Gerais
-            </button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link" id="obrigacoes-tab" data-bs-toggle="tab" data-bs-target="#obrigacoes" type="button">
-                <i class="bi bi-list-check me-2"></i>Obrigações
-                <span class="badge bg-primary ms-1">{% if object %}{{obrigacoes|length}}{% else %}0{% endif %}</span>
-            </button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link" id="arquivos-tab" data-bs-toggle="tab" data-bs-target="#arquivos" type="button">
-                <i class="bi bi-paperclip me-2"></i>Arquivos
-                <span class="badge bg-primary ms-1">{% if object %}{{arquivos|length}}{% else %}0{% endif %}</span>
-            </button>
-        </li>
-    </ul>
+    <form method="post" enctype="multipart/form-data" id="formInstrumento">
+        {% csrf_token %}
 
-    <div class="tab-content">
-        <!-- Aba Dados Gerais -->
-        <div class="tab-pane fade show active" id="dados" role="tabpanel">
-            <form method="post" enctype="multipart/form-data">
-                {% csrf_token %}
-                
-                {% if form.errors %}
-                <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                    <h5 class="alert-heading"><i class="bi bi-exclamation-triangle me-2"></i>Erros no formulário</h5>
-                    <ul class="mb-0">
-                    {% for field in form %}
-                        {% if field.errors %}
-                            {% for error in field.errors %}
-                                <li><strong>{{field.label}}:</strong> {{error}}</li>
-                            {% endfor %}
-                        {% endif %}
-                    {% endfor %}
-                    {% for error in form.non_field_errors %}
-                        <li>{{error}}</li>
-                    {% endfor %}
-                    </ul>
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                </div>
+        {% if form.errors or formset.errors %}
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <h5 class="alert-heading"><i class="bi bi-exclamation-triangle me-2"></i>Erros no formulário</h5>
+            <ul class="mb-0">
+                {% for field in form %}
+                {% if field.errors %}
+                {% for error in field.errors %}
+                <li><strong>{{field.label}}:</strong> {{error}}</li>
+                {% endfor %}
                 {% endif %}
-                
+                {% endfor %}
+                {% for error in form.non_field_errors %}
+                <li>{{error}}</li>
+                {% endfor %}
+                {% if formset %}
+                {% for form_obrig in formset %}
+                {% for field in form_obrig %}
+                {% if field.errors %}
+                {% for error in field.errors %}
+                <li><strong>Obrigação {{forloop.parentloop.counter}} - {{field.label}}:</strong> {{error}}</li>
+                {% endfor %}
+                {% endif %}
+                {% endfor %}
+                {% endfor %}
+                {% endif %}
+            </ul>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        {% endif %}
+
+        <!-- Abas -->
+        <ul class="nav nav-tabs mb-4" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="dados-tab" data-bs-toggle="tab" data-bs-target="#dados"
+                    type="button">
+                    <i class="bi bi-file-text me-2"></i>Dados Gerais
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="obrigacoes-tab" data-bs-toggle="tab" data-bs-target="#obrigacoes"
+                    type="button">
+                    <i class="bi bi-list-check me-2"></i>Obrigações
+                    <span class="badge bg-primary ms-1" id="countObrigacoes">0</span>
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="arquivos-tab" data-bs-toggle="tab" data-bs-target="#arquivos"
+                    type="button">
+                    <i class="bi bi-paperclip me-2"></i>Arquivos
+                    <span class="badge bg-primary ms-1">{% if object %}{{arquivos|length}}{% else %}0{% endif %}</span>
+                </button>
+            </li>
+        </ul>
+
+        <div class="tab-content">
+            <!-- Aba Dados Gerais -->
+            <div class="tab-pane fade show active" id="dados" role="tabpanel">
                 <div class="row">
-                    <!-- Coluna Principal -->
-                    <div class="col-lg-8">
+                    <div class="col-12">
                         <!-- Informações Básicas -->
-                        <div class="card mb-4">
+                        <div class="card mb-4 border-0 shadow-sm">
                             <div class="card-header bg-primary text-white">
                                 <h5 class="mb-0"><i class="bi bi-info-circle me-2"></i>Informações Básicas</h5>
                             </div>
-                            <div class="card-body">
+                            <div class="card-body p-4">
+                                <p class="small text-muted mb-4">
+                                    <i class="bi bi-info-circle me-1"></i>
+                                    Preencha todos os campos obrigatórios marcados com <span
+                                        class="text-danger">*</span>
+                                </p>
+
                                 <div class="row">
-                                    <div class="col-md-6 mb-3">
+                                    <div class="col-md-4 mb-3">
                                         <label class="form-label">Número do Instrumento *</label>
                                         {{form.numero}}
                                     </div>
-                                    <div class="col-md-6 mb-3">
+                                    <div class="col-md-4 mb-3">
                                         <label class="form-label">NUP (E-MS)</label>
                                         {{form.nup}}
-                                        <small class="text-muted d-block">Número Único de Protocolo do sistema E-MS</small>
+                                        <small class="text-muted d-block">Protocolo do sistema E-MS</small>
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label">Status do Instrumento *</label>
+                                        {{form.status}}
                                     </div>
                                 </div>
                                 <div class="row">
@@ -86,7 +110,8 @@
                                         <label class="form-label">Tipo de Instrumento *</label>
                                         <div class="input-group">
                                             {{form.tipo_instrumento}}
-                                            <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modalTipoInstrumento">
+                                            <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal"
+                                                data-bs-target="#modalTipoInstrumento">
                                                 <i class="bi bi-plus-circle"></i>
                                             </button>
                                         </div>
@@ -95,7 +120,8 @@
                                         <label class="form-label">Diretoria Responsável *</label>
                                         <div class="input-group">
                                             {{form.diretoria}}
-                                            <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modalDiretoria">
+                                            <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal"
+                                                data-bs-target="#modalDiretoria">
                                                 <i class="bi bi-plus-circle"></i>
                                             </button>
                                         </div>
@@ -108,17 +134,18 @@
                                 <div class="mb-3">
                                     <label class="form-label">Entidades Vinculadas *</label>
                                     {{form.entidades}}
-                                    <small class="text-muted d-block">Segure Ctrl (ou Cmd) para selecionar múltiplas entidades</small>
+                                    <small class="text-muted d-block">Segure Ctrl (ou Cmd) para selecionar múltiplas
+                                        entidades</small>
                                 </div>
                             </div>
                         </div>
 
                         <!-- Vigência -->
-                        <div class="card mb-4">
+                        <div class="card mb-4 border-0 shadow-sm">
                             <div class="card-header bg-success text-white">
                                 <h5 class="mb-0"><i class="bi bi-calendar-range me-2"></i>Vigência</h5>
                             </div>
-                            <div class="card-body">
+                            <div class="card-body p-4">
                                 <div class="row">
                                     <div class="col-md-4 mb-3">
                                         <label class="form-label">Data de Assinatura *</label>
@@ -137,11 +164,11 @@
                         </div>
 
                         <!-- Revisão Tarifária -->
-                        <div class="card mb-4">
+                        <div class="card mb-4 border-0 shadow-sm">
                             <div class="card-header bg-warning text-dark">
                                 <h5 class="mb-0"><i class="bi bi-cash-coin me-2"></i>Revisão Tarifária (Opcional)</h5>
                             </div>
-                            <div class="card-body">
+                            <div class="card-body p-4">
                                 <div class="row">
                                     <div class="col-md-6 mb-3">
                                         <label class="form-label">Periodicidade (meses)</label>
@@ -156,151 +183,79 @@
                         </div>
 
                         <!-- Observações -->
-                        <div class="card mb-4">
+                        <div class="card mb-4 border-0 shadow-sm">
                             <div class="card-header">
                                 <h5 class="mb-0"><i class="bi bi-chat-left-text me-2"></i>Observações</h5>
                             </div>
-                            <div class="card-body">
+                            <div class="card-body p-4">
                                 {{form.observacoes}}
                             </div>
                         </div>
                     </div>
-
-                    <!-- Coluna Lateral -->
-                    <div class="col-lg-4">
-                        <!-- Status -->
-                        <div class="card mb-4">
-                            <div class="card-header">
-                                <h5 class="mb-0"><i class="bi bi-info-circle me-2"></i>Status</h5>
-                            </div>
-                            <div class="card-body">
-                                <label class="form-label">Status do Instrumento *</label>
-                                {{form.status}}
-                            </div>
-                        </div>
-
-                        <!-- Botões -->
-                        <div class="card">
-                            <div class="card-body">
-                                <button type="submit" class="btn btn-primary w-100 mb-2">
-                                    <i class="bi bi-check-circle me-2"></i>Salvar
-                                </button>
-                                <a href="{% url 'instrumento_list' %}" class="btn btn-outline-secondary w-100">
-                                    <i class="bi bi-x-circle me-2"></i>Cancelar
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </form>
-        </div>
-
-        <!-- Aba Obrigações -->
-        <div class="tab-pane fade" id="obrigacoes" role="tabpanel">
-            <div class="card">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0"><i class="bi bi-list-check me-2"></i>Obrigações</h5>
-                    {% if object %}
-                    <a href="{% url 'obrigacao_create' %}?instrumento={{object.id}}" class="btn btn-primary btn-sm">
-                        <i class="bi bi-plus-circle"></i> Adicionar
-                    </a>
-                    {% endif %}
-                </div>
-                <div class="card-body">
-                    {% if object %}
-                        {% if obrigacoes %}
-                            <table class="table table-hover">
-                                <thead>
-                                    <tr>
-                                        <th>Título</th>
-                                        <th>Tipo</th>
-                                        <th>Vencimento</th>
-                                        <th>Status</th>
-                                        <th>Ações</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for obrigacao in obrigacoes %}
-                                    <tr>
-                                        <td>{{obrigacao.titulo}}</td>
-                                        <td>{{obrigacao.tipo_obrigacao}}</td>
-                                        <td>{{obrigacao.data_vencimento|date:"d/m/Y"|default:"-"}}</td>
-                                        <td><span class="badge bg-{{obrigacao.get_status_color}}">{{obrigacao.get_status_display}}</span></td>
-                                        <td>
-                                            <a href="{% url 'obrigacao_update' obrigacao.pk %}" class="btn btn-sm btn-outline-primary">
-                                                <i class="bi bi-pencil"></i>
-                                            </a>
-                                            <a href="{% url 'obrigacao_delete' obrigacao.pk %}" class="btn btn-sm btn-outline-danger">
-                                                <i class="bi bi-trash"></i>
-                                            </a>
-                                        </td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        {% else %}
-                            <div class="text-center py-5">
-                                <i class="bi bi-inbox display-1 text-muted"></i>
-                                <p class="text-muted mt-3">Nenhuma obrigação cadastrada para este instrumento</p>
-                            </div>
-                        {% endif %}
-                    {% else %}
-                        <div class="alert alert-info">
-                            <i class="bi bi-info-circle me-2"></i>
-                            Salve o instrumento primeiro para poder adicionar obrigações.
-                        </div>
-                    {% endif %}
                 </div>
             </div>
-        </div>
 
-        <!-- Aba Arquivos -->
-        <div class="tab-pane fade" id="arquivos" role="tabpanel">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0"><i class="bi bi-paperclip me-2"></i>Arquivos</h5>
-                </div>
-                <div class="card-body">
-                    {% if object %}
-                        <div class="mb-4">
-                            <h6>Adicionar Arquivo</h6>
-                            <form id="formUploadArquivo" enctype="multipart/form-data">
-                                {% csrf_token %}
-                                <div class="row">
-                                    <div class="col-md-4 mb-3">
-                                        <input type="text" class="form-control" id="nomeArquivo" placeholder="Nome (opcional)">
-                                    </div>
-                                    <div class="col-md-6 mb-3">
-                                        <input type="file" class="form-control" id="arquivo" required>
-                                    </div>
-                                    <div class="col-md-2 mb-3">
-                                        <button type="submit" class="btn btn-primary w-100">
-                                            <i class="bi bi-upload"></i> Upload
-                                        </button>
-                                    </div>
-                                </div>
-                            </form>
-                        </div>
-
-                        {% if arquivos %}
-                            <table class="table table-hover">
-                                <thead>
+            <!-- Aba Obrigações -->
+            <div class="tab-pane fade" id="obrigacoes" role="tabpanel">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0"><i class="bi bi-list-check me-2"></i>Obrigações do Instrumento</h5>
+                        <button type="button" class="btn btn-primary btn-sm" onclick="adicionarObrigacao()">
+                            <i class="bi bi-plus-circle"></i> Adicionar Obrigação
+                        </button>
+                    </div>
+                    <div class="card-body p-0">
+                        {{formset.management_form}}
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="table-light">
                                     <tr>
-                                        <th>Nome</th>
-                                        <th>Data Upload</th>
-                                        <th>Ações</th>
+                                        <th style="min-width: 200px;" class="ps-4 text-uppercase small fw-bold">Título
+                                        </th>
+                                        <th style="min-width: 250px;" class="text-uppercase small fw-bold">Descrição
+                                        </th>
+                                        <th style="min-width: 120px;" class="text-uppercase small fw-bold">Cláusula</th>
+                                        <th style="min-width: 150px;" class="text-uppercase small fw-bold">Tipo</th>
+                                        <th style="min-width: 130px;" class="text-uppercase small fw-bold">Vencimento
+                                        </th>
+                                        <th style="min-width: 130px;" class="text-uppercase small fw-bold">Status</th>
+                                        <th width="60px" class="text-center text-uppercase small fw-bold">Ações</th>
+                                        <th width="60px" class="text-center text-uppercase small fw-bold">Rec.</th>
+                                        <th width="80px" class="text-end pe-4 text-uppercase small fw-bold">Op.</th>
                                     </tr>
                                 </thead>
-                                <tbody id="listaArquivos">
-                                    {% for arquivo in arquivos %}
-                                    <tr>
-                                        <td>{{arquivo.nome_arquivo}}</td>
-                                        <td>{{arquivo.data_upload|date:"d/m/Y H:i"}}</td>
-                                        <td>
-                                            <a href="{{arquivo.arquivo.url}}" class="btn btn-sm btn-outline-primary" target="_blank">
-                                                <i class="bi bi-download"></i>
+                                <tbody id="obrigacoes-container">
+                                    {% for form_obrig in formset %}
+                                    <tr class="obrigacao-form" data-form-idx="{{forloop.counter0}}">
+                                        <td class="ps-4">
+                                            {{form_obrig.id}}
+                                            <div style="display: none;">{{form_obrig.DELETE}}</div>
+                                            {{form_obrig.titulo}}
+                                        </td>
+                                        <td>{{form_obrig.descricao}}</td>
+                                        <td>{{form_obrig.clausula_referencia}}</td>
+                                        <td>{{form_obrig.tipo_obrigacao}}</td>
+                                        <td>{{form_obrig.data_vencimento}}</td>
+                                        <td>{{form_obrig.status}}</td>
+                                        <td class="text-center">
+                                            {% if form_obrig.instance.pk %}
+                                            <a href="{% url 'acao_list' %}?obrigacao={{form_obrig.instance.pk}}"
+                                                class="badge {% if form_obrig.instance.acoes_count > 0 %}bg-primary{% else %}bg-secondary{% endif %} text-decoration-none shadow-sm"
+                                                title="Ver ações desta obrigação">
+                                                {{ form_obrig.instance.acoes_count|default:0 }}
                                             </a>
-                                            <button class="btn btn-sm btn-outline-danger" onclick="excluirArquivo({{arquivo.id}})">
+                                            {% else %}
+                                            <span class="badge bg-light text-muted border">0</span>
+                                            {% endif %}
+                                        </td>
+                                        <td class="text-center">
+                                            <div class="form-check d-inline-block">
+                                                {{form_obrig.recorrente}}
+                                            </div>
+                                        </td>
+                                        <td class="text-end pe-4">
+                                            <button type="button" class="btn btn-sm btn-outline-danger shadow-sm"
+                                                onclick="removerObrigacao(this)" title="Remover Obrigação">
                                                 <i class="bi bi-trash"></i>
                                             </button>
                                         </td>
@@ -308,71 +263,351 @@
                                     {% endfor %}
                                 </tbody>
                             </table>
-                        {% else %}
-                            <div class="text-center py-5">
-                                <i class="bi bi-inbox display-1 text-muted"></i>
-                                <p class="text-muted mt-3">Nenhum arquivo anexado</p>
+                        </div>
+
+                        <div id="empty-obrigacoes" class="text-center py-5" style="display: none;">
+                            <i class="bi bi-inbox display-1 text-muted"></i>
+                            <p class="text-muted mt-3">Nenhuma obrigação adicionada. Clique em "Adicionar Obrigação"
+                                para começar.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Aba Arquivos -->
+            <div class="tab-pane fade" id="arquivos" role="tabpanel">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="bi bi-paperclip me-2"></i>Arquivos</h5>
+                    </div>
+                    <div class="card-body p-4">
+                        {% if object %}
+                        <div class="mb-4 border p-3 rounded bg-light">
+                            <h6 class="mb-3"><i class="bi bi-plus-circle me-1"></i>Anexar Novo Documento</h6>
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <input type="text" class="form-control" id="nomeArquivo"
+                                        placeholder="Nome/Descrição do arquivo">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <input type="file" class="form-control" id="arquivo" name="arquivo_upload"
+                                        accept=".pdf,.docx,.xlsx">
+                                    <small class="text-muted">Apenas PDF, DOCX ou XLSX (sem macros)</small>
+                                </div>
+                                <div class="col-md-2 mb-3">
+                                    <button type="button" class="btn btn-primary w-100" id="btnUpload"
+                                        onclick="executarUpload()">
+                                        <i class="bi bi-upload me-1"></i> <span id="btnUploadText">Upload</span>
+                                    </button>
+                                </div>
                             </div>
+                        </div>
+
+                        {% if arquivos %}
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Nome</th>
+                                    <th>Data Upload</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for arquivo in arquivos %}
+                                <tr>
+                                    <td>{{arquivo.nome_arquivo}}</td>
+                                    <td>{{arquivo.data_upload|date:"d/m/Y H:i"}}</td>
+                                    <td>
+                                        <a href="{{arquivo.arquivo.url}}" class="btn btn-sm btn-outline-primary"
+                                            target="_blank">
+                                            <i class="bi bi-download"></i>
+                                        </a>
+                                        <button type="button" class="btn btn-sm btn-outline-danger"
+                                            onclick="excluirArquivo({{arquivo.id}})">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                        {% else %}
+                        <div class="text-center py-5">
+                            <i class="bi bi-inbox display-1 text-muted"></i>
+                            <p class="text-muted mt-3">Nenhum arquivo anexado</p>
+                        </div>
                         {% endif %}
-                    {% else %}
+                        {% else %}
                         <div class="alert alert-info">
                             <i class="bi bi-info-circle me-2"></i>
-                            Salve o instrumento primeiro para poder fazer upload de arquivos.
+                            Salve o instrumento para poder fazer upload de arquivos.
                         </div>
-                    {% endif %}
+                        {% endif %}
+                    </div>
                 </div>
+            </div>
+        </div>
+
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="d-flex justify-content-end gap-2">
+                    <a href="{% url 'instrumento_list' %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-x-circle me-2"></i>Cancelar
+                    </a>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-circle me-2"></i>Salvar Instrumento e Obrigações
+                    </button>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- Modal de Validação de Datas -->
+<div class="modal fade" id="dateValidationModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header text-white bg-danger">
+                <h5 class="modal-title"><i class="bi bi-exclamation-triangle-fill me-2"></i>Atenção</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-0 fw-bold">Não é possível salvar com DATA DE FIM anterior a DATA DE INÍCIO.</p>
+                <p class="text-muted small mt-2">Por favor, corrija as datas e tente novamente.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Entendi</button>
             </div>
         </div>
     </div>
 </div>
 
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const form = document.getElementById('formInstrumento');
+        const modalEl = document.getElementById('dateValidationModal');
+        const modal = new bootstrap.Modal(modalEl);
+
+        form.addEventListener('submit', function (event) {
+            const dataInicio = document.getElementById('id_data_inicio').value;
+            const dataFim = document.getElementById('id_data_fim').value;
+
+            if (dataInicio && dataFim) {
+                if (new Date(dataFim) < new Date(dataInicio)) {
+                    event.preventDefault();
+                    modal.show();
+                }
+            }
+        });
+    });
+</script>
+
 <!-- Modais CRUD Inline -->
 {% include 'instrumentos/modals_crud.html' %}
 
-<script>
-// Upload de arquivo via AJAX
-{% if object %}
-document.getElementById('formUploadArquivo').addEventListener('submit', function(e) {
-    e.preventDefault();
-    
-    const formData = new FormData();
-    formData.append('arquivo', document.getElementById('arquivo').files[0]);
-    formData.append('nome_arquivo', document.getElementById('nomeArquivo').value);
-    formData.append('csrfmiddlewaretoken', '{{csrf_token}}');
-    
-    fetch('{% url "arquivo_upload" object.id %}', {
-        method: 'POST',
-        body: formData
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            location.reload();
-        } else {
-            alert('Erro ao fazer upload: ' + data.error);
-        }
-    });
-});
+<!-- Template vazio para nova obrigação (Tratado como linha de tabela) -->
+<table style="display: none;">
+    <tbody id="empty-form-template">
+        <tr class="obrigacao-form" data-form-idx="__prefix__">
+            <td class="ps-4">
+                <input type="hidden" name="obrigacoes-__prefix__-id" id="id_obrigacoes-__prefix__-id">
+                <div style="display: none;">
+                    <input type="checkbox" name="obrigacoes-__prefix__-DELETE" id="id_obrigacoes-__prefix__-DELETE">
+                </div>
+                {{ formset.empty_form.titulo }}
+            </td>
+            <td>{{ formset.empty_form.descricao }}</td>
+            <td>{{ formset.empty_form.clausula_referencia }}</td>
+            <td>{{ formset.empty_form.tipo_obrigacao }}</td>
+            <td>{{ formset.empty_form.data_vencimento }}</td>
+            <td>{{ formset.empty_form.status }}</td>
+            <td class="text-center">
+                <span class="badge bg-light text-muted border">0</span>
+            </td>
+            <td class="text-center">
+                <div class="form-check d-inline-block">
+                    {{ formset.empty_form.recorrente }}
+                </div>
+            </td>
+            <td class="text-end pe-4">
+                <button type="button" class="btn btn-sm btn-outline-danger" onclick="removerObrigacao(this)">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </td>
+        </tr>
+    </tbody>
+</table>
 
-function excluirArquivo(id) {
-    if (confirm('Deseja realmente excluir este arquivo?')) {
-        fetch(`/api/arquivo/${id}/excluir/`, {
-            method: 'POST',
-            headers: {
-                'X-CSRFToken': '{{csrf_token}}'
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                location.reload();
-            } else {
-                alert('Erro ao excluir arquivo');
-            }
-        });
+<script>
+    let formIdx = {{ formset.total_form_count }};
+
+    function atualizarContador() {
+        const visibleRows = document.querySelectorAll('#obrigacoes-container .obrigacao-form:not([style*="display: none"])');
+        const count = visibleRows.length;
+
+        const countBadge = document.getElementById('countObrigacoes');
+        if (countBadge) countBadge.textContent = count;
+
+        const emptyMsg = document.getElementById('empty-obrigacoes');
+        if (emptyMsg) {
+            emptyMsg.style.display = count === 0 ? 'block' : 'none';
+        }
     }
-}
-{% endif %}
+
+    function adicionarObrigacao() {
+        const container = document.getElementById('obrigacoes-container');
+        const template = document.getElementById('empty-form-template').innerHTML;
+        const newRowHTML = template.replace(/__prefix__/g, formIdx);
+
+        const temp = document.createElement('tbody');
+        temp.innerHTML = newRowHTML;
+        const newRow = temp.firstElementChild;
+
+        container.appendChild(newRow);
+
+        formIdx++;
+        const totalForms = document.getElementById('id_obrigacoes-TOTAL_FORMS');
+        if (totalForms) totalForms.value = formIdx;
+
+        atualizarContador();
+    }
+
+    function removerObrigacao(btn) {
+        const row = btn.closest('.obrigacao-form');
+        const idx = row.getAttribute('data-form-idx');
+        let deleteInput = row.querySelector(`input[name="obrigacoes-${idx}-DELETE"]`);
+        const idInput = row.querySelector(`input[name="obrigacoes-${idx}-id"]`);
+
+        if (idInput && !idInput.value) {
+            row.remove();
+        } else {
+            if (deleteInput) {
+                deleteInput.checked = true;
+                deleteInput.value = 'on';
+                row.style.display = 'none';
+            } else {
+                const hiddenDelete = document.createElement('input');
+                hiddenDelete.type = 'hidden';
+                hiddenDelete.name = `obrigacoes-${idx}-DELETE`;
+                hiddenDelete.value = 'on';
+                row.appendChild(hiddenDelete);
+                row.style.display = 'none';
+            }
+        }
+        atualizarContador();
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        atualizarContador();
+    });
+
+    {% if object %}
+    function executarUpload() {
+        const fileInput = document.getElementById('arquivo');
+        const nomeInput = document.getElementById('nomeArquivo');
+        const btn = document.getElementById('btnUpload');
+        const btnText = document.getElementById('btnUploadText');
+
+        if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
+            alert('Por favor, selecione um arquivo primeiro.');
+            return;
+        }
+
+        const originalText = btnText ? btnText.textContent : 'Upload';
+        if (btn) btn.disabled = true;
+        if (btnText) btnText.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span>...';
+
+        const formData = new FormData();
+        formData.append('arquivo', fileInput.files[0]);
+        formData.append('nome_arquivo', nomeInput ? nomeInput.value : '');
+        formData.append('csrfmiddlewaretoken', '{{csrf_token}}');
+
+        fetch('{% url "arquivo_upload" object.id %}', {
+            method: 'POST',
+            body: formData,
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert('Erro: ' + data.error);
+                    if (btn) btn.disabled = false;
+                    if (btnText) btnText.textContent = originalText;
+                }
+            })
+            .catch(error => {
+                console.error('Erro no upload:', error);
+                alert('Erro de rede ou no servidor.');
+                if (btn) btn.disabled = false;
+                if (btnText) btnText.textContent = originalText;
+            });
+    }
+
+    function excluirArquivo(id) {
+        if (confirm('Deseja realmente excluir este arquivo?')) {
+            fetch(`/api/arquivo/${id}/excluir/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{csrf_token}}',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        location.reload();
+                    } else {
+                        alert('Erro ao excluir: ' + (data.error || 'Erro desconhecido'));
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Erro na comunicação com o servidor.');
+                });
+        }
+    }
+    {% endif %}
 </script>
 {% endblock %}
 
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const inputs = document.querySelectorAll('input[type="date"]');
+        inputs.forEach(function (input) {
+            const val = input.getAttribute('value') || input.value;
+            if (val && val.includes('/')) {
+                const partes = val.split('/');
+                if (partes.length === 3) {
+                    const [dia, mes, ano] = partes;
+                    const novoValor = `${ano}-${mes.padStart(2, '0')}-${dia.padStart(2, '0')}`;
+                    input.value = novoValor;
+                    input.setAttribute('value', novoValor);
+                }
+            }
+        });
+
+        const activeTabId = sessionStorage.getItem('activeInstrumentoTab');
+        if (activeTabId) {
+            const tabEl = document.querySelector(`#${activeTabId}`);
+            if (tabEl) {
+                const tab = new bootstrap.Tab(tabEl);
+                tab.show();
+            }
+        }
+
+        const tabButtons = document.querySelectorAll('button[data-bs-toggle="tab"]');
+        tabButtons.forEach(btn => {
+            btn.addEventListener('shown.bs.tab', function (event) {
+                sessionStorage.setItem('activeInstrumentoTab', event.target.id);
+            });
+        });
+
+        if (typeof atualizarContador === 'function') {
+            atualizarContador();
+        }
+    });
+</script>
+{% endblock %}

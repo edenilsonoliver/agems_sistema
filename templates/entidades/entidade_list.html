@@ -12,22 +12,12 @@
 {% block table_rows %}
 {% for entidade in object_list %}
 <tr>
-    <td class="align-middle text-center" style="width: 130px; padding: 10px 0;">
-        <div
-            style="width: 120px; height: 50px; display: flex; align-items: center; justify-content: center; margin: 0 auto;">
-            {% if entidade.logo %}
-            {% if 'neoenergia' in entidade.razao_social|lower or 'neoenergia' in entidade.nome_fantasia|lower %}
-            <img src="{{entidade.logo.url}}" alt="{{entidade.razao_social}}"
-                style="max-height: 50px; max-width: 120px; width: auto; height: auto; object-fit: contain; display: block; transform: scale(1.5);">
-            {% else %}
-            <img src="{{entidade.logo.url}}" alt="{{entidade.razao_social}}"
-                style="max-height: 50px; max-width: 120px; width: auto; height: auto; object-fit: contain; display: block;">
-            {% endif %}
-            {% else %}
-            <div class="bg-light rounded d-flex align-items-center justify-content-center"
-                style="width: 40px; height: 40px;"><i class="bi bi-building text-muted" style="font-size: 1.2rem;"></i>
-            </div>
-            {% endif %}
+    <td class="align-middle text-center" style="width: 100px;">
+        <div class="d-flex align-items-center justify-content-center bg-white rounded border shadow-sm"
+            style="width: 80px; height: 50px; overflow: hidden; margin: 0 auto;">
+            <img src="{{ entidade.get_logo_url }}" alt="{{ entidade.razao_social }}" class="img-fluid"
+                style="max-height: 40px; max-width: 70px; object-fit: contain;"
+                onerror="this.src='{% static 'img/placeholder_entidade.png' %}'; this.onerror=null;">
         </div>
     </td>
     <td class="align-middle" style="text-align: left;">
@@ -39,9 +29,10 @@
             style="white-space: normal; display: inline-block; width: 100%;">{{entidade.tipo_entidade}}</span></td>
     <td class="align-middle"><span
             class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25"
-            style="white-space: normal; display: inline-block; text-align: left; width: 100%;">{{entidade.tipo_servico}}</span></td>
+            style="white-space: normal; display: inline-block; text-align: left; width: 100%;">{{entidade.tipo_servico}}</span>
+    </td>
     <td class="align-middle">
-        {% if  entidade.status  ==  'ativa' %}
+        {% if entidade.status == 'ativa' %}
         <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25">Ativa</span>
         {% else %}
         <span class="badge bg-light text-dark border">{{entidade.get_status_display}}</span>

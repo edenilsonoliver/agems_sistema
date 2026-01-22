@@ -1,4 +1,8 @@
 from django import forms
+from django.db.models import Count
+import logging
+
+logger = logging.getLogger(__name__)
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.shortcuts import get_object_or_404, redirect, render
@@ -84,7 +88,7 @@ class InstrumentoListView(ModernListView):
 class InstrumentoCreateView(ModernCreateView):
     model = Instrumento
     form_class = InstrumentoForm
-    template_name = 'instrumentos/instrumento_form_novo.html'
+    template_name = 'instrumentos/instrumento_form.html'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -110,14 +114,15 @@ class InstrumentoCreateView(ModernCreateView):
 class InstrumentoUpdateView(ModernUpdateView):
     model = Instrumento
     form_class = InstrumentoForm
-    template_name = 'instrumentos/instrumento_form_novo.html'
+    template_name = 'instrumentos/instrumento_form.html'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         if self.request.POST:
             context['formset'] = ObrigacaoFormSet(self.request.POST, instance=self.object)
         else:
-            context['formset'] = ObrigacaoFormSet(instance=self.object)
+            queryset = self.object.obrigacoes.annotate(acoes_count=Count('acoes'))
+            context['formset'] = ObrigacaoFormSet(instance=self.object, queryset=queryset)
         context['arquivos'] = getattr(self.object, 'arquivos', []).all() if hasattr(self.object, 'arquivos') else []
         return context
 
@@ -125,7 +130,8 @@ class InstrumentoUpdateView(ModernUpdateView):
         """Sobrescreve post() para permitir salvar o formset mesmo se o form principal não mudar"""
         self.object = self.get_object()
         form = self.get_form()
-        formset = ObrigacaoFormSet(self.request.POST, instance=self.object)
+        queryset = self.object.obrigacoes.annotate(acoes_count=Count('acoes'))
+        formset = ObrigacaoFormSet(self.request.POST, instance=self.object, queryset=queryset)
 
         if form.is_valid() and formset.is_valid():
             self.object = form.save(commit=False)
@@ -164,18 +170,74 @@ def diretoria_create(request):
     return JsonResponse({'success': False, 'error': 'Dados incompletos'})
 
 
+import zipfile
+import os
+from django.utils.text import slugify
+
 @require_POST
 def arquivo_upload(request, instrumento_id):
-    """Upload de arquivo para instrumento via AJAX"""
+    """Upload de arquivo para instrumento via AJAX com validação de segurança"""
     instrumento = get_object_or_404(Instrumento, pk=instrumento_id)
     arquivo = request.FILES.get('arquivo')
     nome = request.POST.get('nome_arquivo', '')
     
-    if arquivo:
-        ArquivoInstrumento.objects.create(
+    if not arquivo:
+        return JsonResponse({'success': False, 'error': 'Nenhum arquivo enviado.'})
+
+    # 1. Validação de Extensão
+    ext = os.path.splitext(arquivo.name)[1].lower()
+    allowed_extensions = ['.pdf', '.docx', '.xlsx']
+    
+    if ext not in allowed_extensions:
+        return JsonResponse({
+            'success': False, 
+            'error': f'Extensão {ext} não permitida. Use apenas PDF, DOCX ou XLSX.'
+        })
+
+    # 2. Verificação de Macros (para arquivos Office)
+    if ext in ['.docx', '.xlsx']:
+        try:
+            # Arquivos Office modernos são ZIPs. Macros ficam em vbaProject.bin
+            with zipfile.ZipFile(arquivo) as z:
+                # Se encontrar qualquer arquivo .bin suspeito ou vbaProject
+                if any(item.filename.endswith('.bin') for item in z.infolist()):
+                    return JsonResponse({
+                        'success': False, 
+                        'error': 'O arquivo contém macros ou conteúdo binário não permitido por segurança.'
+                    })
+        except zipfile.BadZipFile:
+            return JsonResponse({'success': False, 'error': 'Arquivo corrompido ou inválido.'})
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': f'Erro ao processar arquivo: {str(e)}'})
+
+    try:
+        # 3. Salvamento Seguro
+        # O Django já cuida de evitar sobrescrita, mas vamos garantir um nome limpo
+        arquivo_obj = ArquivoInstrumento.objects.create(
             instrumento=instrumento,
             arquivo=arquivo,
             nome_arquivo=nome or arquivo.name
         )
+        return JsonResponse({
+            'success': True,
+            'id': arquivo_obj.id,
+            'nome': arquivo_obj.nome_arquivo,
+            'url': arquivo_obj.arquivo.url
+        })
+    except Exception as e:
+        logger.error(f"Erro no upload de arquivo: {str(e)}")
+        return JsonResponse({'success': False, 'error': f'Erro ao salvar no banco de dados: {str(e)}'})
+
+@require_POST
+def arquivo_delete(request, arquivo_id):
+    """Excluir arquivo de instrumento via AJAX"""
+    arquivo = get_object_or_404(ArquivoInstrumento, pk=arquivo_id)
+    try:
+        # Remove fisicamente o arquivo se desejar, ou apenas o registro
+        # O default do FileField.delete() é apagar o arquivo do sistema
+        arquivo.arquivo.delete(save=False)
+        arquivo.delete()
         return JsonResponse({'success': True})
-    return JsonResponse({'success': False, 'error': 'Arquivo não fornecido'})
+    except Exception as e:
+        logger.error(f"Erro ao excluir arquivo {arquivo_id}: {str(e)}")
+        return JsonResponse({'success': False, 'error': str(e)})

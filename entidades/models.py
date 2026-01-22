@@ -1,4 +1,7 @@
+import uuid
+import os
 from django.db import models
+from django.conf import settings
 from core.models import TipoEntidade, TipoServico
 
 
@@ -35,8 +38,10 @@ class Entidade(models.Model):
     
     # Logo
     def upload_logo_path(instance, filename):
-        # Garante que o arquivo seja salvo exatamente em entidades/logos/
-        return f"entidades/logos/{filename}"
+        """Gera um caminho único para o upload do logo usando UUID"""
+        extension = os.path.splitext(filename)[1]
+        unique_filename = f"{uuid.uuid4()}{extension}"
+        return os.path.join('entidades', 'logos', unique_filename)
 
     logo = models.ImageField(
         'Logo da Entidade',
@@ -45,6 +50,17 @@ class Entidade(models.Model):
         null=True,
         help_text='Upload do logo da entidade (PNG, JPG)'
     )
+
+    def get_logo_url(self):
+        """Retorna a URL do logo ou uma imagem padrão se não existir"""
+        try:
+            if self.logo and hasattr(self.logo, 'url'):
+                if os.path.exists(self.logo.path):
+                    return self.logo.url
+        except Exception:
+            pass
+        
+        return f"{settings.STATIC_URL}img/placeholder_entidade.png"
     
     # Status
     status = models.CharField('Status', max_length=10, choices=STATUS_CHOICES, default='ativa')
