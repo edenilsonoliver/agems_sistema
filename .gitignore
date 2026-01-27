@@ -19,3 +19,18 @@ Thumbs.db
 agems_database_der.png
 ESTRUTURA_BANCO_DADOS.md
 sistema DGE AGEMS.pptx
+
+# Django Media and Static
+media/
+staticfiles/
+
+# Backups
+backups/
+*.bak
+
+# IDE e Editores
+.idea/
+.vscode/
+
+# Outros / Typos
+vevn/

@@ -22,3 +22,15 @@ class ObrigacaoForm(forms.ModelForm):
         widgets = {
             'data_vencimento': forms.DateInput(attrs={'type': 'date'}),
         }
+
+
+class ImportacaoObrigacoesForm(forms.Form):
+    """Formulário para upload de CSV de obrigações"""
+    arquivo_csv = forms.FileField(
+        label="Selecionar Arquivo CSV",
+        help_text="Colunas obrigatórias: Titulo, Descricao, Clausula, Tipo",
+        widget=forms.ClearableFileInput(attrs={
+            'accept': '.csv', 
+            'class': 'form-control'
+        })
+    )

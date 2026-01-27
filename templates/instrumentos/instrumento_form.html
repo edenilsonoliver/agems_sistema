@@ -16,7 +16,7 @@
         </a>
     </div>
 
-    <form method="post" enctype="multipart/form-data" id="formInstrumento">
+    <form method="post" enctype="multipart/form-data" id="formInstrumento" novalidate>
         {% csrf_token %}
 
         {% if form.errors or formset.errors %}
@@ -197,12 +197,21 @@
 
             <!-- Aba Obrigações -->
             <div class="tab-pane fade" id="obrigacoes" role="tabpanel">
-                <div class="card border-0 shadow-sm">
-                    <div class="card-header d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0"><i class="bi bi-list-check me-2"></i>Obrigações do Instrumento</h5>
-                        <button type="button" class="btn btn-primary btn-sm" onclick="adicionarObrigacao()">
-                            <i class="bi bi-plus-circle"></i> Adicionar Obrigação
-                        </button>
+                <div class="card border-0 shadow-sm mb-5">
+                    <div class="card-header bg-white py-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0 text-primary"><i class="bi bi-list-check me-2"></i>Obrigações do Instrumento
+                            </h5>
+                            <div class="d-flex gap-2">
+                                <button type="button" class="btn btn-primary btn-sm" onclick="adicionarObrigacao()">
+                                    <i class="bi bi-plus-circle me-1"></i>Adicionar
+                                </button>
+                                <button type="button" class="btn btn-outline-success btn-sm" data-bs-toggle="modal"
+                                    data-bs-target="#modalImportarCSV">
+                                    <i class="bi bi-file-earmark-spreadsheet me-1"></i>Importar CSV
+                                </button>
+                            </div>
+                        </div>
                     </div>
                     <div class="card-body p-0">
                         {{formset.management_form}}
@@ -267,100 +276,274 @@
 
                         <div id="empty-obrigacoes" class="text-center py-5" style="display: none;">
                             <i class="bi bi-inbox display-1 text-muted"></i>
-                            <p class="text-muted mt-3">Nenhuma obrigação adicionada. Clique em "Adicionar Obrigação"
-                                para começar.</p>
+                            <p class="text-muted mt-3">Nenhuma obrigação adicionada. Clique em "Adicionar Obrigação" ou
+                                "Importar CSV" para começar.</p>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Aba Arquivos -->
-            <div class="tab-pane fade" id="arquivos" role="tabpanel">
-                <div class="card border-0 shadow-sm">
-                    <div class="card-header">
-                        <h5 class="mb-0"><i class="bi bi-paperclip me-2"></i>Arquivos</h5>
-                    </div>
-                    <div class="card-body p-4">
-                        {% if object %}
-                        <div class="mb-4 border p-3 rounded bg-light">
-                            <h6 class="mb-3"><i class="bi bi-plus-circle me-1"></i>Anexar Novo Documento</h6>
-                            <div class="row">
-                                <div class="col-md-4 mb-3">
-                                    <input type="text" class="form-control" id="nomeArquivo"
-                                        placeholder="Nome/Descrição do arquivo">
-                                </div>
-                                <div class="col-md-6 mb-3">
-                                    <input type="file" class="form-control" id="arquivo" name="arquivo_upload"
-                                        accept=".pdf,.docx,.xlsx">
-                                    <small class="text-muted">Apenas PDF, DOCX ou XLSX (sem macros)</small>
-                                </div>
-                                <div class="col-md-2 mb-3">
-                                    <button type="button" class="btn btn-primary w-100" id="btnUpload"
-                                        onclick="executarUpload()">
-                                        <i class="bi bi-upload me-1"></i> <span id="btnUploadText">Upload</span>
-                                    </button>
-                                </div>
-                            </div>
+            <!-- Modal Importação CSV -->
+            <div class="modal fade" id="modalImportarCSV" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title"><i class="bi bi-file-earmark-spreadsheet me-2"></i>Importar
+                                Obrigações via CSV</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                         </div>
-
-                        {% if arquivos %}
-                        <table class="table table-hover">
-                            <thead>
-                                <tr>
-                                    <th>Nome</th>
-                                    <th>Data Upload</th>
-                                    <th>Ações</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for arquivo in arquivos %}
-                                <tr>
-                                    <td>{{arquivo.nome_arquivo}}</td>
-                                    <td>{{arquivo.data_upload|date:"d/m/Y H:i"}}</td>
-                                    <td>
-                                        <a href="{{arquivo.arquivo.url}}" class="btn btn-sm btn-outline-primary"
-                                            target="_blank">
-                                            <i class="bi bi-download"></i>
+                        <div class="modal-body">
+                            <form id="formImportacaoCSV" enctype="multipart/form-data">
+                                <div class="mb-3">
+                                    <label for="inputCsvFile" class="form-label">Selecione o arquivo CSV</label>
+                                    <input class="form-control" type="file" id="inputCsvFile" accept=".csv" required>
+                                    <div class="form-text">
+                                        O arquivo deve conter cabeçalhos: <strong>Titulo, Descricao, Clausula,
+                                            Tipo</strong>.
+                                        <a href="/static/modelo_importacao_obrigacoes.csv" download
+                                            class="text-decoration-none ms-1">
+                                            <i class="bi bi-download"></i> Baixar modelo
                                         </a>
-                                        <button type="button" class="btn btn-sm btn-outline-danger"
-                                            onclick="excluirArquivo({{arquivo.id}})">
-                                            <i class="bi bi-trash"></i>
-                                        </button>
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                        {% else %}
-                        <div class="text-center py-5">
-                            <i class="bi bi-inbox display-1 text-muted"></i>
-                            <p class="text-muted mt-3">Nenhum arquivo anexado</p>
+                                    </div>
+                                </div>
+                                <div id="importProgress" class="d-none">
+                                    <label class="form-label">Processando...</label>
+                                    <div class="progress mb-2">
+                                        <div class="progress-bar progress-bar-striped progress-bar-animated"
+                                            role="progressbar" style="width: 100%"></div>
+                                    </div>
+                                    <small class="text-muted" id="progressStatus">Lendo arquivo...</small>
+                                </div>
+                                <div id="importError" class="alert alert-danger d-none mt-3" role="alert"></div>
+                                <div id="importSuccess" class="alert alert-success d-none mt-3" role="alert">
+                                    Importação concluída! <span id="successCount">0</span> registros carregados.
+                                </div>
+                            </form>
                         </div>
-                        {% endif %}
-                        {% else %}
-                        <div class="alert alert-info">
-                            <i class="bi bi-info-circle me-2"></i>
-                            Salve o instrumento para poder fazer upload de arquivos.
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+                            <button type="button" class="btn btn-primary"
+                                onclick="realizarImportacaoCSV()">Importar</button>
                         </div>
-                        {% endif %}
                     </div>
                 </div>
             </div>
-        </div>
 
-        <div class="row mt-4">
-            <div class="col-12">
-                <div class="d-flex justify-content-end gap-2">
-                    <a href="{% url 'instrumento_list' %}" class="btn btn-outline-secondary">
-                        <i class="bi bi-x-circle me-2"></i>Cancelar
-                    </a>
-                    <button type="submit" class="btn btn-primary">
-                        <i class="bi bi-check-circle me-2"></i>Salvar Instrumento e Obrigações
-                    </button>
+            <!-- Script para Importação CSV -->
+            <script>
+                function realizarImportacaoCSV() {
+                    const fileInput = document.getElementById('inputCsvFile');
+                    const file = fileInput.files[0];
+                    if (!file) {
+                        alert("Por favor, selecione um arquivo CSV.");
+                        return;
+                    }
+
+                    // Elementos de UI
+                    const progressDiv = document.getElementById('importProgress');
+                    const errorDiv = document.getElementById('importError');
+                    const successDiv = document.getElementById('importSuccess');
+                    const importBtn = document.querySelector('#modalImportarCSV .btn-primary');
+                    const countSpan = document.getElementById('successCount');
+                    const statusText = document.getElementById('progressStatus');
+
+                    // Reset UI
+                    progressDiv.classList.remove('d-none');
+                    errorDiv.classList.add('d-none');
+                    successDiv.classList.add('d-none');
+                    importBtn.disabled = true;
+                    statusText.textContent = "Lendo arquivo...";
+
+                    const formData = new FormData();
+                    formData.append('arquivo_csv', file);
+                    formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+
+                    fetch('{% url "importar_obrigacoes_csv" %}', {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.status === 'success') {
+                                const itens = data.data;
+                                statusText.textContent = `Processando ${itens.length} registros...`;
+
+                                // Adiciona cada item à tabela
+                                const total = itens.length;
+
+                                // Usando setTimeout para não travar a UI
+                                function processarLote(index) {
+                                    if (index >= total) {
+                                        // Finalizado todo o lote
+                                        progressDiv.classList.add('d-none');
+                                        successDiv.classList.remove('d-none');
+                                        countSpan.textContent = total;
+                                        importBtn.disabled = false;
+                                        fileInput.value = ''; // Limpa input
+
+                                        // CRUCIAL: Reindexar tudo após a importação em massa
+                                        if (typeof reindexarFormularios === 'function') {
+                                            reindexarFormularios();
+                                            atualizarContadorVisual();
+                                        } else {
+                                            console.error("Função reindexarFormularios não encontrada! Importação pode estar corrompida.");
+                                        }
+
+                                        return;
+                                    }
+
+                                    const item = itens[index];
+                                    adicionarObrigacaoComDados(item);
+
+                                    // Processa próximo registro imediatamente (ou em pequenos chunks se fossem milhares)
+                                    // setTimeout 0 permite render da UI update
+                                    if (index % 50 === 0) {
+                                        setTimeout(() => processarLote(index + 1), 10);
+                                    } else {
+                                        processarLote(index + 1);
+                                    }
+                                }
+
+                                processarLote(0);
+
+                            } else {
+                                throw new Error(data.message || "Erro desconhecido no servidor.");
+                            }
+                        })
+                        .catch(error => {
+                            progressDiv.classList.add('d-none');
+                            errorDiv.textContent = error.message;
+                            errorDiv.classList.remove('d-none');
+                            importBtn.disabled = false;
+                        });
+                }
+
+                function adicionarObrigacaoComDados(data) {
+                    const container = document.getElementById('obrigacoes-container');
+                    const template = document.getElementById('empty-form-template').innerHTML;
+
+                    // Gera ID único para evitar colisão no DOM
+                    const uniqueId = 'import_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
+                    // Usa placeholder único
+                    const newRowHTML = template.replace(/__prefix__/g, uniqueId);
+
+                    const temp = document.createElement('tbody');
+                    temp.innerHTML = newRowHTML;
+                    const newRow = temp.firstElementChild;
+
+                    // Preenche os campos
+                    const tituloInput = newRow.querySelector(`[name$="titulo"]`);
+                    const descInput = newRow.querySelector(`[name$="descricao"]`);
+                    const clausulaInput = newRow.querySelector(`[name$="clausula_referencia"]`);
+                    const tipoSelect = newRow.querySelector(`[name$="tipo_obrigacao"]`);
+
+                    if (tituloInput) tituloInput.value = data.titulo || '';
+                    if (descInput) descInput.value = data.descricao || '';
+                    if (clausulaInput) clausulaInput.value = data.clausula_referencia || '';
+
+                    if (tipoSelect && data.tipo_obrigacao) {
+                        tipoSelect.value = data.tipo_obrigacao;
+                    }
+
+                    container.appendChild(newRow);
+                    // NÃO incrementa formIdx nem chama reindexar aqui para performance.
+                    // Será chamado no final do lote.
+                }
+            </script>
+        </div>
+</div>
+
+<!-- Aba Arquivos -->
+<div class="tab-pane fade" id="arquivos" role="tabpanel">
+    <div class="card border-0 shadow-sm">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="bi bi-paperclip me-2"></i>Arquivos</h5>
+        </div>
+        <div class="card-body p-4">
+            {% if object %}
+            <div class="mb-4 border p-3 rounded bg-light">
+                <h6 class="mb-3"><i class="bi bi-plus-circle me-1"></i>Anexar Novo Documento</h6>
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <input type="text" class="form-control" id="nomeArquivo"
+                            placeholder="Nome/Descrição do arquivo">
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <input type="file" class="form-control" id="arquivo" name="arquivo_upload"
+                            accept=".pdf,.docx,.xlsx">
+                        <small class="text-muted">Apenas PDF, DOCX ou XLSX (sem macros)</small>
+                    </div>
+                    <div class="col-md-2 mb-3">
+                        <button type="button" class="btn btn-primary w-100" id="btnUpload" onclick="executarUpload()">
+                            <i class="bi bi-upload me-1"></i> <span id="btnUploadText">Upload</span>
+                        </button>
+                    </div>
                 </div>
             </div>
+
+            {% if arquivos %}
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Nome</th>
+                        <th>Data Upload</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for arquivo in arquivos %}
+                    <tr>
+                        <td>{{arquivo.nome_arquivo}}</td>
+                        <td>{{arquivo.data_upload|date:"d/m/Y H:i"}}</td>
+                        <td>
+                            <a href="{{arquivo.arquivo.url}}" class="btn btn-sm btn-outline-primary" target="_blank">
+                                <i class="bi bi-download"></i>
+                            </a>
+                            <button type="button" class="btn btn-sm btn-outline-danger"
+                                onclick="excluirArquivo({{arquivo.id}})">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="text-center py-5">
+                <i class="bi bi-inbox display-1 text-muted"></i>
+                <p class="text-muted mt-3">Nenhum arquivo anexado</p>
+            </div>
+            {% endif %}
+            {% else %}
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle me-2"></i>
+                Salve o instrumento para poder fazer upload de arquivos.
+            </div>
+            {% endif %}
         </div>
-    </form>
+    </div>
+</div>
+</div>
+
+<div class="fixed-bottom bg-white border-top shadow-lg py-3" style="left: 260px;">
+    <div class="container-fluid px-4">
+        <div class="d-flex justify-content-end gap-2">
+            <a href="{% url 'instrumento_list' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-x-circle me-2"></i>Cancelar
+            </a>
+            <button type="button" class="btn btn-primary" onclick="salvarFormulario(this)">
+                <i class="bi bi-check-circle me-2"></i>Salvar Instrumento e Obrigações
+            </button>
+        </div>
+    </div>
+</div>
+</form>
+</div>
+<div style="height: 100px;">
+    <div class="text-center text-muted small" id="debug-total-forms"></div>
 </div>
 
 <!-- Modal de Validação de Datas -->
@@ -383,22 +566,45 @@
 </div>
 
 <script>
-    document.addEventListener('DOMContentLoaded', function () {
+    function salvarFormulario(btn) {
         const form = document.getElementById('formInstrumento');
-        const modalEl = document.getElementById('dateValidationModal');
-        const modal = new bootstrap.Modal(modalEl);
 
-        form.addEventListener('submit', function (event) {
-            const dataInicio = document.getElementById('id_data_inicio').value;
-            const dataFim = document.getElementById('id_data_fim').value;
+        // Validação de Data Simples
+        const dataInicio = document.getElementById('id_data_inicio').value;
+        const dataFim = document.getElementById('id_data_fim').value;
 
-            if (dataInicio && dataFim) {
-                if (new Date(dataFim) < new Date(dataInicio)) {
-                    event.preventDefault();
-                    modal.show();
-                }
+        if (dataInicio && dataFim) {
+            if (new Date(dataFim) < new Date(dataInicio)) {
+                const modalEl = document.getElementById('dateValidationModal');
+                // Tenta instanciar ou pegar instância existente
+                let modal = bootstrap.Modal.getInstance(modalEl);
+                if (!modal) modal = new bootstrap.Modal(modalEl);
+                modal.show();
+                return;
             }
-        });
+        }
+
+        // Feedback Visual e Submit Forçado
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Salvando...';
+        btn.classList.add('disabled');
+        btn.style.pointerEvents = 'none';
+
+        // Pequeno delay para garantir que a UI atualize antes do travamento do submit
+        setTimeout(() => {
+            // Garante integridade final dos índices e contador total (incluindo deletados)
+            // A função reindexarFormularios (definida abaixo) cuida de tudo
+            if (typeof reindexarFormularios === 'function') {
+                reindexarFormularios();
+            }
+
+            // Força o submit direto
+            form.submit();
+        }, 50);
+    }
+
+    // Fallback para Modal
+    document.addEventListener('DOMContentLoaded', function () {
+        // Inicializa tooltips ou outros componentes se necessário
     });
 </script>
 
@@ -439,66 +645,112 @@
 </table>
 
 <script>
-    let formIdx = {{ formset.total_form_count }};
+    // --- ROLLBACK / VERSÃO ESTÁVEL SIMPLIFICADA ---
+    // Removemos reindexação complexa. Usamos lógica padrão Django Formset.
 
-    function atualizarContador() {
-        const visibleRows = document.querySelectorAll('#obrigacoes-container .obrigacao-form:not([style*="display: none"])');
-        const count = visibleRows.length;
+    const totalFormsInput = document.getElementById('id_obrigacoes-TOTAL_FORMS');
 
-        const countBadge = document.getElementById('countObrigacoes');
-        if (countBadge) countBadge.textContent = count;
+    function atualizarContadorVisual() {
+        // Conta apenas linhas visíveis
+        const count = document.querySelectorAll('#obrigacoes-container .obrigacao-form:not([style*="display: none"])').length;
+        const badge = document.getElementById('countObrigacoes');
+        if (badge) badge.textContent = count;
 
-        const emptyMsg = document.getElementById('empty-obrigacoes');
-        if (emptyMsg) {
-            emptyMsg.style.display = count === 0 ? 'block' : 'none';
-        }
+        const empty = document.getElementById('empty-obrigacoes');
+        if (empty) empty.style.display = count === 0 ? 'block' : 'none';
+
+        // Debug
+        const debug = document.getElementById('debug-total-forms');
+        if (debug) debug.textContent = `Total Forms (Backend): ${totalFormsInput.value} | Visíveis: ${count}`;
     }
 
     function adicionarObrigacao() {
-        const container = document.getElementById('obrigacoes-container');
+        if (!totalFormsInput) {
+            console.error("ERRO CRÍTICO: ManagementForm TOTAL_FORMS não encontrado.");
+            return;
+        }
+
+        const currentCount = parseInt(totalFormsInput.value);
         const template = document.getElementById('empty-form-template').innerHTML;
-        const newRowHTML = template.replace(/__prefix__/g, formIdx);
 
-        const temp = document.createElement('tbody');
-        temp.innerHTML = newRowHTML;
-        const newRow = temp.firstElementChild;
+        // Substituimos __prefix__ pelo índice ATUAL (Sempre no final)
+        const newRowHTML = template.replace(/__prefix__/g, currentCount);
 
-        container.appendChild(newRow);
+        const container = document.getElementById('obrigacoes-container');
+        // Insere HTML
+        container.insertAdjacentHTML('beforeend', newRowHTML);
 
-        formIdx++;
-        const totalForms = document.getElementById('id_obrigacoes-TOTAL_FORMS');
-        if (totalForms) totalForms.value = formIdx;
+        // Incrementa o contador do Django
+        totalFormsInput.value = currentCount + 1;
 
-        atualizarContador();
+        atualizarContadorVisual();
+
+        // Retorna a linha criada (último filho) para manipulação (usado no CSV)
+        return container.lastElementChild;
     }
 
     function removerObrigacao(btn) {
         const row = btn.closest('.obrigacao-form');
-        const idx = row.getAttribute('data-form-idx');
-        let deleteInput = row.querySelector(`input[name="obrigacoes-${idx}-DELETE"]`);
-        const idInput = row.querySelector(`input[name="obrigacoes-${idx}-id"]`);
+        const deleteInput = row.querySelector('input[name$="-DELETE"]');
+        const idInput = row.querySelector('input[name$="-id"]');
 
-        if (idInput && !idInput.value) {
-            row.remove();
-        } else {
+        // Se tem ID, é item do banco: NÃO REMOVA DO DOM! Apenas oculte e marque DELETE.
+        if (idInput && idInput.value) {
             if (deleteInput) {
                 deleteInput.checked = true;
                 deleteInput.value = 'on';
                 row.style.display = 'none';
             } else {
-                const hiddenDelete = document.createElement('input');
-                hiddenDelete.type = 'hidden';
-                hiddenDelete.name = `obrigacoes-${idx}-DELETE`;
-                hiddenDelete.value = 'on';
-                row.appendChild(hiddenDelete);
+                alert("Erro: Campo DELETE não encontrado para item existente.");
+            }
+        } else {
+            // Item novo (não salvo): Pode remover do DOM.
+            // POREM: Se removermos, criamos um "buraco" nos índices?
+            // O Django tolera buracos se o TOTAL_FORMS for maior? 
+            // Para garantir segurança no Rollback, vamos APENAS OCULTAR e limpar os valores.
+            // Assim os índices preservam-se e o Django recebe um form vazio (que ele ignora ou valida?)
+            // Melhor: Marcar DELETE também se possível (o template empty tem delete input).
+            if (deleteInput) {
+                deleteInput.checked = true;
+                deleteInput.value = 'on';
                 row.style.display = 'none';
+            } else {
+                // Se não tiver delete, removemos. (Buraco pode ocorrer, mas é melhor que validação fail)
+                row.remove();
+                // Nota: Não decrementamos TOTAL_FORMS para não quebrar índices seguintes.
             }
         }
-        atualizarContador();
+
+        atualizarContadorVisual();
+    }
+
+    // --- Lógica de Importação (Adaptada para Nova Função Simples) ---
+    // A função realizarImportacaoCSV() chama adicionarObrigacaoComDados()
+    // Precisamos redefinir adicionarObrigacaoComDados para usar nossa adicionarObrigacao() robusta.
+
+    function adicionarObrigacaoComDados(data) {
+        // Cria a linha usando a lógica padrão (incrementa índice)
+        const newRow = adicionarObrigacao(); // Retorna o elemento TR
+
+        if (!newRow) return;
+
+        // Preenche os campos na linha criada
+        const tituloInput = newRow.querySelector(`input[name$="-titulo"]`);
+        const descInput = newRow.querySelector(`textarea[name$="-descricao"]`);
+        const clausulaInput = newRow.querySelector(`input[name$="-clausula_referencia"]`);
+        const tipoSelect = newRow.querySelector(`select[name$="-tipo_obrigacao"]`);
+
+        if (tituloInput) tituloInput.value = data.titulo || '';
+        if (descInput) descInput.value = data.descricao || '';
+        if (clausulaInput) clausulaInput.value = data.clausula_referencia || '';
+
+        if (tipoSelect && data.tipo_obrigacao) {
+            tipoSelect.value = data.tipo_obrigacao;
+        }
     }
 
     document.addEventListener('DOMContentLoaded', function () {
-        atualizarContador();
+        atualizarContadorVisual();
     });
 
     {% if object %}

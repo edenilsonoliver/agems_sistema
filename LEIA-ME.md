@@ -1,6 +1,6 @@
 # 🚀 AGEMS - Sistema de Gestão Regulatória
 
-**Versão:** 2.0 | **Data:** Outubro 2025
+**Versão:** v0.0.11 | **Data:** Janeiro 2026
 
 Sistema completo de gestão de instrumentos regulatórios, obrigações, entidades e ações para a **AGEMS - Agência de Regulação de Serviços Públicos de Mato Grosso do Sul**.
 
@@ -66,7 +66,7 @@ O pacote inclui scripts PowerShell para facilitar o gerenciamento:
 - **Dashboard Executivo** - Visão geral com estatísticas e gráficos dinâmicos
 - **Entidades** - Concessionárias, órgãos públicos e empresas com gestão de logos
 - **Instrumentos** - Gestão de contratos, convênios e acordos (NUP E-MS)
-- **Obrigações** - Cadastro inline integrado aos instrumentos
+- **Obrigações** - Cadastro inline e **importação em massa via CSV**
 - **Ações** - Nível executivo vinculado às obrigações (Fiscalizações, análises, projetos)
 - **Checklist/Tarefas** - Reordenamento dinâmico (Drag-and-Drop) dentro das ações
 - **Indicadores** - Metas, valores ideais e conformidade contratual
@@ -75,9 +75,10 @@ O pacote inclui scripts PowerShell para facilitar o gerenciamento:
 - **Configurações** - Gestão de tipos, diretorias e subunidades
 
 ### ✅ **Recursos Avançados**
+- ✨ **Importação Inteligente:** Carga de obrigações via planilha CSV com detecção automática de delimitador (; ou ,)
 - ✨ **Estrutura em 4 Níveis:** Instrumento -> Obrigação -> Ação -> Checklist
 - ✨ **Drag-and-Drop:** Reordenamento visual de itens de checklist
-- ✨ **Design Moderno:** Interface premium com gradientes e micro-animações
+- ✨ **Design Moderno:** Interface premium com gradientes, micro-animações e Sticky Footer
 - ✨ **Padronização Visual:** Status "Em Andamento" em **Dourado Metálico** e "Encerrada" em **Vermelho**
 - ✨ **Mascaramento Inteligente:** Campos de CNPJ e CEP com formatação automática
 - ✨ **CRUD Inline:** Criação de tipos sem sair da tela principal

@@ -11,6 +11,10 @@ from django.forms import inlineformset_factory
 from core.views import ModernListView, ModernCreateView, ModernUpdateView, ModernDeleteView
 from core.models import TipoInstrumento, Diretoria, TipoObrigacao
 from .models import Instrumento, Obrigacao, ArquivoInstrumento
+import csv
+import io
+import json
+from .forms import ImportacaoObrigacoesForm
 
 
 class InstrumentoForm(forms.ModelForm):
@@ -93,9 +97,9 @@ class InstrumentoCreateView(ModernCreateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         if self.request.POST:
-            context['formset'] = ObrigacaoFormSet(self.request.POST)
+            context['formset'] = ObrigacaoFormSet(self.request.POST, prefix='obrigacoes')
         else:
-            context['formset'] = ObrigacaoFormSet()
+            context['formset'] = ObrigacaoFormSet(prefix='obrigacoes')
         context['arquivos'] = []
         return context
 
@@ -119,10 +123,10 @@ class InstrumentoUpdateView(ModernUpdateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         if self.request.POST:
-            context['formset'] = ObrigacaoFormSet(self.request.POST, instance=self.object)
+            context['formset'] = ObrigacaoFormSet(self.request.POST, instance=self.object, prefix='obrigacoes')
         else:
             queryset = self.object.obrigacoes.annotate(acoes_count=Count('acoes'))
-            context['formset'] = ObrigacaoFormSet(instance=self.object, queryset=queryset)
+            context['formset'] = ObrigacaoFormSet(instance=self.object, queryset=queryset, prefix='obrigacoes')
         context['arquivos'] = getattr(self.object, 'arquivos', []).all() if hasattr(self.object, 'arquivos') else []
         return context
 
@@ -131,7 +135,7 @@ class InstrumentoUpdateView(ModernUpdateView):
         self.object = self.get_object()
         form = self.get_form()
         queryset = self.object.obrigacoes.annotate(acoes_count=Count('acoes'))
-        formset = ObrigacaoFormSet(self.request.POST, instance=self.object, queryset=queryset)
+        formset = ObrigacaoFormSet(self.request.POST, instance=self.object, queryset=queryset, prefix='obrigacoes')
 
         if form.is_valid() and formset.is_valid():
             self.object = form.save(commit=False)
@@ -240,4 +244,90 @@ def arquivo_delete(request, arquivo_id):
         return JsonResponse({'success': True})
     except Exception as e:
         logger.error(f"Erro ao excluir arquivo {arquivo_id}: {str(e)}")
-        return JsonResponse({'success': False, 'error': str(e)})
+
+@require_POST
+def importar_obrigacoes_csv(request):
+    """
+    Processa upload de CSV e retorna dados JSON das obrigações.
+    NÃO salva no banco. Apenas parseia para preenchimento do formulário.
+    """
+    form = ImportacaoObrigacoesForm(request.POST, request.FILES)
+    if form.is_valid():
+        arquivo = request.FILES['arquivo_csv']
+        try:
+            # Lê e decodifica o arquivo
+            content = arquivo.read().decode('utf-8-sig')
+            decoded_file = content.splitlines()
+            
+            if not decoded_file:
+                 return JsonResponse({'status': 'error', 'message': 'Arquivo CSV vazio ou inválido.'})
+
+            # Detecção inteligente de delimitador
+            # Verifica o primeiro caractere separador comum na primeira linha
+            primeira_linha = decoded_file[0]
+            delimitador = ';' if ';' in primeira_linha else ','
+            
+            reader = csv.DictReader(decoded_file, delimiter=delimitador, quotechar='"')
+            
+            # Normalizar headers
+            if not reader.fieldnames:
+                 return JsonResponse({'status': 'error', 'message': 'Não foi possível ler os cabeçalhos do arquivo.'})
+
+            headers_map = {h.strip().lower(): h for h in reader.fieldnames}
+            headers_lower = headers_map.keys()
+            
+            # Validação de colunas mínimas
+            esperados = ['titulo', 'descricao', 'clausula', 'tipo']
+            faltantes = [campo for campo in esperados if campo not in headers_lower]
+            
+            if faltantes:
+                 encontrados = list(headers_lower)
+                 msg_debug = f" (Encontrado: {', '.join(encontrados)})" if encontrados else ""
+                 return JsonResponse({
+                     'status': 'error', 
+                     'message': f'Colunas obrigatórias faltando: {", ".join(faltantes)}.{msg_debug}'
+                 }, status=400)
+            
+            # Cache de Tipos de Obrigação
+            tipos_bd = list(TipoObrigacao.objects.values('id', 'nome'))
+            tipos_map = {t['nome'].strip().lower(): t['id'] for t in tipos_bd}
+            
+            dados_parseados = []
+            
+            for idx, row in enumerate(reader, start=1):
+                # Normaliza linha usando o mapa de headers original para garantir acesso correto
+                row_lower = {}
+                for header_clean, header_original in headers_map.items():
+                    if header_original in row:
+                        row_lower[header_clean] = row[header_original]
+
+                titulo = row_lower.get('titulo', '').strip()
+                tipo_nome = row_lower.get('tipo', '').strip()
+                
+                if not titulo:
+                    continue 
+
+                tipo_id = None
+                if tipo_nome:
+                    tipo_id = tipos_map.get(tipo_nome.lower())
+                
+                # Tratamento básico de aspas extras na descrição se vierem sujas do Excel
+                descricao = row_lower.get('descricao', '').strip()
+                
+                dados_parseados.append({
+                    'titulo': titulo,
+                    'descricao': descricao,
+                    'clausula_referencia': row_lower.get('clausula', '').strip(),
+                    'tipo_obrigacao': tipo_id,
+                    'tipo_obrigacao_nome': tipo_nome
+                })
+            
+            return JsonResponse({'status': 'success', 'data': dados_parseados})
+
+        except UnicodeDecodeError:
+            return JsonResponse({'status': 'error', 'message': 'O arquivo não está em UTF-8. Salve como "CSV UTF-8" no Excel.'}, status=400)
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': f'Erro ao processar linha {reader.line_num if "reader" in locals() else "?"}: {str(e)}'}, status=500)
+    
+    return JsonResponse({'status': 'error', 'message': 'Formulário inválido.'}, status=400)
+
