@@ -130,6 +130,7 @@ class TipoAcaoDeleteView(ModernDeleteView):
 
 class SubunidadeListView(ModernListView):
     model = Subunidade
+    template_name = 'core/subunidade_list.html'
     title = 'Subunidades'
     subtitle = 'Gerencie as subunidades vinculadas às diretorias'
     icon = 'bi bi-diagram-3'

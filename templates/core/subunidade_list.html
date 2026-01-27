@@ -1,0 +1,57 @@
+{% extends 'components/list_view.html' %}
+
+{% block table_headers %}
+<th>Sigla</th>
+<th>Nome</th>
+<th>Diretoria</th>
+<th>Responsável</th>
+<th>Status</th>
+{% endblock %}
+
+{% block table_rows %}
+{% for item in object_list %}
+<tr>
+    <td>
+        {% if item.sigla %}
+        <span class="badge bg-light text-dark border">{{item.sigla}}</span>
+        {% else %}
+        -
+        {% endif %}
+    </td>
+    <td>
+        <div class="fw-semibold">{{item.nome}}</div>
+    </td>
+    <td>
+        {% if item.diretoria %}
+        <span class="badge bg-secondary">{{item.diretoria.sigla}}</span>
+        {% else %}
+        -
+        {% endif %}
+    </td>
+    <td>
+        {% if item.responsavel %}
+        <small>{{item.responsavel}}</small>
+        {% else %}
+        <small class="text-muted">-</small>
+        {% endif %}
+    </td>
+    <td>
+        {% if item.ativa %}
+        <span class="badge bg-success">Ativa</span>
+        {% else %}
+        <span class="badge bg-danger">Inativa</span>
+        {% endif %}
+    </td>
+    <td>
+        <div class="btn-group btn-group-sm">
+            <a href="{% url 'subunidade_edit' item.pk %}" class="btn btn-outline-primary" title="Editar">
+                <i class="bi bi-pencil"></i>
+            </a>
+            <a href="{% url 'subunidade_delete' item.pk %}" class="btn btn-outline-danger" title="Excluir">
+                <i class="bi bi-trash"></i>
+            </a>
+        </div>
+    </td>
+</tr>
+{% endfor %}
+{% endblock %}

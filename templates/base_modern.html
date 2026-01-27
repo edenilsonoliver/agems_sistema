@@ -509,41 +509,64 @@
     <aside class="sidebar" id="sidebar">
         <ul class="sidebar-nav">
             <li class="sidebar-nav-item">
-                <a href="/" class="sidebar-nav-link {% if  request.path  ==  '/' %}active{% endif %}">
+                <a href="/" class="sidebar-nav-link {% if request.path == '/' %}active{% endif %}">
                     <i class="bi bi-speedometer2"></i>
                     <span>Dashboard</span>
                 </a>
             </li>
+
+            {% if perms.entidades.view_entidade %}
             <li class="sidebar-nav-item">
                 <a href="{% url 'entidade_list' %}" class="sidebar-nav-link">
                     <i class="bi bi-building"></i>
                     <span>Entidades</span>
                 </a>
             </li>
+            {% endif %}
+
+            {% if perms.instrumentos.view_instrumento %}
             <li class="sidebar-nav-item">
                 <a href="{% url 'instrumento_list' %}" class="sidebar-nav-link">
                     <i class="bi bi-file-earmark-text"></i>
                     <span>Instrumentos</span>
                 </a>
             </li>
+            {% endif %}
+
+            {% if perms.acoes.view_acao %}
             <li class="sidebar-nav-item">
                 <a href="{% url 'acao_list' %}" class="sidebar-nav-link">
                     <i class="bi bi-lightning"></i>
                     <span>Ações</span>
                 </a>
             </li>
+            {% endif %}
+
+            {% if perms.indicadores.view_indicador %}
             <li class="sidebar-nav-item">
                 <a href="{% url 'indicador_list' %}" class="sidebar-nav-link">
                     <i class="bi bi-graph-up"></i>
                     <span>Indicadores</span>
                 </a>
             </li>
-            <li class="sidebar-nav-item">
-                <a href="{% url 'configuracoes' %}" class="sidebar-nav-link">
-                    <i class="bi bi-gear"></i>
-                    <span>Configurações</span>
-                </a>
-            </li>
+            {% endif %}
+
+            {% if user.is_authenticated and user.perfil <= 3 %} <!-- Apenas Gestores e Coordenadores podem ver
+                Configurações de Usuários -->
+                <li class="sidebar-nav-item">
+                    <a href="{% url 'usuario_list' %}" class="sidebar-nav-link">
+                        <!-- Link corrigido para lista de usuários, 'configuracoes' pode ser ambíguo -->
+                        <i class="bi bi-people"></i>
+                        <span>Usuários</span>
+                    </a>
+                </li>
+                <li class="sidebar-nav-item">
+                    <a href="{% url 'configuracoes' %}" class="sidebar-nav-link">
+                        <i class="bi bi-gear"></i>
+                        <span>Configurações</span>
+                    </a>
+                </li>
+                {% endif %}
         </ul>
 
         <div class="sidebar-footer">

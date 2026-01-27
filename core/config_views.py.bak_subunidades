@@ -1,7 +1,7 @@
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import get_user_model
-from .models import Diretoria, TipoEntidade, TipoServico, TipoInstrumento, TipoObrigacao, TipoAcao, Subunidade
+from .models import Diretoria, TipoEntidade, TipoServico, TipoInstrumento, TipoObrigacao, TipoAcao
 
 User = get_user_model()
 
@@ -10,7 +10,6 @@ User = get_user_model()
 def configuracoes(request):
     context = {
         'diretorias': Diretoria.objects.all(),
-        'subunidades': Subunidade.objects.select_related('diretoria').all()[:5], # Listar apenas as 5 primeiras para não poluir
         'tipos_entidade': TipoEntidade.objects.all(),
         'tipos_servico': TipoServico.objects.all(),
         'tipos_instrumento': TipoInstrumento.objects.all(),

@@ -35,8 +35,7 @@ class AcaoListView(PermissionRequiredMixin, ModernListView):
         instrumento_id = self.request.GET.get('instrumento')
         obrigacao_id = self.request.GET.get('obrigacao')
 
-        # OTIMIZAÇÃO: Carregamento antecipado de chaves estrangeiras
-        queryset = Acao.objects.select_related('responsavel', 'obrigacao', 'obrigacao__instrumento').all()
+        queryset = Acao.objects.all()
 
         if instrumento_id:
             queryset = queryset.filter(obrigacao__instrumento_id=instrumento_id)
@@ -50,8 +49,7 @@ class AcaoListView(PermissionRequiredMixin, ModernListView):
         instrumento_id = self.request.GET.get('instrumento')
 
         context['instrumentos'] = Instrumento.objects.all()
-        # OTIMIZAÇÃO: Se filtrar obrigações para o dropdown, carregue apenas o necessário
-        context['obrigacoes'] = Obrigacao.objects.filter(instrumento_id=instrumento_id).only('id', 'titulo') if instrumento_id else Obrigacao.objects.all().only('id', 'titulo')
+        context['obrigacoes'] = Obrigacao.objects.filter(instrumento_id=instrumento_id) if instrumento_id else Obrigacao.objects.all()
         try:
             context['instrumento_selecionado'] = int(instrumento_id) if instrumento_id else None
         except (ValueError, TypeError):
@@ -148,8 +146,7 @@ class AcaoCalendarioView(PermissionRequiredMixin, TemplateView):
 @permission_required('acoes.view_acao', raise_exception=True)
 def acoes_json(request):
     """Retorna as ações em formato JSON para o FullCalendar"""
-    # OTIMIZAÇÃO: Carrega responsável e obrigação para evitar N+1 no loop
-    acoes = Acao.objects.select_related('responsavel', 'obrigacao').all()
+    acoes = Acao.objects.all()
     eventos = []
 
     for a in acoes:

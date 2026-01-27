@@ -91,16 +91,6 @@ class InstrumentoListView(PermissionRequiredMixin, ModernListView):
     create_url = 'instrumento_create'
     search_fields = ['numero', 'objeto', 'nup']
 
-    def get_queryset(self):
-        """
-        Otimização de Performance:
-        Carrega relacionamentos ForeignKey (select_related) e ManyToMany (prefetch_related)
-        em uma única query para evitar o problema N+1.
-        """
-        # Recupera o queryset base (que já pode ter filtros do ModernListView)
-        queryset = super().get_queryset()
-        return queryset.select_related('tipo_instrumento', 'diretoria').prefetch_related('entidades')
-
 
 class InstrumentoCreateView(PermissionRequiredMixin, ModernCreateView):
     permission_required = 'instrumentos.add_instrumento'
