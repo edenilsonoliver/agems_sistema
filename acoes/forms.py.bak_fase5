@@ -106,34 +106,3 @@ ChecklistItemFormSet = inlineformset_factory(
 # Ajuste global para tornar campos do checklist opcionais na validação de formulário novo
 for field in ChecklistItemFormSet.form.base_fields.values():
     field.required = False
-
-
-# Forms e FormSets para Documentos e Fotos (Fase 5)
-from .models import AcaoDocumento, AcaoFoto
-
-# Formset para Documentos
-AcaoDocumentoFormSet = inlineformset_factory(
-    Acao,
-    AcaoDocumento,
-    fields=['arquivo', 'descricao'],
-    extra=1,
-    can_delete=True,
-    widgets={
-        'arquivo': forms.FileInput(attrs={'class': 'form-control'}),
-        'descricao': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Descrição do arquivo'}),
-    }
-)
-
-# Formset para Fotos
-AcaoFotoFormSet = inlineformset_factory(
-    Acao,
-    AcaoFoto,
-    fields=['imagem', 'legenda', 'coordenadas'],
-    extra=1,
-    can_delete=True,
-    widgets={
-        'imagem': forms.ClearableFileInput(attrs={'class': 'form-control'}),
-        'legenda': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Legenda da foto'}),
-        'coordenadas': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Latitude, Longitude'}),
-    }
-)

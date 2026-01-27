@@ -6,7 +6,7 @@ from django.views.generic import TemplateView
 from django.db.models import Q
 from .models import Acao, ChecklistItem
 from django.urls import reverse_lazy
-from .forms import AcaoForm, ChecklistItemFormSet, AcaoDocumentoFormSet, AcaoFotoFormSet
+from .forms import AcaoForm, ChecklistItemFormSet
 from instrumentos.models import Instrumento, Obrigacao
 from django.http import JsonResponse
 
@@ -83,48 +83,24 @@ class AcaoCreateView(PermissionRequiredMixin, ModernCreateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         if self.request.method == 'POST':
-            context['checklist_formset'] = ChecklistItemFormSet(self.request.POST, prefix='checklist_itens')
-            context['docs_formset'] = AcaoDocumentoFormSet(self.request.POST, self.request.FILES, prefix='docs')
-            context['fotos_formset'] = AcaoFotoFormSet(self.request.POST, self.request.FILES, prefix='fotos')
+            context['checklist_formset'] = ChecklistItemFormSet(
+                self.request.POST,
+                prefix='checklist_itens'
+            )
         else:
-            context['checklist_formset'] = ChecklistItemFormSet(prefix='checklist_itens')
-            context['docs_formset'] = AcaoDocumentoFormSet(prefix='docs')
-            context['fotos_formset'] = AcaoFotoFormSet(prefix='fotos')
+            context['checklist_formset'] = ChecklistItemFormSet(
+                prefix='checklist_itens'
+            )
         return context
 
     def form_valid(self, form):
         context = self.get_context_data()
         checklist_formset = context['checklist_formset']
-        docs_formset = context['docs_formset']
-        fotos_formset = context['fotos_formset']
         
-        if form.is_valid() and checklist_formset.is_valid() and docs_formset.is_valid() and fotos_formset.is_valid():
+        if form.is_valid() and checklist_formset.is_valid():
             self.object = form.save()
-            
-            # Salvar Checklist
             checklist_formset.instance = self.object
             checklist_formset.save()
-            
-            # Salvar Documentos
-            docs = docs_formset.save(commit=False)
-            for doc in docs:
-                doc.acao = self.object
-                doc.usuario = self.request.user
-                doc.save()
-            # Deletar removidos
-            for obj in docs_formset.deleted_objects:
-                obj.delete()
-
-            # Salvar Fotos
-            fotos = fotos_formset.save(commit=False)
-            for foto in fotos:
-                foto.acao = self.object
-                foto.usuario = self.request.user
-                foto.save()
-            # Deletar removidos
-            for obj in fotos_formset.deleted_objects:
-                obj.delete()
-
             return super().form_valid(form)
         else:
             return self.render_to_response(self.get_context_data(form=form))
@@ -140,48 +116,26 @@ class AcaoUpdateView(PermissionRequiredMixin, ModernUpdateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         if self.request.method == 'POST':
-            context['checklist_formset'] = ChecklistItemFormSet(self.request.POST, instance=self.object, prefix='checklist_itens')
-            context['docs_formset'] = AcaoDocumentoFormSet(self.request.POST, self.request.FILES, instance=self.object, prefix='docs')
-            context['fotos_formset'] = AcaoFotoFormSet(self.request.POST, self.request.FILES, instance=self.object, prefix='fotos')
+            context['checklist_formset'] = ChecklistItemFormSet(
+                self.request.POST,
+                instance=self.object,
+                prefix='checklist_itens'
+            )
         else:
-            context['checklist_formset'] = ChecklistItemFormSet(instance=self.object, prefix='checklist_itens')
-            context['docs_formset'] = AcaoDocumentoFormSet(instance=self.object, prefix='docs')
-            context['fotos_formset'] = AcaoFotoFormSet(instance=self.object, prefix='fotos')
+            context['checklist_formset'] = ChecklistItemFormSet(
+                instance=self.object,
+                prefix='checklist_itens'
+            )
         return context
 
     def form_valid(self, form):
         context = self.get_context_data()
         checklist_formset = context['checklist_formset']
-        docs_formset = context['docs_formset']
-        fotos_formset = context['fotos_formset']
 
-        if form.is_valid() and checklist_formset.is_valid() and docs_formset.is_valid() and fotos_formset.is_valid():
+        if form.is_valid() and checklist_formset.is_valid():
             self.object = form.save()
-            
-            # Salvar Checklist
             checklist_formset.instance = self.object
             checklist_formset.save()
-            
-            # Salvar Documentos (Injetando Usuario)
-            docs = docs_formset.save(commit=False)
-            for doc in docs:
-                doc.acao = self.object
-                if not doc.pk: # Apenas se for novo upload
-                     doc.usuario = self.request.user
-                doc.save()
-            for obj in docs_formset.deleted_objects:
-                obj.delete()
-
-            # Salvar Fotos (Injetando Usuario)
-            fotos = fotos_formset.save(commit=False)
-            for foto in fotos:
-                foto.acao = self.object
-                if not foto.pk: # Apenas se for nova
-                    foto.usuario = self.request.user
-                foto.save()
-            for obj in fotos_formset.deleted_objects:
-                obj.delete()
-
             return super().form_valid(form)
         else:
             return self.render_to_response(self.get_context_data(form=form))

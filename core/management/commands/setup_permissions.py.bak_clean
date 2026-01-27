@@ -15,28 +15,35 @@ class Command(BaseCommand):
         # Definindo a estrutura de permissões
         # Formato: 'app_model': ['permissões']
         
-        # 1. GRUPO GESTORES
-        # Foco: Gerenciar o Negócio (Pode Criar, Editar, Excluir tudo exceto configs avançadas)
+        # 1. GRUPO GESTORES (Diretoria/Assessoria)
+        # Foco: Gerenciar o "Negócio" (Contratos, Entidades)
         perms_gestores = {
-            'entidades': ['add_entidade', 'change_entidade', 'delete_entidade', 'view_entidade'],
-            'instrumentos': ['add_instrumento', 'change_instrumento', 'delete_instrumento', 'view_instrumento', 
-                             'add_obrigacao', 'change_obrigacao', 'delete_obrigacao', 'view_obrigacao'],
-            'acoes': ['add_acao', 'change_acao', 'delete_acao', 'view_acao', 
-                      'add_checklistitem', 'change_checklistitem', 'delete_checklistitem', 'view_checklistitem'],
-            'usuarios': ['add_usuario', 'change_usuario', 'view_usuario'], # Pode gerenciar usuários básicos
+            'entidades': ['add_entidade', 'change_entidade', 'view_entidade'],
+            'instrumentos': ['add_instrumento', 'change_instrumento', 'view_instrumento', 'add_obrigacao', 'change_obrigacao', 'view_obrigacao'],
+            'acoes': ['view_acao', 'view_checklistitem'], # Apenas visualizam o operacional
+            'usuarios': ['view_usuario'],
         }
 
-        # 2. GRUPO TÉCNICOS
-        # Foco: Operacional (Visualiza contexto, Executa Ações. NÃO EXCLUI NADA)
-        perms_tecnicos = {
+        # 2. GRUPO COORDENADORES (Chefia Técnica)
+        # Foco: Gestão Operacional completa (Criar, Editar, EXCLUIR)
+        perms_coordenadores = {
+            'entidades': ['view_entidade'],
+            'instrumentos': ['view_instrumento', 'view_obrigacao'],
+            'acoes': ['add_acao', 'change_acao', 'delete_acao', 'view_acao', 
+                      'add_checklistitem', 'change_checklistitem', 'delete_checklistitem', 'view_checklistitem'],
+        }
+
+        # 3. GRUPO EXECUTORES (Fiscais de Campo)
+        # Foco: Execução (Criar, Editar, NÃO EXCLUIR)
+        perms_executores = {
             'entidades': ['view_entidade'],
             'instrumentos': ['view_instrumento', 'view_obrigacao'],
             'acoes': ['add_acao', 'change_acao', 'view_acao', # Sem delete_acao
-                      'add_checklistitem', 'change_checklistitem', 'view_checklistitem'],
+                      'add_checklistitem', 'change_checklistitem', 'view_checklistitem'], # Sem delete_checklistitem (opcional, mas seguro)
         }
 
-        # 3. GRUPO VISUALIZADORES
-        # Foco: Auditoria (Apenas visualiza)
+        # 4. GRUPO VISUALIZADORES (Auditoria)
+        # Foco: Ver tudo, não tocar em nada
         perms_visualizadores = {
             'entidades': ['view_entidade'],
             'instrumentos': ['view_instrumento', 'view_obrigacao'],
@@ -46,7 +53,8 @@ class Command(BaseCommand):
 
         grupos_config = {
             'Gestores': perms_gestores,
-            'Tecnicos': perms_tecnicos,
+            'Coordenadores': perms_coordenadores,
+            'Executores': perms_executores,
             'Visualizadores': perms_visualizadores,
         }
 

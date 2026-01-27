@@ -7,7 +7,7 @@
 ---
 
 ## 1. Análise Situacional
-
+F
 ### Pontos Fortes Identificados:
 *   **Modelo de Dados Coerente:** A hierarquia `Instrumento -> Obrigação -> Ação -> Checklist` é sólida e reflete bem o negócio.
 *   **Automação Básica:** O cálculo automático de progresso (`atualizar_progresso`) via Signals no checklist é uma boa sacada de UX.
@@ -93,5 +93,34 @@ Ao invés de verificar *quem* é o usuário (cargo), verificaremos *o que* ele p
     *   [ ] **API Performance:** Revisar endpoints JSON do calendário e formulários dinâmicos.
     *   [ ] **Auditoria:** Implementar logs de acesso simples (Middleware).
 
+4.  **Fase 4: Kanban e Polimento**
+    **Objetivo:** Integrar a visão Kanban aos novos filtros de visibilidade e refinar a experiência do usuário.
+
+    ### 4.1. Visibilidade do Kanban
+    - **Problema:** A visão Kanban pode estar exibindo todas as ações ou apenas as do responsável, sem considerar os executores.
+    - **Solução:** Aplicar o mesmo filtro `Q(responsavel) | Q(executores)` na view do Kanban.
+
+    ### 4.2. Notificações (Planejamento)
+    - **Objetivo:** Alertar usuários sobre prazos próximos.
+    - **Estratégia:** Criar comando de management para verificar datas e criar alertas no sistema/email.
+
+5.  **Fase 5: Melhoria em Ações e Obrigações**
+    **Objetivo:** Enriquecer o registro de Ações com tipagem robusta e gestão documental comprobatória.
+
+    ### 5.1. Tipos de Ação Personalizáveis
+    - **Requisito:** Permitir tipagem (Fiscalização, Monitoramento, Visita Técnica, etc.).
+    - **Ação:** Refinar cadastro de `TipoAcao` e adaptar formulário da Ação para destacar este campo.
+    - **Customização:** Avaliar campos dinâmicos por tipo (futuro).
+
+    ### 5.2. Gestão de Evidências e Documentos
+    - **Requisito:** Aba "Documentos/Evidências" para anexar PDFs, DOCs, XLSs.
+    - **Rastreabilidade:** Registrar quem enviou e quando.
+    - **Ação:** Criar modelo `AcaoDocumento`.
+
+    ### 5.3. Registro Fotográfico (Fiscalização)
+    - **Requisito:** Área específica para fotos de campo.
+    - **Ação:** Criar modelo `AcaoFoto` com suporte a metadados visualizáveis (galeria).
+    - **Interface:** Implementar sistema de abas na edição da Ação (Dados, Checklist, Docs, Fotos).
+
 ---
-**Última atualização:** 26/01/2026 - Fases 1 e 2 finalizadas com sucesso. Sistema agora opera com integridade referencial protegida e RBAC nativo.
+**Última atualização:** 27/01/2026 - FASE 4 Concluída. Iniciando Planejamento da FASE 5.

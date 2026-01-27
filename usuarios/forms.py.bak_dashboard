@@ -205,7 +205,7 @@ class UsuarioCreateForm(forms.ModelForm):
             grupo_nome = None
             if user.perfil in [1, 2]: # Diretoria/Assessoria
                 grupo_nome = 'Gestores'
-            elif user.perfil in [3, 4]: # Coordenação/Técnico
+            elif user.perfil in [3, 4]: # Coordenação/Comum
                 grupo_nome = 'Tecnicos'
             elif user.perfil == 5: # Visualizador
                 grupo_nome = 'Visualizadores'

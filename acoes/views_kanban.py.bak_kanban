@@ -14,20 +14,13 @@ def acao_kanban_view(request):
     """
     View para visualização Kanban das Ações.
     """
-    # Base QuerySet
-    queryset = Acao.objects.select_related(
+    acoes = Acao.objects.select_related(
         'obrigacao',
         'responsavel'
     ).prefetch_related(
         'executores',
         'checklist_itens'
-    )
-
-    # Filtro de Visibilidade (Fase 4): Técnicos veem apenas suas ações
-    if request.user.perfil in [3, 4]:
-        queryset = queryset.filter(Q(responsavel=request.user) | Q(executores=request.user)).distinct()
-
-    acoes = queryset.order_by('-data_cadastro')
+    ).order_by('-data_cadastro')
     
     # Preparar dados para JSON
     acoes_json = []

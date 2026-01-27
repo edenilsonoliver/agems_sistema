@@ -205,8 +205,10 @@ class UsuarioCreateForm(forms.ModelForm):
             grupo_nome = None
             if user.perfil in [1, 2]: # Diretoria/Assessoria
                 grupo_nome = 'Gestores'
-            elif user.perfil in [3, 4]: # Coordenação/Técnico
-                grupo_nome = 'Tecnicos'
+            elif user.perfil == 3: # Coordenação
+                grupo_nome = 'Coordenadores'
+            elif user.perfil == 4: # Comum/Executor
+                grupo_nome = 'Executores'
             elif user.perfil == 5: # Visualizador
                 grupo_nome = 'Visualizadores'
             
@@ -375,8 +377,10 @@ class UsuarioUpdateForm(forms.ModelForm):
             grupo_nome = None
             if user.perfil in [1, 2]: 
                 grupo_nome = 'Gestores'
-            elif user.perfil in [3, 4]: 
-                grupo_nome = 'Tecnicos'
+            elif user.perfil == 3: 
+                grupo_nome = 'Coordenadores'
+            elif user.perfil == 4: 
+                grupo_nome = 'Executores'
             elif user.perfil == 5: 
                 grupo_nome = 'Visualizadores'
             

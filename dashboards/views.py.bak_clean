@@ -20,12 +20,11 @@ def dashboard_principal(request):
     usuario = request.user
     hoje = timezone.now().date()
 
-    # Define se é um Técnico (perfil 3 ou 4) para aplicar filtros de visão
-    is_tecnico = (usuario.perfil in [3, 4])
+    is_executor = (usuario.perfil == 4)
 
     # Instrumentos vigentes
     queryset_instrumentos = Instrumento.objects.filter(status='vigente')
-    if is_tecnico:
+    if is_executor:
         # Filtra instrumentos que têm obrigações com ações deste usuário (Responsável ou Executor)
         queryset_instrumentos = queryset_instrumentos.filter(
             Q(obrigacoes__acoes__responsavel=usuario) | Q(obrigacoes__acoes__executores=usuario)
@@ -43,7 +42,7 @@ def dashboard_principal(request):
 
     # Total de obrigações do sistema
     queryset_all_obrigacoes = Obrigacao.objects.all()
-    if is_tecnico:
+    if is_executor:
         queryset_all_obrigacoes = queryset_all_obrigacoes.filter(
             Q(acoes__responsavel=usuario) | Q(acoes__executores=usuario)
         ).distinct()
@@ -53,7 +52,7 @@ def dashboard_principal(request):
     # Ações (Executores veem apenas as suas)
     # Se for Executor (Perfil 4), filtra. Se for Coordenador/Gestor/Admin, vê tudo.
     
-    if is_tecnico:
+    if is_executor:
         # Filtra ações onde o usuário é responsável OU está na lista de executores
         acoes = Acao.objects.filter(
             Q(responsavel=usuario) | Q(executores=usuario)
@@ -73,7 +72,7 @@ def dashboard_principal(request):
 
     # Obrigações - Filtra se executor
     queryset_obrigacoes = Obrigacao.objects.select_related('instrumento', 'tipo_obrigacao').prefetch_related('acoes')
-    if is_tecnico:
+    if is_executor:
         # Mostra apenas obrigações que possuem alguma ação atribuída a este usuário
         queryset_obrigacoes = queryset_obrigacoes.filter(
             Q(acoes__responsavel=usuario) | Q(acoes__executores=usuario)

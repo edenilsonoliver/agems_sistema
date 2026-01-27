@@ -40,66 +40,212 @@
                         Preencha todos os campos obrigatórios marcados com <span class="text-danger">*</span>
                     </p>
 
-                    {{form|crispy}}
+                    <!-- Navegação em Abas -->
+                    <ul class="nav nav-tabs mb-4" id="acaoTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="dados-tab" data-bs-toggle="tab" data-bs-target="#dados"
+                                type="button" role="tab"><i class="bi bi-file-text me-2"></i>Dados Gerais</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="docs-tab" data-bs-toggle="tab" data-bs-target="#docs"
+                                type="button" role="tab"><i
+                                    class="bi bi-paperclip me-2"></i>Documentos/Evidências</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="fotos-tab" data-bs-toggle="tab" data-bs-target="#fotos"
+                                type="button" role="tab"><i class="bi bi-camera me-2"></i>Fotos</button>
+                        </li>
+                    </ul>
 
-                    <hr class="my-4">
+                    <div class="tab-content" id="acaoTabsContent">
 
-                    <h5 class="mt-3">
-                        <i class="bi bi-list-check me-2"></i> Checklist de Tarefas Operativas
-                    </h5>
-                    <p class="text-muted small">Defina o passo-a-passo detalhado para execução desta Ação. Arraste para
-                        reordenar.</p>
+                        <!-- ABA 1: Dados Gerais e Checklist -->
+                        <div class="tab-pane fade show active" id="dados" role="tabpanel" aria-labelledby="dados-tab">
+                            {{form|crispy}}
 
-                    <div id="checklist-toggle-container" {% if checklist_formset.forms %}style="display:none;" {% else
-                        %}style="display:block;" {% endif %}>
-                        <button type="button" class="btn btn-sm btn-outline-primary" id="show-checklist-btn">
-                            <i class="bi bi-plus-circle me-1"></i> Adicionar Itens de Tarefa
-                        </button>
-                    </div>
+                            <hr class="my-4">
 
-                    <div id="checklist-container" {% if not checklist_formset.forms %}style="display:none;" {% else
-                        %}style="display:block;" {% endif %}>
-                        {{checklist_formset.management_form}}
+                            <h5 class="mt-3">
+                                <i class="bi bi-list-check me-2"></i> Checklist de Tarefas Operativas
+                            </h5>
+                            <p class="text-muted small">Defina o passo-a-passo detalhado para execução desta Ação.
+                                Arraste para reordenar.</p>
 
-                        <div id="checklist-items">
-                            {% for c_form in checklist_formset %}
-                            <div class="checklist-item mb-2 d-flex align-items-center gap-2 bg-white p-2 rounded border"
-                                data-form-index="{{forloop.counter0}}">
-                                <div class="drag-handle px-2 text-muted border-end" style="cursor: grab;">
-                                    <i class="bi bi-grip-vertical fs-5"></i>
-                                </div>
-                                {{ c_form.id }}
-                                {{ c_form.ordem }}
-
-                                <input type="text" name="{{c_form.nome.html_name}}" id="{{c_form.nome.id_for_label}}"
-                                    value="{{c_form.nome.value|default:''}}" class="form-control"
-                                    placeholder="Ex: Enviar ofício, Conferir documento...">
-
-                                <div class="form-check">
-                                    <input type="checkbox" name="{{c_form.concluido.html_name}}"
-                                        id="{{c_form.concluido.id_for_label}}" class="form-check-input" {{
-                                        c_form.concluido.value|yesno:"checked," }}>
-                                    <label class="form-check-label small text-muted"
-                                        for="{{c_form.concluido.id_for_label}}">
-                                        Concluído
-                                    </label>
-                                </div>
-
-                                <input type="checkbox" name="{{c_form.DELETE.html_name}}"
-                                    id="{{c_form.DELETE.id_for_label}}" class="d-none" {{
-                                    c_form.DELETE.value|yesno:"checked," }}>
-
-                                <button type="button" class="btn btn-sm btn-outline-danger remove-checklist-item"
-                                    title="Remover item">
-                                    <i class="bi bi-trash"></i>
+                            <div id="checklist-toggle-container" {% if checklist_formset.forms %}style="display:none;"
+                                {% else %}style="display:block;" {% endif %}>
+                                <button type="button" class="btn btn-sm btn-outline-primary" id="show-checklist-btn">
+                                    <i class="bi bi-plus-circle me-1"></i> Adicionar Itens de Tarefa
                                 </button>
                             </div>
-                            {% endfor %}
+
+                            <div id="checklist-container" {% if not checklist_formset.forms %}style="display:none;" {%
+                                else %}style="display:block;" {% endif %}>
+                                {{checklist_formset.management_form}}
+
+                                <div id="checklist-items">
+                                    {% for c_form in checklist_formset %}
+                                    <div class="checklist-item mb-2 d-flex align-items-center gap-2 bg-white p-2 rounded border"
+                                        data-form-index="{{forloop.counter0}}">
+                                        <div class="drag-handle px-2 text-muted border-end" style="cursor: grab;">
+                                            <i class="bi bi-grip-vertical fs-5"></i>
+                                        </div>
+                                        {{ c_form.id }}
+                                        {{ c_form.ordem }}
+
+                                        <input type="text" name="{{c_form.nome.html_name}}"
+                                            id="{{c_form.nome.id_for_label}}" value="{{c_form.nome.value|default:''}}"
+                                            class="form-control" placeholder="Ex: Enviar ofício, Conferir documento...">
+
+                                        <div class="form-check">
+                                            <input type="checkbox" name="{{c_form.concluido.html_name}}"
+                                                id="{{c_form.concluido.id_for_label}}" class="form-check-input" {{
+                                                c_form.concluido.value|yesno:"checked," }}>
+                                            <label class="form-check-label small text-muted"
+                                                for="{{c_form.concluido.id_for_label}}">
+                                                Concluído
+                                            </label>
+                                        </div>
+
+                                        <input type="checkbox" name="{{c_form.DELETE.html_name}}"
+                                            id="{{c_form.DELETE.id_for_label}}" class="d-none" {{
+                                            c_form.DELETE.value|yesno:"checked," }}>
+
+                                        <button type="button"
+                                            class="btn btn-sm btn-outline-danger remove-checklist-item"
+                                            title="Remover item">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+
+                                <button type="button" class="btn btn-sm btn-outline-secondary mt-2"
+                                    id="add-checklist-item">
+                                    <i class="bi bi-plus me-1"></i> Adicionar tarefa operacional
+                                </button>
+                            </div>
                         </div>
 
-                        <button type="button" class="btn btn-sm btn-outline-secondary mt-2" id="add-checklist-item">
-                            <i class="bi bi-plus me-1"></i> Adicionar tarefa operacional
-                        </button>
+                        <!-- ABA 2: Documentos -->
+                        <div class="tab-pane fade" id="docs" role="tabpanel" aria-labelledby="docs-tab">
+                            <div class="alert alert-light border">
+                                <i class="bi bi-info-circle me-2"></i> Anexe documentos comprobatórios (PDF, DOCX,
+                                XLSX).
+                            </div>
+                            {{ docs_formset.management_form }}
+                            <div id="docs-items">
+                                {% for d_form in docs_formset %}
+                                <div class="doc-item mb-3 p-3 border rounded bg-light">
+                                    {{ d_form.id }}
+                                    <div class="row g-3">
+                                        <div class="col-md-5">
+                                            {{ d_form.arquivo|as_crispy_field }}
+                                            {% if d_form.instance.pk %}
+                                            <small class="text-muted">Atual: <a href="{{ d_form.instance.arquivo.url }}"
+                                                    target="_blank">{{ d_form.instance.arquivo.name }}</a></small>
+                                            {% endif %}
+                                        </div>
+                                        <div class="col-md-6">
+                                            {{ d_form.descricao|as_crispy_field }}
+                                        </div>
+                                        <div class="col-md-1 d-flex align-items-end">
+                                            {% if d_form.instance.pk %}
+                                            <div class="form-check form-switch">
+                                                {{ d_form.DELETE }}
+                                                <label class="form-check-label text-danger">Excluir</label>
+                                            </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            <button type="button" class="btn btn-sm btn-outline-primary mt-2" id="add-doc-item">
+                                <i class="bi bi-plus-circle me-1"></i> Adicionar Documento
+                            </button>
+
+                            <!-- Template Vazio para Docs -->
+                            <div id="empty-doc-form" style="display:none;">
+                                <div class="doc-item mb-3 p-3 border rounded bg-light">
+                                    <div class="row g-3">
+                                        <div class="col-md-5">
+                                            {{ docs_formset.empty_form.arquivo|as_crispy_field }}
+                                        </div>
+                                        <div class="col-md-6">
+                                            {{ docs_formset.empty_form.descricao|as_crispy_field }}
+                                        </div>
+                                        <div class="col-md-1 d-flex align-items-end">
+                                            <button type="button"
+                                                class="btn btn-sm btn-outline-danger remove-item-btn"><i
+                                                    class="bi bi-trash"></i></button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- ABA 3: Fotos -->
+                        <div class="tab-pane fade" id="fotos" role="tabpanel" aria-labelledby="fotos-tab">
+                            <div class="alert alert-light border">
+                                <i class="bi bi-info-circle me-2"></i> Registro fotográfico de fiscalizações e visitas.
+                            </div>
+                            {{ fotos_formset.management_form }}
+                            <div id="fotos-items">
+                                {% for f_form in fotos_formset %}
+                                <div class="foto-item mb-3 p-3 border rounded bg-light">
+                                    {{ f_form.id }}
+                                    <div class="row g-3">
+                                        <div class="col-md-4">
+                                            {{ f_form.imagem|as_crispy_field }}
+                                            {% if f_form.instance.pk %}
+                                            <img src="{{ f_form.instance.imagem.url }}" alt="Preview"
+                                                class="img-thumbnail mt-2" style="max-height: 100px;">
+                                            {% endif %}
+                                        </div>
+                                        <div class="col-md-4">
+                                            {{ f_form.legenda|as_crispy_field }}
+                                        </div>
+                                        <div class="col-md-3">
+                                            {{ f_form.coordenadas|as_crispy_field }}
+                                        </div>
+                                        <div class="col-md-1 d-flex align-items-end">
+                                            {% if f_form.instance.pk %}
+                                            <div class="form-check form-switch">
+                                                {{ f_form.DELETE }}
+                                                <label class="form-check-label text-danger">Excluir</label>
+                                            </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            <button type="button" class="btn btn-sm btn-outline-primary mt-2" id="add-foto-item">
+                                <i class="bi bi-plus-circle me-1"></i> Adicionar Foto
+                            </button>
+
+                            <!-- Template Vazio para Fotos -->
+                            <div id="empty-foto-form" style="display:none;">
+                                <div class="foto-item mb-3 p-3 border rounded bg-light">
+                                    <div class="row g-3">
+                                        <div class="col-md-4">
+                                            {{ fotos_formset.empty_form.imagem|as_crispy_field }}
+                                        </div>
+                                        <div class="col-md-4">
+                                            {{ fotos_formset.empty_form.legenda|as_crispy_field }}
+                                        </div>
+                                        <div class="col-md-3">
+                                            {{ fotos_formset.empty_form.coordenadas|as_crispy_field }}
+                                        </div>
+                                        <div class="col-md-1 d-flex align-items-end">
+                                            <button type="button"
+                                                class="btn btn-sm btn-outline-danger remove-item-btn"><i
+                                                    class="bi bi-trash"></i></button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <hr class="my-4">
@@ -360,4 +506,55 @@
         background-color: white !important;
     }
 </style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Função genérica para adicionar item ao formset
+        function addFormsetItem(prefix, containerId, emptyFormId) {
+            const container = document.getElementById(containerId);
+            const totalFormsInput = document.querySelector(`input[name="${prefix}-TOTAL_FORMS"]`);
+            const emptyFormHtml = document.getElementById(emptyFormId).innerHTML;
+
+            if (!container || !totalFormsInput || !emptyFormHtml) return;
+
+            const newIndex = parseInt(totalFormsInput.value);
+            const newHtml = emptyFormHtml.replace(/__prefix__/g, newIndex);
+
+            const div = document.createElement('div');
+            div.innerHTML = newHtml;
+            const newItem = div.firstElementChild;
+
+            container.appendChild(newItem);
+            totalFormsInput.value = newIndex + 1;
+        }
+
+        // Docs
+        document.getElementById('add-doc-item')?.addEventListener('click', function () {
+            addFormsetItem('docs', 'docs-items', 'empty-doc-form');
+        });
+
+        // Fotos
+        document.getElementById('add-foto-item')?.addEventListener('click', function () {
+            addFormsetItem('fotos', 'fotos-items', 'empty-foto-form');
+        });
+
+        // Event Delegation para remover itens (Docs e Fotos)
+        document.addEventListener('click', function (e) {
+            if (e.target.closest('.remove-item-btn')) {
+                const item = e.target.closest('.doc-item, .foto-item');
+                if (item) {
+                    // Verifica se é item novo (sem ID salvo) ou existente
+                    // Simplificação: apenas remove visualmente e limpa inputs se for novo.
+                    // Se for existente do Django formset can_delete, precisaria marcar checkbox DELETE.
+                    // Como implementamos botões de exclusão "checkbox" nativos no loop, 
+                    // este botão trash é util para itens NOVOS que o usuário desistiu de enviar.
+                    item.remove();
+
+                    // Opcional: Atualizar TOTAL_FORMS decrementando? Não recomendado pelo Django.
+                    // Django lida bem com buracos se o management form estiver ok, mas clonagem simples incrementa.
+                }
+            }
+        });
+    });
+</script>
 {% endblock %}
