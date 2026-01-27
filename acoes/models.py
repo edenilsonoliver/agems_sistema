@@ -44,7 +44,7 @@ class Acao(models.Model):
     # Relacionamentos
     obrigacao = models.ForeignKey(
         Obrigacao,
-        on_delete=models.CASCADE,
+        on_delete=models.PROTECT,
         verbose_name='Obrigação',
         related_name='acoes'
     )
@@ -179,6 +179,26 @@ class Acao(models.Model):
         """Retorna a duração da ação em dias"""
         delta = self.data_fim - self.data_inicio
         return delta.days + 1
+
+    def clean(self):
+        """Validações de datas e consistência"""
+        from django.core.exceptions import ValidationError
+        
+        if self.data_inicio and self.data_fim:
+            if self.data_fim < self.data_inicio:
+                raise ValidationError({
+                    'data_fim': 'A data de fim não pode ser anterior à data de início.'
+                })
+        
+        if self.data_conclusao and self.data_inicio:
+            if self.data_conclusao < self.data_inicio:
+                raise ValidationError({
+                    'data_conclusao': 'A conclusão não pode ser anterior ao início da ação.'
+                })
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
 
 
 class ChecklistItem(models.Model):

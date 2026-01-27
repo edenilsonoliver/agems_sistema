@@ -1,4 +1,5 @@
 from django.db import models
+from django.core.exceptions import ValidationError
 from core.models import Diretoria, TipoInstrumento, TipoObrigacao
 from entidades.models import Entidade
 
@@ -94,6 +95,23 @@ class Instrumento(models.Model):
     def __str__(self):
         return f"{self.numero} - {self.tipo_instrumento}"
     
+    def clean(self):
+        """Validações de integridade do instrumento."""
+        if self.data_inicio and self.data_fim:
+            if self.data_fim < self.data_inicio:
+                raise ValidationError({
+                    'data_fim': 'A data final da vigência não pode ser anterior à data de início.'
+                })
+        
+        if self.data_assinatura and self.data_inicio:
+            # Aviso: Alguns contratos podem ser assinados DEPOIS do início (retroativos), 
+            # mas vamos manter apenas a lógica de sanidade básica.
+            pass
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
+    
     def get_entidades_display(self):
         """Retorna lista de entidades vinculadas"""
         return ", ".join([e.razao_social for e in self.entidades.all()])
@@ -122,7 +140,7 @@ class Obrigacao(models.Model):
     # Relacionamento
     instrumento = models.ForeignKey(
         Instrumento,
-        on_delete=models.CASCADE,
+        on_delete=models.PROTECT,  # Alterado de CASCADE para PROTECT para segurança
         verbose_name='Instrumento',
         related_name='obrigacoes'
     )
@@ -185,6 +203,21 @@ class Obrigacao(models.Model):
         if acoes.exists():
             return all(acao.status == 'finalizado' for acao in acoes)
         return False
+
+    def clean(self):
+        """Validações de integridade da obrigação."""
+        if self.data_vencimento and self.instrumento:
+            # Verifica se o vencimento está dentro da vigência do instrumento
+            # Nota: Obrigação pode vencer no dia final, mas não depois.
+            if self.instrumento.data_fim and self.data_vencimento > self.instrumento.data_fim:
+                pass 
+                # Decisao de design: Permitir obrigação pós-vigência? (Ex: Prestação de Contas Final)
+                # Por enquanto, vamos apenas logar ou flexibilizar. Se o usuário quiser restringir:
+                # raise ValidationError({'data_vencimento': 'A data de vencimento excede a vigência do instrumento.'})
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
 
 
 # Manter compatibilidade temporária
