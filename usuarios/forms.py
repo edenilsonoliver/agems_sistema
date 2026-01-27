@@ -125,9 +125,9 @@ class UsuarioCreateForm(forms.ModelForm):
             if self.request_user.perfil == 1:  # Diretoria
                 # Diretoria só pode criar perfis 2, 3, 4
                 self.fields['perfil'].choices = [
-                    (2, 'Assessoria'),
-                    (3, 'Coordenação'),
-                    (4, 'Usuário Comum'),
+                    (2, 'Gestor (Assessor)'),
+                    (3, 'Técnico (Coordenador)'),
+                    (4, 'Técnico (Executor)'),
                 ]
                 # Filtrar apenas sua diretoria
                 self.fields['diretoria'].queryset = Diretoria.objects.filter(id=self.request_user.diretoria.id)
@@ -138,7 +138,7 @@ class UsuarioCreateForm(forms.ModelForm):
             
             elif self.request_user.perfil in [2, 3]:  # Assessoria ou Coordenação
                 # Podem criar apenas usuários comuns
-                self.fields['perfil'].choices = [(4, 'Usuário Comum')]
+                self.fields['perfil'].choices = [(4, 'Técnico (Executor)')]
                 # Fixar na sua subunidade
                 if self.request_user.subunidade:
                     self.fields['diretoria'].queryset = Diretoria.objects.filter(id=self.request_user.subunidade.diretoria.id)
@@ -197,6 +197,25 @@ class UsuarioCreateForm(forms.ModelForm):
         
         if commit:
             user.save()
+            # Sincronizar Grupos baseado no Perfil
+            # 0=Admin, 1=Diretoria, 2=Assessoria, 3=Coordenação, 4=Comum, 5=Visualizador
+            from django.contrib.auth.models import Group
+            user.groups.clear()
+            
+            grupo_nome = None
+            if user.perfil in [1, 2]: # Diretoria/Assessoria
+                grupo_nome = 'Gestores'
+            elif user.perfil in [3, 4]: # Coordenação/Comum
+                grupo_nome = 'Tecnicos'
+            elif user.perfil == 5: # Visualizador
+                grupo_nome = 'Visualizadores'
+            
+            if grupo_nome:
+                try:
+                    grupo = Group.objects.get(name=grupo_nome)
+                    user.groups.add(grupo)
+                except Group.DoesNotExist:
+                    pass # Grupo não criado ainda, ignorar silenciosamente ou logar erro
         
         return user
 
@@ -295,12 +314,12 @@ class UsuarioUpdateForm(forms.ModelForm):
         if self.request_user and self.request_user.perfil != 0:
             if self.request_user.perfil == 1:  # Diretoria
                 self.fields['perfil'].choices = [
-                    (2, 'Assessoria'),
-                    (3, 'Coordenação'),
-                    (4, 'Usuário Comum'),
+                    (2, 'Gestor (Assessor)'),
+                    (3, 'Técnico (Coordenador)'),
+                    (4, 'Técnico (Executor)'),
                 ]
             elif self.request_user.perfil in [2, 3]:  # Assessoria ou Coordenação
-                self.fields['perfil'].choices = [(4, 'Usuário Comum')]
+                self.fields['perfil'].choices = [(4, 'Técnico (Executor)')]
     
     def clean(self):
         cleaned_data = super().clean()
@@ -349,6 +368,24 @@ class UsuarioUpdateForm(forms.ModelForm):
         
         if commit:
             user.save()
+            # Sincronizar Grupos baseado no Perfil
+            from django.contrib.auth.models import Group
+            user.groups.clear()
+            
+            grupo_nome = None
+            if user.perfil in [1, 2]: 
+                grupo_nome = 'Gestores'
+            elif user.perfil in [3, 4]: 
+                grupo_nome = 'Tecnicos'
+            elif user.perfil == 5: 
+                grupo_nome = 'Visualizadores'
+            
+            if grupo_nome:
+                try:
+                    grupo = Group.objects.get(name=grupo_nome)
+                    user.groups.add(grupo)
+                except Group.DoesNotExist:
+                    pass
         
         return user
 

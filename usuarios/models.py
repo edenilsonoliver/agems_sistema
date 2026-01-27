@@ -7,12 +7,12 @@ class Usuario(AbstractUser):
     
     # Novos perfis hierárquicos (0-5)
     PERFIL_CHOICES = [
-        (0, 'Admin'),
-        (1, 'Diretoria'),
-        (2, 'Assessoria'),
-        (3, 'Coordenação'),
-        (4, 'Usuário Comum'),
-        (5, 'Visualizador'),
+        (0, 'Admin do Sistema'),
+        (1, 'Gestor (Diretor)'),
+        (2, 'Gestor (Assessor)'),
+        (3, 'Técnico (Coordenador)'),
+        (4, 'Técnico (Executor)'),
+        (5, 'Visualizador (Auditor)'),
     ]
     
     perfil = models.IntegerField(

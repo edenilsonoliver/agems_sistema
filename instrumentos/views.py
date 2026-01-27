@@ -5,6 +5,8 @@ import logging
 logger = logging.getLogger(__name__)
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
+from django.contrib.auth.decorators import permission_required
+from django.contrib.auth.mixins import PermissionRequiredMixin
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy, reverse
 from django.forms import inlineformset_factory
@@ -81,7 +83,8 @@ ObrigacaoFormSet = inlineformset_factory(
 )
 
 
-class InstrumentoListView(ModernListView):
+class InstrumentoListView(PermissionRequiredMixin, ModernListView):
+    permission_required = 'instrumentos.view_instrumento'
     model = Instrumento
     template_name = 'instrumentos/instrumento_list.html'
     icon = "bi bi-file-earmark-text"
@@ -89,7 +92,8 @@ class InstrumentoListView(ModernListView):
     search_fields = ['numero', 'objeto', 'nup']
 
 
-class InstrumentoCreateView(ModernCreateView):
+class InstrumentoCreateView(PermissionRequiredMixin, ModernCreateView):
+    permission_required = 'instrumentos.add_instrumento'
     model = Instrumento
     form_class = InstrumentoForm
     template_name = 'instrumentos/instrumento_form.html'
@@ -115,7 +119,9 @@ class InstrumentoCreateView(ModernCreateView):
         else:
             return self.form_invalid(form)
 
-class InstrumentoUpdateView(ModernUpdateView):
+
+class InstrumentoUpdateView(PermissionRequiredMixin, ModernUpdateView):
+    permission_required = 'instrumentos.change_instrumento'
     model = Instrumento
     form_class = InstrumentoForm
     template_name = 'instrumentos/instrumento_form.html'
@@ -146,7 +152,9 @@ class InstrumentoUpdateView(ModernUpdateView):
         else:
             return self.render_to_response(self.get_context_data(form=form, formset=formset))
 
-class InstrumentoDeleteView(ModernDeleteView):
+
+class InstrumentoDeleteView(PermissionRequiredMixin, ModernDeleteView):
+    permission_required = 'instrumentos.delete_instrumento'
     model = Instrumento
     success_url = reverse_lazy('instrumento_list')
 
@@ -154,6 +162,7 @@ class InstrumentoDeleteView(ModernDeleteView):
 # ===== VIEWS API PARA CRUD INLINE =====
 
 @require_POST
+@permission_required('instrumentos.add_tipoinstrumento', raise_exception=True)
 def tipo_instrumento_create(request):
     """Criar tipo de instrumento via AJAX"""
     nome = request.POST.get('nome')
@@ -164,6 +173,7 @@ def tipo_instrumento_create(request):
 
 
 @require_POST
+@permission_required('core.add_diretoria', raise_exception=True)
 def diretoria_create(request):
     """Criar diretoria via AJAX"""
     sigla = request.POST.get('sigla')
@@ -179,6 +189,7 @@ import os
 from django.utils.text import slugify
 
 @require_POST
+@permission_required('instrumentos.change_instrumento', raise_exception=True)
 def arquivo_upload(request, instrumento_id):
     """Upload de arquivo para instrumento via AJAX com validação de segurança"""
     instrumento = get_object_or_404(Instrumento, pk=instrumento_id)
@@ -233,6 +244,7 @@ def arquivo_upload(request, instrumento_id):
         return JsonResponse({'success': False, 'error': f'Erro ao salvar no banco de dados: {str(e)}'})
 
 @require_POST
+@permission_required('instrumentos.change_instrumento', raise_exception=True)
 def arquivo_delete(request, arquivo_id):
     """Excluir arquivo de instrumento via AJAX"""
     arquivo = get_object_or_404(ArquivoInstrumento, pk=arquivo_id)
@@ -246,6 +258,7 @@ def arquivo_delete(request, arquivo_id):
         logger.error(f"Erro ao excluir arquivo {arquivo_id}: {str(e)}")
 
 @require_POST
+@permission_required('instrumentos.add_obrigacao', raise_exception=True)
 def importar_obrigacoes_csv(request):
     """
     Processa upload de CSV e retorna dados JSON das obrigações.

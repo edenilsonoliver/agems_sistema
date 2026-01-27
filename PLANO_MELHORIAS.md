@@ -74,17 +74,24 @@ Ao invés de verificar *quem* é o usuário (cargo), verificaremos *o que* ele p
 
 ---
 
-## 4. Roteiro de Execução Sugerido
+## 4. Roteiro de Execução
 
-1.  **Fase 1: Integridade e Segurança (Imediato)**
-    *   Implementar validações de DATA (`clean()`) nos models.
-    *   Proteger relacionamentos críticos (remover `CASCADE` perigoso).
-    *   Backup completo do banco antes de alterações estruturais.
+1.  **Fase 1: Integridade e Segurança (Concluído ✅)**
+    *   [x] Implementar validações de DATA (`clean()`) nos models (Instrumentos e Ações).
+    *   [x] Proteger relacionamentos críticos (`on_delete=PROTECT` em Obrigações e Ações).
+    *   [x] Corrigir dependências do ambiente (`django-import-export`).
 
-2.  **Fase 2: Refatoração de Auth (Curto Prazo)**
-    *   Criar estrutura de Grupos/Permissões.
-    *   Migrar lógica de views para usar permissões e não "perfil numérico".
+2.  **Fase 2: Refatoração de Auth (Concluído ✅)**
+    *   [x] Criar estrutura automatizada de Grupos/Permissões (`management command: setup_permissions`).
+    *   [x] Migrar lógica de views para `PermissionRequiredMixin` (Instrumentos, Entidades, Ações).
+    *   [x] Atualizar formulários e models de Usuário para sincronizar Perfil -> Grupo Django.
+    *   [x] Atualizar nomenclatura de perfis para refletir funções (Gestor, Técnico, Visualizador).
 
-3.  **Fase 3: Performance e Polimento (Médio Prazo)**
-    *   Otimização de queries (Django Debug Toolbar).
-    *   Implementação de Soft Deletes.
+3.  **Fase 3: Performance e Polimento (Pendente - Próximo Passo 🚀)**
+    *   [ ] **Otimização de Queries:** Usar `select_related` e `prefetch_related` para resolver problemas de N+1 (especialmente em listagens e API check).
+    *   [ ] **Soft Deletes:** Implementar mecanismo de deleção lógica para garantir auditoria completa.
+    *   [ ] **API Performance:** Revisar endpoints JSON do calendário e formulários dinâmicos.
+    *   [ ] **Auditoria:** Implementar logs de acesso simples (Middleware).
+
+---
+**Última atualização:** 26/01/2026 - Fases 1 e 2 finalizadas com sucesso. Sistema agora opera com integridade referencial protegida e RBAC nativo.

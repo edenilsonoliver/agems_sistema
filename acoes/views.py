@@ -1,3 +1,5 @@
+from django.contrib.auth.mixins import PermissionRequiredMixin
+from django.contrib.auth.decorators import permission_required
 from core.views import ModernListView, ModernCreateView, ModernUpdateView, ModernDeleteView
 from django.shortcuts import render, get_object_or_404, redirect
 from django.views.generic import TemplateView
@@ -18,10 +20,11 @@ def get_obrigacoes_por_instrumento(request):
     return JsonResponse({'obrigacoes': list(obrigacoes)})
 
 
-class AcaoListView(ModernListView):
+class AcaoListView(PermissionRequiredMixin, ModernListView):
     """
     Lista as Ações (nível de execução vinculado à Obrigação).
     """
+    permission_required = 'acoes.view_acao'
     model = Acao
     template_name = 'acoes/acao_list.html'
     icon = "bi bi-lightning-charge"
@@ -60,7 +63,8 @@ class AcaoListView(ModernListView):
         return context
 
 
-class AcaoCreateView(ModernCreateView):
+class AcaoCreateView(PermissionRequiredMixin, ModernCreateView):
+    permission_required = 'acoes.add_acao'
     model = Acao
     form_class = AcaoForm
     success_url = reverse_lazy('acao_list')
@@ -92,7 +96,8 @@ class AcaoCreateView(ModernCreateView):
             return self.render_to_response(self.get_context_data(form=form))
 
 
-class AcaoUpdateView(ModernUpdateView):
+class AcaoUpdateView(PermissionRequiredMixin, ModernUpdateView):
+    permission_required = 'acoes.change_acao'
     model = Acao
     form_class = AcaoForm
     success_url = reverse_lazy('acao_list')
@@ -126,16 +131,19 @@ class AcaoUpdateView(ModernUpdateView):
             return self.render_to_response(self.get_context_data(form=form))
 
 
-class AcaoDeleteView(ModernDeleteView):
+class AcaoDeleteView(PermissionRequiredMixin, ModernDeleteView):
+    permission_required = 'acoes.delete_acao'
     model = Acao
     success_url = reverse_lazy('acao_list')
 
 
 # Calendário de Ações
-class AcaoCalendarioView(TemplateView):
+class AcaoCalendarioView(PermissionRequiredMixin, TemplateView):
+    permission_required = 'acoes.view_acao'
     template_name = 'acoes/acoes_calendario.html'
 
 
+@permission_required('acoes.view_acao', raise_exception=True)
 def acoes_json(request):
     """Retorna as ações em formato JSON para o FullCalendar"""
     acoes = Acao.objects.all()
