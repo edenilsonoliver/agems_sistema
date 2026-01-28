@@ -5,3 +5,6 @@ class AcoesConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
     name = 'acoes'
     verbose_name = 'Gerenciamento de Ações'
+
+    def ready(self):
+        import acoes.signals

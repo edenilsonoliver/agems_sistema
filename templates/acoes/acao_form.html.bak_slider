@@ -555,36 +555,6 @@
                 }
             }
         });
-
-        // SLIDER PROGRESSO
-        const slider = document.getElementById('id_percentual_cumprido');
-        if (slider) {
-            const display = document.createElement('span');
-            display.className = 'badge bg-primary ms-2';
-            display.style.fontSize = '0.9rem';
-            display.innerText = slider.value + '%';
-
-            // Wrap para alinhar melhor
-            const wrapper = document.createElement('div');
-            wrapper.className = 'd-flex align-items-center';
-
-            slider.parentNode.insertBefore(wrapper, slider);
-            wrapper.appendChild(slider);
-            wrapper.appendChild(display);
-
-            slider.addEventListener('input', function () {
-                display.innerText = this.value + '%';
-
-                // Color feedbacK
-                if (this.value == 100) {
-                    display.classList.remove('bg-primary', 'bg-info');
-                    display.classList.add('bg-success');
-                } else {
-                    display.classList.remove('bg-success');
-                    display.classList.add('bg-primary');
-                }
-            });
-        }
     });
 </script>
 {% endblock %}

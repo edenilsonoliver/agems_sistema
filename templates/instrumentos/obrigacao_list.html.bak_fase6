@@ -6,7 +6,6 @@
 <th>Tipo</th>
 <th>Cláusula</th>
 <th>Vencimento</th>
-<th>Evolução</th>
 <th>Status</th>
 <th>Recorrente</th>
 {% endblock %}
@@ -32,19 +31,6 @@
         {% else %}
         <small class="text-muted">—</small>
         {% endif %}
-    </td>
-    <td>
-        {% with p=obrigacao.percentual_conclusao %}
-        <div class="d-flex align-items-center gap-2">
-            <div class="progress flex-grow-1" style="height: 6px;">
-                <div class="progress-bar {% if p == 100 %}bg-success{% else %}bg-info{% endif %}" role="progressbar"
-                    style="width: {{ p }}%;" aria-valuenow="{{ p }}" aria-valuemin="0" aria-valuemax="100">
-                </div>
-            </div>
-            <small class="text-muted fw-bold" style="font-size: 0.75rem; width: 30px; text-align: right;">{{ p
-                }}%</small>
-        </div>
-        {% endwith %}
     </td>
     <td>
         {% if obrigacao.status == 'cumprida' %}

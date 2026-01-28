@@ -193,56 +193,16 @@ class Obrigacao(models.Model):
     def __str__(self):
         return f"{self.titulo} - {self.instrumento.numero}"
     
-    @property
-    def percentual_conclusao(self):
-        """Calcula o percentual de conclusão baseado nas ações vinculadas."""
-        total = self.acoes.count()
-        if total == 0:
-            return 0
-        concluidas = self.acoes.filter(status='finalizado').count()
-        return int((concluidas / total) * 100)
-
-    def atualizar_status_por_acoes(self):
-        """
-        Atualiza o status da Obrigação baseada no progresso das ações.
-        Chamado via signals sempre que uma Ação é alterada.
-        """
+    def verificar_cumprimento_automatico(self):
+        """Verifica se a obrigação deve ser marcada como cumprida automaticamente"""
         if self.recorrente:
-            return  # Obrigações recorrentes seguem lógica manual ou específica
-            
-        total = self.acoes.count()
-        if total == 0:
-            return
-
-        concluidas = self.acoes.filter(status='finalizado').count()
+            return False
         
-        # Lógica de Transição
-        novo_status = self.status
-        nova_cumprida = self.cumprida
-        
-        if concluidas == total:
-            novo_status = 'cumprida'
-            nova_cumprida = True
-        elif concluidas > 0:
-            novo_status = 'em_andamento'
-            nova_cumprida = False
-        else:
-            # Se estava cumprida e alguém reabriu uma ação, volta para pendente/em_andamento?
-            # Se concluir 0 de N, técnicamente é pendente ou em_andamento (se tiver ações iniciadas).
-            # Vamos simplificar: Se 0 concluidas, mantem pendente ou volta para pendente se não tiver nenhuma em andamento.
-            # Melhor checar se tem alguma "em_andamento".
-            iniciadas = self.acoes.exclude(status='a_iniciar').exists()
-            if iniciadas:
-                novo_status = 'em_andamento'
-            else:
-                novo_status = 'pendente'
-            nova_cumprida = False
-
-        # Salvar apenas se houve mudança para evitar writes desnecessários
-        if novo_status != self.status or nova_cumprida != self.cumprida:
-            self.status = novo_status
-            self.cumprida = nova_cumprida
-            self.save(update_fields=['status', 'cumprida', 'data_atualizacao'])
+        # Verifica se todas as ações estão finalizadas
+        acoes = self.acoes.all()
+        if acoes.exists():
+            return all(acao.status == 'finalizado' for acao in acoes)
+        return False
 
     def clean(self):
         """Validações de integridade da obrigação."""
