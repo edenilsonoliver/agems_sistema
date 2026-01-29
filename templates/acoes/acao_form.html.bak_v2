@@ -33,10 +33,14 @@
                         <i class="bi bi-exclamation-triangle me-2"></i>
                         <strong>Erro!</strong> Por favor, verifique os dados preenchidos.
                         <ul class="mb-0 mt-2 small">
-                            {% if form.errors %}<li>Dados Gerais: {{ form.non_field_errors }}{{ form.errors }}</li>{% endif %}
-                            {% if checklist_formset.errors %}<li>Checklist: {{ checklist_formset.non_form_errors }}{{checklist_formset.errors }}</li>{% endif %}
-                            {% if docs_formset.errors %}<li>Documentos: {{ docs_formset.non_form_errors }}{{docs_formset.errors }}</li>{% endif %}
-                            {% if fotos_formset.errors %}<li>Fotos: {{ fotos_formset.non_form_errors }}{{fotos_formset.errors }}</li>{% endif %}
+                            {% if form.errors %}<li>Dados Gerais: {{ form.non_field_errors }}{{ form.errors }}</li>{%
+                            endif %}
+                            {% if checklist_formset.errors %}<li>Checklist: {{ checklist_formset.non_form_errors
+                                }}{{checklist_formset.errors }}</li>{% endif %}
+                            {% if docs_formset.errors %}<li>Documentos: {{ docs_formset.non_form_errors
+                                }}{{docs_formset.errors }}</li>{% endif %}
+                            {% if fotos_formset.errors %}<li>Fotos: {{ fotos_formset.non_form_errors
+                                }}{{fotos_formset.errors }}</li>{% endif %}
                         </ul>
                         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                     </div>
@@ -85,7 +89,8 @@
                                 </button>
                             </div>
 
-                            <div id="checklist-container" {% if not checklist_formset.forms %}style="display:none;" {% else %}style="display:block;" {% endif %}>
+                            <div id="checklist-container" {% if not checklist_formset.forms %}style="display:none;" {%
+                                else %}style="display:block;" {% endif %}>
                                 {{checklist_formset.management_form}}
 
                                 <div id="checklist-items">
@@ -164,9 +169,7 @@
                                 {{ docs_formset.management_form }}
                                 <div id="docs-hidden-forms">
                                     {% for d_form in docs_formset %}
-                                    <div class="hidden-doc-form" data-index="{{ forloop.counter0 }}"
-                                        data-filename="{% if d_form.instance.arquivo %}{{ d_form.instance.arquivo.name }}{% endif %}"
-                                        data-url="{% if d_form.instance.arquivo %}{{ d_form.instance.arquivo.url }}{% endif %}">
+                                    <div class="hidden-doc-form" data-index="{{ forloop.counter0 }}">
                                         {{ d_form.id }}
                                         {{ d_form.arquivo }}
                                         {{ d_form.descricao }}
@@ -801,14 +804,12 @@
                 // Só renderiza se for item existente (tem PK)
                 if (idInput && idInput.value) {
                     if (type === 'docs') {
-                        const fileName = form.dataset.filename;
-                        const fileUrl = form.dataset.url;
-                        const descInput = form.querySelector('input[name$="-descricao"]');
-
-                        if (fileName && fileUrl) {
+                        const fileLink = form.querySelector('a');
+                        const descInput = document.querySelector(`input[name="docs-${index}-descricao"]`);
+                        if (fileLink) {
                             renderDocRow(null, index, true, {
-                                name: fileName.split('/').pop(),
-                                url: fileUrl,
+                                name: fileLink.textContent,
+                                url: fileLink.href,
                                 descricao: descInput ? descInput.value : ''
                             });
                         }

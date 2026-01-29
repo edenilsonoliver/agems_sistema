@@ -168,20 +168,25 @@ class AcaoUpdateView(PermissionRequiredMixin, ModernUpdateView):
         return context
 
     def save_assets(self, acao, docs_formset, fotos_formset):
-        """Helper para salvar documentos e fotos com injeção de usuário"""
+        """Helper para salvar documentos e fotos com injeção de usuário e logs"""
+        print(f"\n[SAVE_ASSETS] Iniciando salvamento de ativos para Acao {acao.id}")
         try:
             # Documentos
             docs = docs_formset.save(commit=False)
+            print(f"[SAVE_ASSETS] Documentos a salvar: {len(docs)}")
             for doc in docs:
                 doc.acao = acao
                 if not doc.pk:
                     doc.usuario = self.request.user
+                print(f"[SAVE_ASSETS] Salvando documento: {doc.arquivo.name if doc.arquivo else 'SEM ARQUIVO'}")
                 doc.save()
             for obj in docs_formset.deleted_objects:
+                print(f"[SAVE_ASSETS] Deletando documento: {obj.id}")
                 obj.delete()
 
             # Fotos
             fotos = fotos_formset.save(commit=False)
+            print(f"[SAVE_ASSETS] Fotos a salvar: {len(fotos)}")
             for foto in fotos:
                 foto.acao = acao
                 if not foto.pk:
@@ -189,8 +194,13 @@ class AcaoUpdateView(PermissionRequiredMixin, ModernUpdateView):
                 foto.save()
             for obj in fotos_formset.deleted_objects:
                 obj.delete()
+            print(f"[SAVE_ASSETS] Salvamento concluído com sucesso\n")
         except Exception as e:
+            from django.contrib import messages
             messages.error(self.request, f"Erro ao salvar arquivos: {str(e)}")
+            print(f"CRITICAL ERROR SAVING ASSETS: {str(e)}")
+            import traceback
+            traceback.print_exc()
 
     def form_valid(self, form):
         context = self.get_context_data()
@@ -198,7 +208,20 @@ class AcaoUpdateView(PermissionRequiredMixin, ModernUpdateView):
         docs_formset = context['docs_formset']
         fotos_formset = context['fotos_formset']
 
-
+        # LOGGING DETALHADO PARA DIAGNÓSTICO
+        print(f"\n{'='*60}")
+        print(f"DEBUG UPDATE - Acao ID: {self.object.id}")
+        print(f"Docs TOTAL_FORMS: {self.request.POST.get('docs-TOTAL_FORMS', 'NOT FOUND')}")
+        print(f"Docs formset length: {len(docs_formset)}")
+        print(f"Docs formset.is_valid(): {docs_formset.is_valid()}")
+        if not docs_formset.is_valid():
+            print(f"Docs formset.errors: {docs_formset.errors}")
+            print(f"Docs formset.non_form_errors: {docs_formset.non_form_errors()}")
+        else:
+            print(f"Docs formset data count: {len(docs_formset.cleaned_data)}")
+            for i, data in enumerate(docs_formset.cleaned_data):
+                print(f"  Doc {i}: {data}")
+        print(f"{'='*60}\n")
 
         is_valid = all([
             form.is_valid(),

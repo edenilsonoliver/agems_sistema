@@ -123,11 +123,11 @@ AcaoDocumentoFormSet = inlineformset_factory(
     Acao,
     AcaoDocumento,
     fields=['arquivo', 'descricao'],
-    extra=0,
+    extra=1,
     can_delete=True,
     widgets={
         'arquivo': forms.FileInput(attrs={'class': 'form-control'}),
-        'descricao': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Descrição do arquivo', 'required': False}),
+        'descricao': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Descrição do arquivo'}),
     }
 )
 
@@ -135,13 +135,12 @@ AcaoDocumentoFormSet = inlineformset_factory(
 AcaoFotoFormSet = inlineformset_factory(
     Acao,
     AcaoFoto,
-    fields=['imagem', 'legenda', 'coordenadas', 'data_registro'],
-    extra=0,
+    fields=['imagem', 'legenda', 'coordenadas'],
+    extra=1,
     can_delete=True,
     widgets={
         'imagem': forms.ClearableFileInput(attrs={'class': 'form-control'}),
         'legenda': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Legenda da foto'}),
         'coordenadas': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Latitude, Longitude'}),
-        'data_registro': forms.HiddenInput(),
     }
 )

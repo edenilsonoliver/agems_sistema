@@ -233,7 +233,7 @@ class AcaoDocumento(models.Model):
     """
     acao = models.ForeignKey(Acao, related_name='documentos', on_delete=models.CASCADE)
     arquivo = models.FileField(upload_to='evidencias/docs/%Y/%m/')
-    descricao = models.CharField('Descrição do Documento', max_length=255, blank=True, null=True)
+    descricao = models.CharField('Descrição do Documento', max_length=255)
     usuario = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
