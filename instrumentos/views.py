@@ -61,15 +61,19 @@ class ObrigacaoForm(forms.ModelForm):
     class Meta:
         model = Obrigacao
         fields = ['titulo', 'descricao', 'tipo_obrigacao', 'clausula_referencia', 
-                  'data_vencimento', 'status', 'recorrente']
+                  'prazo_dias', 'data_vencimento', 'status', 'percentual_atendimento', 
+                  'recorrente', 'observacoes']
         widgets = {
             'titulo': forms.TextInput(attrs={'class': 'form-control'}),
             'descricao': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
             'tipo_obrigacao': forms.Select(attrs={'class': 'form-select'}),
             'clausula_referencia': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: Cláusula 5.2'}),
+            'prazo_dias': forms.NumberInput(attrs={'class': 'form-control'}),
             'data_vencimento': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}, format='%Y-%m-%d'),
             'status': forms.Select(attrs={'class': 'form-select'}),
+            'percentual_atendimento': forms.NumberInput(attrs={'class': 'form-control', 'readonly': 'readonly'}),
             'recorrente': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'observacoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
         }
 
 
@@ -167,6 +171,43 @@ class InstrumentoDeleteView(PermissionRequiredMixin, ModernDeleteView):
     permission_required = 'instrumentos.delete_instrumento'
     model = Instrumento
     success_url = reverse_lazy('instrumento_list')
+    
+    def post(self, request, *args, **kwargs):
+        """
+        Tratamento específico de ProtectedError para Instrumentos.
+        Identifica se são obrigações ou outros objetos vinculados.
+        """
+        from django.db.models.deletion import ProtectedError
+        from django.shortcuts import redirect
+        from django.contrib import messages
+        
+        try:
+            return super().post(request, *args, **kwargs)
+        except ProtectedError as e:
+            # Extrai informações sobre os objetos protegidos
+            protected_objects = e.protected_objects
+            
+            # Identifica obrigações
+            obrigacoes = [obj for obj in protected_objects if isinstance(obj, Obrigacao)]
+            
+            if obrigacoes:
+                messages.error(
+                    self.request,
+                    f'Não é possível excluir este instrumento porque existem '
+                    f'{len(obrigacoes)} obrigação(ões) vinculada(s) a ele. '
+                    f'Remova as obrigações antes de excluir o instrumento.'
+                )
+            else:
+                # Outros tipos de objetos protegidos
+                count = len(protected_objects)
+                messages.error(
+                    self.request,
+                    f'Não é possível excluir este instrumento porque existem '
+                    f'{count} registro(s) vinculado(s) a ele. '
+                    f'Remova as vinculações antes de excluir.'
+                )
+            
+            return redirect(self.success_url)
 
 
 # ===== VIEWS API PARA CRUD INLINE =====

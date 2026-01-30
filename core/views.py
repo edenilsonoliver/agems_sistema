@@ -106,6 +106,32 @@ class ModernDeleteView(LoginRequiredMixin, DeleteView):
             
         return context
     
+    def post(self, request, *args, **kwargs):
+        """
+        Sobrescreve o método post para tratar ProtectedError.
+        Captura tentativas de exclusão de objetos protegidos por foreign keys.
+        """
+        from django.db.models.deletion import ProtectedError
+        from django.shortcuts import redirect
+        
+        try:
+            return super().post(request, *args, **kwargs)
+        except ProtectedError as e:
+            # Extrai informações sobre os objetos protegidos
+            protected_objects = e.protected_objects
+            count = len(protected_objects)
+            
+            # Mensagem amigável ao usuário
+            messages.error(
+                self.request,
+                f'Não é possível excluir este {self.model._meta.verbose_name} '
+                f'porque existem {count} registro(s) vinculado(s) a ele. '
+                f'Remova as vinculações antes de excluir.'
+            )
+            
+            # Redireciona para a lista
+            return redirect(self.success_url)
+    
     def delete(self, request, *args, **kwargs):
         messages.success(self.request, f'{self.model._meta.verbose_name.title()} excluído com sucesso!')
         return super().delete(request, *args, **kwargs)

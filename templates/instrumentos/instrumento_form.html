@@ -221,16 +221,22 @@
                                     <tr>
                                         <th style="min-width: 200px;" class="ps-4 text-uppercase small fw-bold">Título
                                         </th>
-                                        <th style="min-width: 250px;" class="text-uppercase small fw-bold">Descrição
+                                        <th style="min-width: 200px;" class="text-uppercase small fw-bold">Descrição
                                         </th>
-                                        <th style="min-width: 120px;" class="text-uppercase small fw-bold">Cláusula</th>
+                                        <th style="min-width: 100px;" class="text-uppercase small fw-bold">Cláusula</th>
                                         <th style="min-width: 150px;" class="text-uppercase small fw-bold">Tipo</th>
+                                        <th style="min-width: 100px;" class="text-uppercase small fw-bold">Prazo (Dias)
+                                        </th>
                                         <th style="min-width: 130px;" class="text-uppercase small fw-bold">Vencimento
                                         </th>
+                                        <th style="min-width: 100px;" class="text-uppercase small fw-bold text-center">%
+                                            Atend.</th>
                                         <th style="min-width: 130px;" class="text-uppercase small fw-bold">Status</th>
-                                        <th width="60px" class="text-center text-uppercase small fw-bold">Ações</th>
-                                        <th width="60px" class="text-center text-uppercase small fw-bold">Rec.</th>
-                                        <th width="80px" class="text-end pe-4 text-uppercase small fw-bold">Op.</th>
+                                        <th style="min-width: 200px;" class="text-uppercase small fw-bold">Observações
+                                        </th>
+                                        <th width="50px" class="text-center text-uppercase small fw-bold">Ações</th>
+                                        <th width="40px" class="text-center text-uppercase small fw-bold">Rec.</th>
+                                        <th width="60px" class="text-end pe-4 text-uppercase small fw-bold">Op.</th>
                                     </tr>
                                 </thead>
                                 <tbody id="obrigacoes-container">
@@ -244,8 +250,20 @@
                                         <td>{{form_obrig.descricao}}</td>
                                         <td>{{form_obrig.clausula_referencia}}</td>
                                         <td>{{form_obrig.tipo_obrigacao}}</td>
+                                        <td>{{form_obrig.prazo_dias}}</td>
                                         <td>{{form_obrig.data_vencimento}}</td>
+                                        <td class="text-center">
+                                            <div class="progress" style="height: 10px;"
+                                                title="{{form_obrig.percentual_atendimento.value}}%">
+                                                <div class="progress-bar {% if form_obrig.percentual_atendimento.value == 100 %}bg-success{% else %}bg-primary{% endif %}"
+                                                    role="progressbar"
+                                                    style="width:{{form_obrig.percentual_atendimento.value}}%"></div>
+                                            </div>
+                                            <small class="fw-bold">{{form_obrig.percentual_atendimento.value}}%</small>
+                                            <div style="display:none">{{form_obrig.percentual_atendimento}}</div>
+                                        </td>
                                         <td>{{form_obrig.status}}</td>
+                                        <td>{{form_obrig.observacoes}}</td>
                                         <td class="text-center">
                                             {% if form_obrig.instance.pk %}
                                             <a href="{% url 'acao_list' %}?obrigacao={{form_obrig.instance.pk}}"
@@ -625,8 +643,17 @@
             <td>{{ formset.empty_form.descricao }}</td>
             <td>{{ formset.empty_form.clausula_referencia }}</td>
             <td>{{ formset.empty_form.tipo_obrigacao }}</td>
+            <td>{{ formset.empty_form.prazo_dias }}</td>
             <td>{{ formset.empty_form.data_vencimento }}</td>
+            <td class="text-center">
+                <div class="progress" style="height: 10px;">
+                    <div class="progress-bar bg-primary" role="progressbar" style="width: 0%"></div>
+                </div>
+                <small class="fw-bold">0%</small>
+                <div style="display:none">{{ formset.empty_form.percentual_atendimento }}</div>
+            </td>
             <td>{{ formset.empty_form.status }}</td>
+            <td>{{ formset.empty_form.observacoes }}</td>
             <td class="text-center">
                 <span class="badge bg-light text-muted border">0</span>
             </td>
@@ -751,7 +778,56 @@
 
     document.addEventListener('DOMContentLoaded', function () {
         atualizarContadorVisual();
+        vincularEventosDatas();
     });
+
+    function vincularEventosDatas() {
+        // Delegação de evento para campos de prazo e vencimento
+        const container = document.getElementById('obrigacoes-container');
+        if (!container) return;
+
+        // Escuta tanto 'input' (digitação) quanto 'change' (seleção/spinner/perda de foco)
+        container.addEventListener('change', processarMudancaData);
+        container.addEventListener('input', processarMudancaData);
+    }
+
+    function processarMudancaData(e) {
+        const target = e.target;
+        const row = target.closest('.obrigacao-form');
+        if (!row) return;
+
+        const inputDataInicio = document.getElementById('id_data_inicio');
+        // Se não tem data de início no instrumento, não tem como calcular
+        if (!inputDataInicio || !inputDataInicio.value) return;
+
+        // Data de Início do Instrumento (Base do cálculo)
+        const parts = inputDataInicio.value.split('-');
+        const dataReferencia = new Date(parts[0], parts[1] - 1, parts[2]);
+
+        const inputPrazo = row.querySelector('input[name$="-prazo_dias"]');
+        const inputVencimento = row.querySelector('input[name$="-data_vencimento"]');
+
+        if (target === inputPrazo) {
+            // Se mudou prazo -> calcula vencimento
+            const dias = parseInt(target.value) || 0;
+            const novaData = new Date(dataReferencia);
+            novaData.setDate(novaData.getDate() + dias);
+
+            // Formata para YYYY-MM-DD para o input date
+            const y = novaData.getFullYear();
+            const m = String(novaData.getMonth() + 1).padStart(2, '0');
+            const d = String(novaData.getDate()).padStart(2, '0');
+            inputVencimento.value = `${y}-${m}-${d}`;
+        } else if (target === inputVencimento && target.value) {
+            // Se mudou vencimento -> calcula prazo
+            const vParts = target.value.split('-');
+            const dataVenc = new Date(vParts[0], vParts[1] - 1, vParts[2]);
+
+            const diffTime = dataVenc - dataReferencia;
+            const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+            inputPrazo.value = isNaN(diffDays) ? 0 : diffDays;
+        }
+    }
 
     {% if object %}
     function executarUpload() {

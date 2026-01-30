@@ -50,10 +50,10 @@ class ObrigacaoAdmin(admin.ModelAdmin):
             'fields': ('titulo', 'descricao', 'instrumento', 'tipo_obrigacao', 'clausula_referencia')
         }),
         ('Características', {
-            'fields': ('recorrente', 'data_vencimento', 'dias_antecedencia_alerta')
+            'fields': ('recorrente', 'prazo_dias', 'data_vencimento')
         }),
         ('Status', {
-            'fields': ('status', 'cumprida', 'data_cumprimento')
+            'fields': ('status', 'percentual_atendimento')
         }),
         ('Observações', {
             'fields': ('observacoes',)

@@ -132,6 +132,19 @@ class AcaoCreateView(PermissionRequiredMixin, ModernCreateView):
         ])
 
         if is_valid:
+            # Validar checklist obrigatório (mínimo 1 item válido)
+            itens_validos = 0
+            for c_form in checklist_formset:
+                if c_form.cleaned_data and not c_form.cleaned_data.get('DELETE', False):
+                    if c_form.cleaned_data.get('nome', '').strip():
+                        itens_validos += 1
+            
+            if itens_validos == 0:
+                messages.error(
+                    self.request,
+                    'É obrigatório adicionar pelo menos 1 item no checklist de tarefas operativas.'
+                )
+                return self.render_to_response(self.get_context_data(form=form))
             self.object = form.save()
             
             # Checklist
@@ -208,6 +221,19 @@ class AcaoUpdateView(PermissionRequiredMixin, ModernUpdateView):
         ])
 
         if is_valid:
+            # Validar checklist obrigatório (mínimo 1 item válido)
+            itens_validos = 0
+            for c_form in checklist_formset:
+                if c_form.cleaned_data and not c_form.cleaned_data.get('DELETE', False):
+                    if c_form.cleaned_data.get('nome', '').strip():
+                        itens_validos += 1
+            
+            if itens_validos == 0:
+                messages.error(
+                    self.request,
+                    'É obrigatório adicionar pelo menos 1 item no checklist de tarefas operativas.'
+                )
+                return self.render_to_response(self.get_context_data(form=form))
             self.object = form.save()
             
             # Checklist

@@ -160,25 +160,26 @@ class Obrigacao(models.Model):
         help_text='Se marcado, esta obrigação não será marcada como cumprida automaticamente'
     )
     
-    # Prazo
+    # Prazo e Atendimento
+    prazo_dias = models.IntegerField(
+        'Prazo (Dias)',
+        default=0,
+        help_text='Número de dias a partir da data de início do instrumento'
+    )
     data_vencimento = models.DateField(
         'Data de Vencimento',
         null=True,
         blank=True,
-        help_text='Data limite para cumprimento (se aplicável)'
+        help_text='Data limite para cumprimento (calculada ou manual)'
+    )
+    percentual_atendimento = models.IntegerField(
+        'Percentual de Atendimento (%)',
+        default=0,
+        help_text='Média ponderada baseada nos itens de checklist das ações'
     )
     
     # Status
     status = models.CharField('Status', max_length=15, choices=STATUS_CHOICES, default='pendente')
-    cumprida = models.BooleanField('Cumprida', default=False)
-    data_cumprimento = models.DateField('Data de Cumprimento', null=True, blank=True)
-    
-    # Alertas
-    dias_antecedencia_alerta = models.IntegerField(
-        'Dias de Antecedência para Alerta',
-        default=30,
-        help_text='Número de dias antes do vencimento para gerar alerta'
-    )
     
     # Observações e Metadados
     observacoes = models.TextField('Observações', blank=True)
@@ -204,45 +205,48 @@ class Obrigacao(models.Model):
 
     def atualizar_status_por_acoes(self):
         """
-        Atualiza o status da Obrigação baseada no progresso das ações.
-        Chamado via signals sempre que uma Ação é alterada.
+        Atualiza o status e o percentual de atendimento da Obrigação.
+        O percentual é a média dos percentuais de conclusão de todas as ações.
         """
-        if self.recorrente:
-            return  # Obrigações recorrentes seguem lógica manual ou específica
-            
-        total = self.acoes.count()
-        if total == 0:
-            return
+        from django.utils import timezone
+        hoje = timezone.now().date()
+        
+        # 1. Cálculo do Percentual de Atendimento (Média das Ações)
+        acoes = self.acoes.all()
+        total_acoes = acoes.count()
+        
+        novo_percentual = 0
+        if total_acoes > 0:
+            soma_percentuais = sum([acao.percentual_cumprido for acao in acoes])
+            novo_percentual = int(soma_percentuais / total_acoes)
 
-        concluidas = self.acoes.filter(status='finalizado').count()
+        from django.utils import timezone
+        hoje = timezone.now().date()
         
-        # Lógica de Transição
-        novo_status = self.status
-        nova_cumprida = self.cumprida
-        
-        if concluidas == total:
+        # 2. Determinação do Status
+        if total_acoes > 0 and novo_percentual >= 100:
             novo_status = 'cumprida'
-            nova_cumprida = True
-        elif concluidas > 0:
+        elif self.data_vencimento and self.data_vencimento < hoje:
+            novo_status = 'vencida'
+        elif self.acoes.filter(status__in=['em_andamento', 'atrasado', 'em_validacao']).exists() or novo_percentual > 0:
             novo_status = 'em_andamento'
-            nova_cumprida = False
         else:
-            # Se estava cumprida e alguém reabriu uma ação, volta para pendente/em_andamento?
-            # Se concluir 0 de N, técnicamente é pendente ou em_andamento (se tiver ações iniciadas).
-            # Vamos simplificar: Se 0 concluidas, mantem pendente ou volta para pendente se não tiver nenhuma em andamento.
-            # Melhor checar se tem alguma "em_andamento".
-            iniciadas = self.acoes.exclude(status='a_iniciar').exists()
-            if iniciadas:
-                novo_status = 'em_andamento'
-            else:
-                novo_status = 'pendente'
-            nova_cumprida = False
+            novo_status = 'pendente'
 
-        # Salvar apenas se houve mudança para evitar writes desnecessários
-        if novo_status != self.status or nova_cumprida != self.cumprida:
+        # 3. Salvar alterações
+        campos_alterados = []
+        
+        if novo_percentual != self.percentual_atendimento:
+            self.percentual_atendimento = novo_percentual
+            campos_alterados.append('percentual_atendimento')
+            
+        if novo_status != self.status:
             self.status = novo_status
-            self.cumprida = nova_cumprida
-            self.save(update_fields=['status', 'cumprida', 'data_atualizacao'])
+            campos_alterados.append('status')
+        
+        if campos_alterados:
+            campos_alterados.append('data_atualizacao')
+            self.save(update_fields=campos_alterados)
 
     def clean(self):
         """Validações de integridade da obrigação."""

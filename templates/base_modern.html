@@ -498,6 +498,13 @@
         input[type="file"]::file-selector-button:hover {
             background-color: #e9ecef;
         }
+
+        /* Destaque para mensagens de erro */
+        .alert-danger {
+            border-left: 6px solid #b02a37 !important;
+            font-weight: 500;
+            box-shadow: 0 0.25rem 0.5rem rgba(220, 53, 69, 0.15);
+        }
     </style>
 
 
@@ -641,6 +648,29 @@
             </div>
         </header>
 
+        <!-- Django Messages -->
+        <div class="content-area">
+            {% if messages %}
+            <div class="messages-container mt-3">
+                {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                    {% if message.tags == 'error' or message.tags == 'danger' %}
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                    {% elif message.tags == 'success' %}
+                    <i class="bi bi-check-circle-fill me-2"></i>
+                    {% elif message.tags == 'warning' %}
+                    <i class="bi bi-exclamation-circle-fill me-2"></i>
+                    {% elif message.tags == 'info' %}
+                    <i class="bi bi-info-circle-fill me-2"></i>
+                    {% endif %}
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+
         <!-- Content -->
         <div class="content-area">
             {% block content %}{% endblock %}
@@ -685,6 +715,17 @@
                 setTimeout(() => {
                     el.classList.add('fade-in');
                 }, index * 100);
+            });
+        });
+
+        // Auto-dismiss messages after 5 seconds
+        document.addEventListener('DOMContentLoaded', function () {
+            const alerts = document.querySelectorAll('.messages-container .alert');
+            alerts.forEach(alert => {
+                setTimeout(() => {
+                    const bsAlert = new bootstrap.Alert(alert);
+                    bsAlert.close();
+                }, 5000);
             });
         });
 

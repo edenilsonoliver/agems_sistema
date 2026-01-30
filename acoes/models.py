@@ -156,7 +156,7 @@ class Acao(models.Model):
                 novo_status = 'atrasado'
             elif novo_status == 'a_iniciar' and novo_percentual > 0:
                 novo_status = 'em_andamento'
-            
+        
         # Usar update para evitar disparar sinais novamente e garantir persistência direta
         Acao.objects.filter(pk=self.pk).update(
             percentual_cumprido=novo_percentual,
@@ -168,6 +168,7 @@ class Acao(models.Model):
         self.percentual_cumprido = novo_percentual
         self.status = novo_status
         self.data_conclusao = nova_data_conclusao
+
 
     def esta_atrasada(self):
         """Verifica se a ação está atrasada"""
@@ -222,9 +223,20 @@ class ChecklistItem(models.Model):
 @receiver(post_save, sender=ChecklistItem)
 @receiver(post_delete, sender=ChecklistItem)
 def checklist_item_changed(sender, instance, **kwargs):
-    """Sinal para atualizar o progresso da ação quando um item do checklist muda"""
+    """
+    Sinal para atualizar o progresso da ação quando um item do checklist muda.
+    Também atualiza o status da obrigação pai, já que atualizar_progresso()
+    usa .update() que não dispara o signal post_save da Ação.
+    """
     if instance.acao:
+        # Atualiza progresso da ação (percentual e status)
         instance.acao.atualizar_progresso()
+        
+        # Atualiza status da obrigação (já que .update() não dispara signal)
+        if instance.acao.obrigacao:
+            instance.acao.obrigacao.atualizar_status_por_acoes()
+
+
 
 
 class AcaoDocumento(models.Model):
