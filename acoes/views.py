@@ -157,7 +157,28 @@ class AcaoCreateView(PermissionRequiredMixin, ModernCreateView):
             messages.success(self.request, f'Ação "{self.object.nome}" criada com sucesso!')
             return super().form_valid(form)
         else:
-            print(f"CREATE ERRORS - Docs: {docs_formset.errors}")
+            # Tratamento de Erros Amigável (UX)
+            # Extrair mensagens de erro dos formsets para exibir no topo como toast/alert
+            
+            # Erros de Documentos
+            for form_erro in docs_formset.errors:
+                if form_erro:
+                    for campo, msgs in form_erro.items():
+                         for msg in msgs:
+                             # Se o erro for no campo arquivo, mostra mensagem específica
+                             prefixo = "Erro no arquivo: " if campo == 'arquivo' else ""
+                             messages.error(self.request, f"{prefixo}{msg}")
+
+            # Erros de Fotos
+            for form_erro in fotos_formset.errors:
+                if form_erro:
+                    for campo, msgs in form_erro.items():
+                        for msg in msgs:
+                            messages.error(self.request, f"Erro na foto: {msg}")
+
+            if not docs_formset.errors and not fotos_formset.errors:
+                 messages.error(self.request, "Verifique os dados do formulário.")
+                 
             return self.render_to_response(self.get_context_data(form=form))
 
 
@@ -246,9 +267,26 @@ class AcaoUpdateView(PermissionRequiredMixin, ModernUpdateView):
             messages.success(self.request, f'Ação "{self.object.nome}" atualizada com sucesso!')
             return super().form_valid(form)
         else:
-            # Log de erros para o desenvolvedor ver via docker logs
-            print(f"FORMSET ERRORS - Docs: {docs_formset.errors}")
-            print(f"FORMSET ERRORS - Fotos: {fotos_formset.errors}")
+            # Tratamento de Erros Amigável (UX) - UpdateView
+            
+            # Erros de Documentos
+            for form_erro in docs_formset.errors:
+                if form_erro:
+                    for campo, msgs in form_erro.items():
+                         for msg in msgs:
+                             prefixo = "Erro no arquivo: " if campo == 'arquivo' else ""
+                             messages.error(self.request, f"{prefixo}{msg}")
+
+            # Erros de Fotos
+            for form_erro in fotos_formset.errors:
+                if form_erro:
+                    for campo, msgs in form_erro.items():
+                        for msg in msgs:
+                            messages.error(self.request, f"Erro na foto: {msg}")
+
+            if not docs_formset.errors and not fotos_formset.errors:
+                 messages.error(self.request, "Verifique os dados do formulário.")
+
             return self.render_to_response(self.get_context_data(form=form))
 
 

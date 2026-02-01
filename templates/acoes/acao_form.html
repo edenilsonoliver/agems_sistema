@@ -175,7 +175,7 @@
                                 <p class="text-muted">Arraste arquivos aqui ou clique para selecionar (PDF, DOCX, XLSX)
                                 </p>
                                 <input type="file" id="docs-input" multiple style="display: none;"
-                                    accept=".pdf,.docx,.xlsx,.doc,.xls">
+                                    accept=".pdf,.docx,.xlsx,.doc,.xls,.txt,.zip">
                             </div>
 
                             <div class="table-responsive mt-4">
@@ -223,8 +223,9 @@
                             <div class="upload-zone" id="fotos-upload-zone">
                                 <i class="bi bi-camera"></i>
                                 <h5>Capturar Fotos</h5>
-                                <p class="text-muted">Arraste fotos aqui ou clique para selecionar</p>
-                                <input type="file" id="fotos-input" multiple style="display: none;" accept="image/*">
+                                <p class="text-muted">Arraste fotos aqui ou clique para selecionar (JPG, PNG)</p>
+                                <input type="file" id="fotos-input" multiple style="display: none;"
+                                    accept="image/jpeg,image/png,image/webp,image/heic,image/heif">
                             </div>
 
                             <div class="table-responsive mt-4">
@@ -711,7 +712,25 @@
 
         function handleDocsSelection(e) {
             const files = Array.from(e.target.files);
-            files.forEach(file => {
+
+            // FILTRO DE EXTENSÃO (Frontend Validation)
+            const allowedExtensions = ['.pdf', '.docx', '.xlsx', '.doc', '.xls', '.txt', '.zip', '.csv'];
+            const validFiles = files.filter(file => {
+                const ext = '.' + file.name.split('.').pop().toLowerCase();
+                if (!allowedExtensions.includes(ext)) {
+                    alert(`Arquivo NÃO PERMITIDO: "${file.name}".\n\nApenas PDF, DOCX, XLSX, TXT, CSV e ZIP são aceitos.`);
+                    return false;
+                }
+                return true;
+            });
+
+            // Se nenhum arquivo sobrou, limpa e sai
+            if (validFiles.length === 0) {
+                docsInput.value = '';
+                return;
+            }
+
+            validFiles.forEach(file => {
                 const nextIndex = parseInt(docsTotalForms.value);
 
                 // 1. Criar formulário oculto
@@ -791,7 +810,25 @@
 
         function handleFotosSelection(e) {
             const files = Array.from(e.target.files);
-            files.forEach(file => {
+
+            // FILTRO DE EXTENSÃO PARA FOTOS (Frontend Validation)
+            const allowedExtensions = ['.jpg', '.jpeg', '.png', '.webp', '.heic', '.heif'];
+            const validFiles = files.filter(file => {
+                const ext = '.' + file.name.split('.').pop().toLowerCase();
+                if (!allowedExtensions.includes(ext)) {
+                    alert(`Arquivo NÃO PERMITIDO: "${file.name}".\n\nApenas imagens JPG, PNG, WEBP, HEIC e HEIF são aceitas.`);
+                    return false;
+                }
+                return true;
+            });
+
+            // Se nenhum arquivo sobrou, limpa e sai
+            if (validFiles.length === 0) {
+                fotosInput.value = '';
+                return;
+            }
+
+            validFiles.forEach(file => {
                 const nextIndex = parseInt(fotosTotalForms.value);
 
                 // 1. Criar formulário oculto

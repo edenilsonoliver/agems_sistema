@@ -237,6 +237,7 @@ def diretoria_create(request):
 
 import zipfile
 import os
+import magic
 from django.utils.text import slugify
 
 @require_POST
@@ -260,7 +261,34 @@ def arquivo_upload(request, instrumento_id):
             'error': f'Extensão {ext} não permitida. Use apenas PDF, DOCX ou XLSX.'
         })
 
-    # 2. Verificação de Macros (para arquivos Office)
+    # 2. Verificação de MIME Type Real (NOVO)
+    # Lista de MIME Types permitidos
+    ALLOWED_MIMES = {
+        'application/pdf',
+        'application/msword', 
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'application/vnd.ms-excel',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    }
+
+    try:
+        # Lê o início do arquivo para detectar o tipo
+        initial_pos = arquivo.tell()
+        mime_type = magic.from_buffer(arquivo.read(2048), mime=True)
+        arquivo.seek(initial_pos) # Reseta o ponteiro de leitura
+        
+        if mime_type not in ALLOWED_MIMES:
+            return JsonResponse({
+                'success': False, 
+                'error': f'Tipo de arquivo inválido ({mime_type}). Apenas PDF, Word e Excel originais são permitidos.'
+            })
+            
+    except Exception as e:
+        logger.error(f"Erro na validação MIME: {e}")
+        # Em caso de erro na lib magic, podemos decidir falhar ou logar e prosseguir (aqui vamos falhar seguro)
+        return JsonResponse({'success': False, 'error': 'Erro ao validar integridade do arquivo.'})
+
+    # 3. Verificação de Macros (para arquivos Office)
     if ext in ['.docx', '.xlsx']:
         try:
             # Arquivos Office modernos são ZIPs. Macros ficam em vbaProject.bin

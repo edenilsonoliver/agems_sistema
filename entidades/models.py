@@ -3,6 +3,9 @@ import os
 from django.db import models
 from django.conf import settings
 from core.models import TipoEntidade, TipoServico
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class Entidade(models.Model):
@@ -55,10 +58,15 @@ class Entidade(models.Model):
         """Retorna a URL do logo ou uma imagem padrão se não existir"""
         try:
             if self.logo and hasattr(self.logo, 'url'):
+                # Verifica se o arquivo existe fisicamente
                 if os.path.exists(self.logo.path):
                     return self.logo.url
-        except Exception:
-            pass
+        except (ValueError, AttributeError) as e:
+            # Erros de atributo ou valor ao acessar o arquivo
+            logger.warning(f"Logo não acessível para entidade {self.pk}: {e}")
+        except Exception as e:
+            # Erros inesperados
+            logger.error(f"Erro inesperado ao acessar logo da entidade {self.pk}: {e}")
         
         return f"{settings.STATIC_URL}img/placeholder_entidade.png"
     

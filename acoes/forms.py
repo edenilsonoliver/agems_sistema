@@ -3,6 +3,11 @@ from django import forms
 from .models import Acao, ChecklistItem
 from usuarios.models import Usuario
 from django.forms import inlineformset_factory
+import magic
+import os
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class AcaoForm(forms.ModelForm):
@@ -87,7 +92,7 @@ ChecklistItemFormSet = inlineformset_factory(
     Acao,
     ChecklistItem,
     fields=['nome', 'concluido', 'ordem'],
-    extra=1,
+    extra=0,
     can_delete=True,
     widgets={
         'nome': forms.TextInput(attrs={
@@ -112,29 +117,138 @@ for field in ChecklistItemFormSet.form.base_fields.values():
 from .models import AcaoDocumento, AcaoFoto
 
 # Formset para Documentos
+# Formset para Documentos
+
+class AcaoDocumentoForm(forms.ModelForm):
+    class Meta:
+        model = AcaoDocumento
+        fields = ['arquivo', 'descricao']
+        widgets = {
+            'arquivo': forms.FileInput(attrs={'class': 'form-control'}),
+            'descricao': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Descrição do arquivo', 'required': False}),
+        }
+
+    def clean_arquivo(self):
+        arquivo = self.cleaned_data.get('arquivo')
+        if not arquivo:
+            return arquivo
+
+        # Check for DELETE action to skip validation if deleting
+        if self.cleaned_data.get('DELETE'):
+            return arquivo
+            
+        # 1. Validação de Extensão
+        ext = os.path.splitext(arquivo.name)[1].lower()
+        allowed_extensions = {'.pdf', '.docx', '.xlsx', '.doc', '.xls', '.ppt', '.pptx', '.txt', '.csv', '.zip', '.rar'}
+        
+        if ext not in allowed_extensions:
+             raise forms.ValidationError(f'Extensão {ext} não permitida.')
+
+        # 2. Validação de MIME Type Real
+        ALLOWED_MIMES = {
+            'application/pdf',
+            'application/msword', 
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'application/vnd.ms-excel',
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'text/plain',
+            'text/csv',
+            'application/csv',
+            'application/zip',
+            'application/x-rar-compressed',
+            'application/vnd.ms-powerpoint',
+            'application/vnd.openxmlformats-officedocument.presentationml.presentation'
+        }
+
+        try:
+            # Lê o início do arquivo para detectar o tipo
+            initial_pos = arquivo.tell()
+            mime_type = magic.from_buffer(arquivo.read(2048), mime=True)
+            arquivo.seek(initial_pos) # Reseta o ponteiro de leitura
+            
+            if mime_type not in ALLOWED_MIMES:
+                 # Verificações extras para casos ambíguos
+                 if ext == '.csv' and mime_type in ['text/plain', 'application/csv']:
+                     pass # OK
+                 elif ext in ['.zip', '.docx', '.xlsx'] and mime_type == 'application/zip':
+                     pass # OK
+                 else:
+                    raise forms.ValidationError(f'Arquivo inválido (Tipo detectado: {mime_type}).')
+
+        except Exception as e:
+            logger.error(f"Erro na validação MIME em Acoes: {e}")
+            raise forms.ValidationError('Erro ao validar integridade do arquivo.')
+
+        return arquivo
+
 AcaoDocumentoFormSet = inlineformset_factory(
     Acao,
     AcaoDocumento,
-    fields=['arquivo', 'descricao'],
+    form=AcaoDocumentoForm,
     extra=0,
-    can_delete=True,
-    widgets={
-        'arquivo': forms.FileInput(attrs={'class': 'form-control'}),
-        'descricao': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Descrição do arquivo', 'required': False}),
-    }
+    can_delete=True
 )
 
 # Formset para Fotos
+# Formset para Fotos
+class AcaoFotoForm(forms.ModelForm):
+    class Meta:
+        model = AcaoFoto
+        fields = ['imagem', 'legenda', 'coordenadas', 'data_registro']
+        widgets = {
+            'imagem': forms.ClearableFileInput(attrs={'class': 'form-control'}),
+            'legenda': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Legenda da foto'}),
+            'coordenadas': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Latitude, Longitude'}),
+            'data_registro': forms.HiddenInput(),
+        }
+
+    def clean_imagem(self):
+        imagem = self.cleaned_data.get('imagem')
+        if not imagem:
+            return imagem
+
+        # Check for DELETE action
+        if self.cleaned_data.get('DELETE'):
+            return imagem
+            
+        # 1. Validação de Extensão
+        ext = os.path.splitext(imagem.name)[1].lower()
+        allowed_extensions = {'.jpg', '.jpeg', '.png', '.webp', '.heic', '.heif'}
+        
+        if ext not in allowed_extensions:
+             raise forms.ValidationError(f'Extensão {ext} não permitida para fotos.')
+
+        # 2. Validação de MIME Type Real
+        ALLOWED_MIMES = {
+            'image/jpeg',
+            'image/png',
+            'image/webp',
+            'image/heic', 
+            'image/heif',
+            'application/octet-stream' # Algumas variantes de HEIC podem vir assim
+        }
+
+        try:
+            initial_pos = imagem.tell()
+            mime_type = magic.from_buffer(imagem.read(2048), mime=True)
+            imagem.seek(initial_pos)
+            
+            # Tratamento especial para HEIC/HEIF que as vezes é detectado como octet-stream ou application/x-ole-storage
+            if ext in ['.heic', '.heif'] and mime_type in ['application/octet-stream', 'application/x-ole-storage']:
+                pass # Aceitar, pois libmagic pode não ter assinatura exata para toda variante de HEIC
+            elif mime_type not in ALLOWED_MIMES:
+                raise forms.ValidationError(f'Arquivo inválido. Tipo de imagem detectado: {mime_type}')
+
+        except Exception as e:
+            logger.error(f"Erro na validação MIME de Foto: {e}")
+            raise forms.ValidationError('Erro ao validar integridade da imagem.')
+
+        return imagem
+
 AcaoFotoFormSet = inlineformset_factory(
     Acao,
     AcaoFoto,
-    fields=['imagem', 'legenda', 'coordenadas', 'data_registro'],
+    form=AcaoFotoForm,
     extra=0,
-    can_delete=True,
-    widgets={
-        'imagem': forms.ClearableFileInput(attrs={'class': 'form-control'}),
-        'legenda': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Legenda da foto'}),
-        'coordenadas': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Latitude, Longitude'}),
-        'data_registro': forms.HiddenInput(),
-    }
+    can_delete=True
 )

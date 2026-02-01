@@ -13,11 +13,12 @@ WORKDIR /app
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
-# Instala dependências do sistema (incluindo netcat)
+# Instala dependências do sistema (incluindo netcat e libmagic)
 RUN apt-get update && apt-get install -y \
     netcat-traditional \
     build-essential \
     libpq-dev \
+    libmagic1 \
     && rm -rf /var/lib/apt/lists/*
 
 # Copia os arquivos do projeto
