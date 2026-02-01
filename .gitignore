@@ -37,4 +37,12 @@ backups/
 vevn/
 
 # Referências de Coding (Locais)
+DIRETRIZES_GLOBAIS.md
+PLANO_MELHORIAS.md
 RELATORIO_MELHORIAS_OBRIGACOES.md
+
+# Security Analysis
+.security_analysis/
+
+# Manuals and Internal Documentation
+manuals/
