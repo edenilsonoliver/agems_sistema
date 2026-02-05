@@ -69,9 +69,10 @@
                                 type="button" role="tab"><i
                                     class="bi bi-paperclip me-2"></i>Documentos/Evidências</button>
                         </li>
-                        <li class="nav-item" role="presentation">
+                        <li class="nav-item" role="presentation" id="fotos-tab-item">
                             <button class="nav-link" id="fotos-tab" data-bs-toggle="tab" data-bs-target="#fotos"
-                                type="button" role="tab"><i class="bi bi-camera me-2"></i>Fotos</button>
+                                type="button" role="tab"><i class="bi bi-camera me-2"></i>Fotos/Evidências de
+                                Campo</button>
                         </li>
                     </ul>
 
@@ -185,6 +186,8 @@
                                             <th style="width: 50px;">Tipo</th>
                                             <th>Nome do Arquivo</th>
                                             <th>Descrição do Documento</th>
+                                            <th>Enviado por</th>
+                                            <th>Data</th>
                                             <th style="width: 100px;" class="text-center">Ações</th>
                                         </tr>
                                     </thead>
@@ -201,7 +204,9 @@
                                     {% for d_form in docs_formset %}
                                     <div class="hidden-doc-form" data-index="{{ forloop.counter0 }}"
                                         data-filename="{% if d_form.instance.arquivo %}{{ d_form.instance.arquivo.name }}{% endif %}"
-                                        data-url="{% if d_form.instance.arquivo %}{{ d_form.instance.arquivo.url }}{% endif %}">
+                                        data-url="{% if d_form.instance.arquivo %}{{ d_form.instance.arquivo.url }}{% endif %}"
+                                        data-usuario="{% if d_form.instance.usuario %}{{ d_form.instance.usuario.get_full_name|default:d_form.instance.usuario.username }}{% endif %}"
+                                        data-data="{{ d_form.instance.data_envio|date:'d/m/Y H:i' }}">
                                         {{ d_form.id }}
                                         {{ d_form.arquivo }}
                                         {{ d_form.descricao }}
@@ -236,6 +241,7 @@
                                             <th>Descrição da Foto</th>
                                             <th>GPS (Coordenadas)</th>
                                             <th>Data/Hora Captura</th>
+                                            <th>Enviado por</th>
                                             <th style="width: 100px;" class="text-center">Ações</th>
                                         </tr>
                                     </thead>
@@ -253,7 +259,8 @@
                                     <div class="hidden-foto-form" data-index="{{ forloop.counter0 }}"
                                         data-coordenadas="{{ f_form.instance.coordenadas|default:'' }}"
                                         data-registro="{{ f_form.instance.data_registro|date:'d/m/Y H:i'|default:'' }}"
-                                        data-envio="{{ f_form.instance.data_envio|date:'d/m/Y H:i' }}">
+                                        data-envio="{{ f_form.instance.data_envio|date:'d/m/Y H:i' }}"
+                                        data-usuario="{% if f_form.instance.usuario %}{{ f_form.instance.usuario.get_full_name|default:f_form.instance.usuario.username }}{% endif %}">
                                         {{ f_form.id }}
                                         {{ f_form.imagem }}
                                         {{ f_form.legenda }}
@@ -361,6 +368,51 @@
         }
     });
 </script>
+
+{{ fiscalizacao_ids|json_script:"fiscalizacao-ids-data" }}
+
+<script>
+    // ===== FASE 5: Interface Condicional para Fiscalização =====
+    document.addEventListener('DOMContentLoaded', function () {
+        // IDs vindos do Backend via json_script (mais seguro)
+        const fiscalizacaoIds = JSON.parse(document.getElementById('fiscalizacao-ids-data').textContent);
+
+        const tipoAcaoSelect = document.getElementById('id_tipo_acao');
+        const fotosTabItem = document.getElementById('fotos-tab-item');
+
+        function toggleFotosTab() {
+            if (!tipoAcaoSelect || !fotosTabItem) return;
+
+            const selectedValue = parseInt(tipoAcaoSelect.value);
+
+            console.log("DEBUG: Fiscalização IDs:", fiscalizacaoIds);
+            console.log("DEBUG: Selected Value (parsed):", selectedValue, "Original:", tipoAcaoSelect.value);
+
+            if (fiscalizacaoIds.includes(selectedValue)) {
+                console.log("DEBUG: SHOWING Fotos Tab");
+                fotosTabItem.style.display = 'block';
+            } else {
+                console.log("DEBUG: HIDING Fotos Tab");
+                fotosTabItem.style.display = 'none';
+                // Se a aba Fotos estava ativa, volta para Dados
+                if (fotosTabItem.querySelector('.active')) {
+                    const dadosTabBtn = document.getElementById('dados-tab');
+                    if (dadosTabBtn) {
+                        const tab = new bootstrap.Tab(dadosTabBtn);
+                        tab.show();
+                    }
+                }
+            }
+        }
+
+        if (tipoAcaoSelect) {
+            tipoAcaoSelect.addEventListener('change', toggleFotosTab);
+            // Executar no load para definir estado inicial
+            toggleFotosTab();
+        }
+    });
+</script>
+
 
 <script>
     document.addEventListener('DOMContentLoaded', function () {
@@ -775,6 +827,8 @@
                     <input type="text" class="form-control form-control-sm doc-desc-input" 
                            data-index="${index}" value="${description}" placeholder="Descrição do documento...">
                 </td>
+                <td><small class="text-muted">${isExisting && existingDoc.usuario ? existingDoc.usuario : 'Você'}</small></td>
+                <td><small class="text-muted">${isExisting && existingDoc.data ? existingDoc.data : 'Agora'}</small></td>
                 <td class="text-center">
                     <button type="button" class="btn-remove-asset" onclick="removeAsset('docs', ${index})">
                         <i class="bi bi-trash"></i>
@@ -909,6 +963,7 @@
                 </td>
                 <td>${displayCoords}</td>
                 <td class="small text-muted">${displayDate}</td>
+                <td><small class="text-muted">${isExisting && existingData.usuario ? existingData.usuario : 'Você'}</small></td>
                 <td class="text-center">
                     <button type="button" class="btn-remove-asset" onclick="removeAsset('fotos', ${index})">
                         <i class="bi bi-trash"></i>

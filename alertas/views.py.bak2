@@ -4,7 +4,7 @@ from django.utils import timezone
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
 from django.views.decorators.http import require_POST
-from django.shortcuts import get_object_or_404, render
+from django.shortcuts import get_object_or_404
 
 from acoes.models import Acao
 from instrumentos.models import Obrigacao
@@ -80,31 +80,39 @@ def marcar_todas_como_lidas(request):
 
 @login_required
 def historico_notificacoes(request):
-    """View para exibir o histórico de notificações do usuário em formato HTML."""
     user = request.user
     tipo = request.GET.get('tipo')
-    lidas = request.GET.get('lidas', 'nao')  # Padrão: mostrar não lidas
+    lidas = request.GET.get('lidas', 'todas')
+    limite = int(request.GET.get('limite', 100))
     
-    # Filtrar notificações do usuário
     notificacoes = Notificacao.objects.filter(usuario=user)
-    
     if tipo:
         notificacoes = notificacoes.filter(tipo=tipo)
-    
     if lidas == 'sim':
         notificacoes = notificacoes.filter(lida=True)
     elif lidas == 'nao':
         notificacoes = notificacoes.filter(lida=False)
-    # Se lidas == 'todas', não aplica filtro
     
-    # Ordenar por data de criação (mais recentes primeiro) e limitar a 100
-    notificacoes = notificacoes.order_by('-data_criacao')[:100]
+    notificacoes = notificacoes.order_by('-data_criacao')[:limite]
     
-    context = {
-        'notificacoes_list': notificacoes,
+    data = {
+        'total': notificacoes.count(),
+        'notificacoes': [
+            {
+                'id': n.id,
+                'titulo': n.titulo,
+                'mensagem': n.mensagem,
+                'link': n.link,
+                'tipo': n.get_tipo_display(),
+                'prioridade': n.prioridade,
+                'lida': n.lida,
+                'data_criacao': n.data_criacao.strftime('%d/%m/%Y %H:%M'),
+                'data_leitura': n.data_leitura.strftime('%d/%m/%Y %H:%M') if n.data_leitura else None,
+            }
+            for n in notificacoes
+        ]
     }
-    
-    return render(request, 'alertas/historico.html', context)
+    return JsonResponse(data)
 
 
 @login_required

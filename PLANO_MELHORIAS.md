@@ -104,23 +104,28 @@ Ao invés de verificar *quem* é o usuário (cargo), verificaremos *o que* ele p
     - **Objetivo:** Alertar usuários sobre prazos próximos.
     - **Estratégia:** Criar comando de management para verificar datas e criar alertas no sistema/email.
 
-5.  **Fase 5: Melhoria em Ações e Obrigações**
-    **Objetivo:** Enriquecer o registro de Ações com tipagem robusta e gestão documental comprobatória.
+5.  **Fase 5: Especialização para Fiscalização ("Soft Specialization")**
+    **Objetivo:** Adaptar o módulo de Ações para suportar Fiscalização de Campo sem segmentar o banco de dados.
 
-    ### 5.1. Tipos de Ação Personalizáveis
-    - **Requisito:** Permitir tipagem (Fiscalização, Monitoramento, Visita Técnica, etc.).
-    - **Ação:** Refinar cadastro de `TipoAcao` e adaptar formulário da Ação para destacar este campo.
-    - **Customização:** Avaliar campos dinâmicos por tipo (futuro).
+    ### 5.1. Estratégia de Modelo Unificado
+    - **Conceito:** Manter um único modelo `Acao` para todos os tipos (Reunião, Projeto, Fiscalização).
+    - **Benefício:** Evita fragmentação do banco e facilita relatórios unificados.
+    - **Comportamento:** O sistema comporta-se como um Gerenciador de Tarefas padrão para tipos comuns (só Checklist e Prazos).
 
-    ### 5.2. Gestão de Evidências e Documentos
-    - **Requisito:** Aba "Documentos/Evidências" para anexar PDFs, DOCs, XLSs.
-    - **Rastreabilidade:** Registrar quem enviou e quando.
-    - **Ação:** Criar modelo `AcaoDocumento`.
+    ### 5.2. Interface Condicional (Frontend)
+    - **Lógica:** A aba "Fotos" e campos específicos ficam ocultos por padrão.
+    - **Gatilho:** Ao selecionar o Tipo de Ação "Fiscalização", a interface ativa dinamicamente a aba "Fotos/Evidências de Campo".
+    - **Aba Documentos:** Permanece visível para todos os tipos (para atas, minutas, etc).
 
-    ### 5.3. Registro Fotográfico (Fiscalização)
-    - **Requisito:** Área específica para fotos de campo.
-    - **Ação:** Criar modelo `AcaoFoto` com suporte a metadados visualizáveis (galeria).
-    - **Interface:** Implementar sistema de abas na edição da Ação (Dados, Checklist, Docs, Fotos).
+    ### 5.3. Campos Específicos e Rastreabilidade
+    - **Fotos (`AcaoFoto`):** Tabela satélite vinculada por FK. Só gera registros se houver upload.
+        - Campos: Miniatura, GPS (Latitude/Longitude extraídos do EXIF), Data do Registro, Responsável.
+    - **Rastreabilidade:** Adicionar colunas "Enviado por" e "Data" nas tabelas de documentos e fotos para auditoria clara.
+
+    ### 5.4. Lógica de Banco de Dados
+    - **Tabela Principal:** `acoes_acao` (Limpa, sem campos de imagem).
+    - **Tabela Satélite:** `acoes_acaofoto` (Relacionamento 1:N).
+    - **Eficiência:** Ações que não são fiscalização custam ZERO espaço na tabela de fotos.
 
 ---
 **Última atualização:** 27/01/2026 - FASE 4 Concluída. Iniciando Planejamento da FASE 5.

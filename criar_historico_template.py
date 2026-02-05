@@ -1,0 +1,183 @@
+# -*- coding: utf-8 -*-
+"""Script para criar o template historico.html com encoding UTF-8 correto."""
+
+import os
+
+TEMPLATE_CONTENT = """{% extends 'base_modern.html' %}
+
+{% block title %}Notificações{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12 d-flex justify-content-between align-items-center">
+        <div>
+            <h2 class="fw-bold text-primary mb-0">
+                <i class="bi bi-bell me-2"></i>Histórico de Notificações
+            </h2>
+            <p class="text-muted small mb-0">Visualize e gerencie seus alertas</p>
+        </div>
+        <div>
+            <button id="btn-mark-all-read" class="btn btn-outline-primary btn-sm">
+                <i class="bi bi-check-all me-1"></i>Marcar todas como lidas
+            </button>
+        </div>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm">
+    <div class="card-header bg-white py-3">
+        <form method="get" class="row g-3 align-items-center">
+            <div class="col-auto">
+                <label for="filtro-lidas" class="col-form-label fw-bold">Filtrar:</label>
+            </div>
+            <div class="col-auto">
+                <select name="lidas" id="filtro-lidas" class="form-select form-select-sm" onchange="this.form.submit()">
+                    <option value="todas" {% if request.GET.lidas == 'todas' %}selected{% endif %}>Todas</option>
+                    <option value="nao" {% if request.GET.lidas == 'nao' or not request.GET.lidas %}selected{% endif %}>Não Lidas</option>
+                    <option value="sim" {% if request.GET.lidas == 'sim' %}selected{% endif %}>Lidas</option>
+                </select>
+            </div>
+        </form>
+    </div>
+    <div class="card-body p-0">
+        <div class="list-group list-group-flush">
+            {% for notif in notificacoes_list %}
+            <div class="list-group-item list-group-item-action p-3 {% if not notif.lida %}bg-light-blue{% endif %}" id="notif-{{ notif.id }}">
+                <div class="d-flex w-100 justify-content-between">
+                    <div class="d-flex align-items-start">
+                        <div class="me-3 mt-1">
+                            {% if notif.tipo == 'acao_atrasada' %}
+                                <span class="badge bg-danger rounded-circle p-2"><i class="bi bi-exclamation-triangle"></i></span>
+                            {% elif notif.tipo == 'acao_vencendo_hoje' %}
+                                <span class="badge bg-warning text-dark rounded-circle p-2"><i class="bi bi-alarm"></i></span>
+                            {% elif notif.tipo == 'acao_nova' %}
+                                <span class="badge bg-info text-white rounded-circle p-2"><i class="bi bi-plus-lg"></i></span>
+                            {% elif notif.tipo == 'obrigacao_vencendo' %}
+                                <span class="badge bg-primary rounded-circle p-2"><i class="bi bi-collection"></i></span>
+                            {% else %}
+                                <span class="badge bg-secondary rounded-circle p-2"><i class="bi bi-bell"></i></span>
+                            {% endif %}
+                        </div>
+                        <div>
+                            <div class="d-flex align-items-center mb-1">
+                                <h6 class="mb-0 fw-bold {{ notif.lida|yesno:'text-muted,text-dark' }}">
+                                    {% if notif.link %}
+                                        <a href="{{ notif.link }}" class="text-decoration-none text-reset">{{ notif.titulo }}</a>
+                                    {% else %}
+                                        {{ notif.titulo }}
+                                    {% endif %}
+                                </h6>
+                                {% if not notif.lida %}
+                                    <span class="badge bg-primary ms-2 api-new-badge">Nova</span>
+                                {% endif %}
+                            </div>
+                            <p class="mb-1 text-muted small">{{ notif.mensagem }}</p>
+                            <small class="text-muted">
+                                <i class="bi bi-clock me-1"></i>{{ notif.data_criacao|date:"d/m/Y H:i" }}
+                            </small>
+                        </div>
+                    </div>
+                    <div class="dropdown">
+                        <button class="btn btn-link text-muted btn-sm" type="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-three-dots-vertical"></i>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            {% if not notif.lida %}
+                            <li>
+                                <a class="dropdown-item mark-read-btn" href="#" data-id="{{ notif.id }}">
+                                    <i class="bi bi-check2 me-2"></i>Marcar como lida
+                                </a>
+                            </li>
+                            {% endif %}
+                            <li>
+                                <a class="dropdown-item text-danger" href="#"><i class="bi bi-trash me-2"></i>Excluir</a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="text-center p-5">
+                <i class="bi bi-bell-slash fs-1 text-muted mb-3"></i>
+                <p class="text-muted">Nenhuma notificação encontrada.</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<style>
+    .bg-light-blue {
+        background-color: #f8f9fa;
+        border-left: 4px solid var(--bs-primary);
+    }
+</style>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Marcar uma como lida
+        document.querySelectorAll('.mark-read-btn').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                const id = this.dataset.id;
+                const row = document.getElementById(`notif-${id}`);
+                
+                fetch(`/alertas/${id}/marcar-lida/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        row.classList.remove('bg-light-blue');
+                        row.querySelector('.api-new-badge')?.remove();
+                        this.closest('li').remove();
+                    }
+                });
+            });
+        });
+
+        // Marcar todas como lidas
+        document.getElementById('btn-mark-all-read')?.addEventListener('click', function() {
+            if(!confirm('Deseja marcar todas as notificações como lidas?')) return;
+            
+            fetch(`/alertas/marcar-todas-lidas/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}
+"""
+
+# Criar diretório se não existir
+output_path = r'c:\Users\SAMSUNG\OneDrive\Documentos\agems_sistema\templates\alertas\historico.html'
+os.makedirs(os.path.dirname(output_path), exist_ok=True)
+
+# Escrever arquivo com UTF-8 (sem BOM)
+with open(output_path, 'w', encoding='utf-8') as f:
+    f.write(TEMPLATE_CONTENT)
+
+print(f"✓ Arquivo criado: {output_path}")
+print(f"✓ Tamanho: {os.path.getsize(output_path)} bytes")
+print(f"✓ Encoding: UTF-8")
+
+# Validar sintaxe Django (verificar espaços ao redor de ==)
+if " == " in TEMPLATE_CONTENT:
+    print("✓ Sintaxe Django correta (espaços ao redor de ==)")
+else:
+    print("✗ ERRO: Sintaxe Django incorreta")

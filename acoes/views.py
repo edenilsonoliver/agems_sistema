@@ -10,6 +10,7 @@ from django.urls import reverse_lazy
 from .forms import AcaoForm, ChecklistItemFormSet, AcaoDocumentoFormSet, AcaoFotoFormSet
 from instrumentos.models import Instrumento, Obrigacao
 from django.http import JsonResponse
+from core.models import TipoAcao
 
 
 # Endpoint AJAX para obrigações (usado na criação de Ações)
@@ -91,6 +92,13 @@ class AcaoCreateView(PermissionRequiredMixin, ModernCreateView):
             context['checklist_formset'] = ChecklistItemFormSet(prefix='checklist_itens')
             context['docs_formset'] = AcaoDocumentoFormSet(prefix='docs')
             context['fotos_formset'] = AcaoFotoFormSet(prefix='fotos')
+        
+        # Contexto para Fiscalização (Fase 5)
+        # Passar IDs dos tipos que são "Fiscalização" para lógica no frontend
+        context['fiscalizacao_ids'] = list(TipoAcao.objects.filter(
+            nome__icontains='Fiscalização'
+        ).values_list('id', flat=True))
+        
         return context
 
     def save_assets(self, acao, docs_formset, fotos_formset):
@@ -199,6 +207,12 @@ class AcaoUpdateView(PermissionRequiredMixin, ModernUpdateView):
             context['checklist_formset'] = ChecklistItemFormSet(instance=self.object, prefix='checklist_itens')
             context['docs_formset'] = AcaoDocumentoFormSet(instance=self.object, prefix='docs')
             context['fotos_formset'] = AcaoFotoFormSet(instance=self.object, prefix='fotos')
+            
+        # Contexto para Fiscalização (Fase 5)
+        context['fiscalizacao_ids'] = list(TipoAcao.objects.filter(
+            nome__icontains='Fiscalização'
+        ).values_list('id', flat=True))
+        
         return context
 
     def save_assets(self, acao, docs_formset, fotos_formset):
