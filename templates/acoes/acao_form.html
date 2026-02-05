@@ -1,9 +1,43 @@
 {% extends 'base_modern.html' %}
 {% load crispy_forms_tags %}
 
+{% block extra_css %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+<style>
+    #mapa-fiscalizacao {
+        height: 500px;
+        width: 100%;
+        border-radius: 12px;
+        border: 2px solid #dee2e6;
+        z-index: 1;
+        /* Garantir que fique abaixo de dropdowns mas acima da base */
+    }
+
+    .leaflet-popup-content-wrapper {
+        border-radius: 8px;
+        padding: 5px;
+    }
+
+    .marcador-form-popup label {
+        font-weight: 600;
+        font-size: 0.8rem;
+        margin-bottom: 2px;
+        display: block;
+    }
+
+    .marcador-form-popup input,
+    .marcador-form-popup textarea {
+        margin-bottom: 8px;
+    }
+</style>
+{% endblock %}
+
 {% block extra_js %}
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/exif-js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 {% endblock %}
 
 {% block content %}
@@ -73,6 +107,10 @@
                             <button class="nav-link" id="fotos-tab" data-bs-toggle="tab" data-bs-target="#fotos"
                                 type="button" role="tab"><i class="bi bi-camera me-2"></i>Fotos/Evidências de
                                 Campo</button>
+                        </li>
+                        <li class="nav-item" role="presentation" id="mapa-tab-item" style="display: none;">
+                            <button class="nav-link" id="mapa-tab" data-bs-toggle="tab" data-bs-target="#mapa-content"
+                                type="button" role="tab"><i class="bi bi-geo-alt me-2"></i>Mapa de Ocorrências</button>
                         </li>
                     </ul>
 
@@ -280,6 +318,53 @@
                                 </div>
                             </div>
                         </div>
+
+                        <!-- ABA 4: Mapa de Ocorrências (FASE 5) -->
+                        <div class="tab-pane fade" id="mapa-content" role="tabpanel" aria-labelledby="mapa-tab">
+                            <div class="alert alert-info shadow-sm border-0 d-flex align-items-center mb-4">
+                                <i class="bi bi-info-circle-fill fs-4 me-3"></i>
+                                <div>
+                                    <strong>Mapa Interativo de Fiscalização</strong><br>
+                                    Clique em qualquer local do mapa para registrar uma ocorrência ou ponto de
+                                    interesse.
+                                    Você poderá adicionar fotos e descrições a cada ponto.
+                                </div>
+                            </div>
+
+                            <div id="mapa-fiscalizacao"></div>
+
+                            <!-- LISTA DE PINS ABAIXO DO MAPA (NOVO) -->
+                            <div class="mt-4">
+                                <h6 class="fw-bold mb-3"><i class="bi bi-list-ul me-2"></i>Lista de Ocorrências no Mapa
+                                </h6>
+                                <div class="table-responsive">
+                                    <table
+                                        class="table table-sm table-hover border align-middle shadow-sm bg-white rounded overflow-hidden">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>Título/Ponto</th>
+                                                <th>Descrição</th>
+                                                <th>Coordenadas</th>
+                                                <th class="text-center">Evidências</th>
+                                                <th class="text-center">Ações</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="lista-marcadores-body">
+                                            <tr>
+                                                <td colspan="5" class="text-center py-3 text-muted">Carregando
+                                                    marcadores...</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <div class="mt-3 text-muted small">
+                                <i class="bi bi-cursor me-1"></i>
+                                Coordenadas capturadas via mapa serão automaticamente vinculadas às fotos registradas em
+                                cada ponto.
+                            </div>
+                        </div>
                     </div>
 
                     <hr class="my-4">
@@ -379,23 +464,22 @@
 
         const tipoAcaoSelect = document.getElementById('id_tipo_acao');
         const fotosTabItem = document.getElementById('fotos-tab-item');
+        const mapaTabItem = document.getElementById('mapa-tab-item');
 
-        function toggleFotosTab() {
-            if (!tipoAcaoSelect || !fotosTabItem) return;
+        function toggleFiscalizacaoTabs() {
+            if (!tipoAcaoSelect) return;
 
             const selectedValue = parseInt(tipoAcaoSelect.value);
+            const isFiscalizacao = fiscalizacaoIds.includes(selectedValue);
 
-            console.log("DEBUG: Fiscalização IDs:", fiscalizacaoIds);
-            console.log("DEBUG: Selected Value (parsed):", selectedValue, "Original:", tipoAcaoSelect.value);
+            console.log("DEBUG: Fiscalização Check:", isFiscalizacao);
 
-            if (fiscalizacaoIds.includes(selectedValue)) {
-                console.log("DEBUG: SHOWING Fotos Tab");
-                fotosTabItem.style.display = 'block';
-            } else {
-                console.log("DEBUG: HIDING Fotos Tab");
-                fotosTabItem.style.display = 'none';
-                // Se a aba Fotos estava ativa, volta para Dados
-                if (fotosTabItem.querySelector('.active')) {
+            if (fotosTabItem) fotosTabItem.style.display = isFiscalizacao ? 'block' : 'none';
+            if (mapaTabItem) mapaTabItem.style.display = isFiscalizacao ? 'block' : 'none';
+
+            // Se as abas estavam ativas e sumiram, volta para Dados
+            if (!isFiscalizacao) {
+                if (fotosTabItem?.querySelector('.active') || mapaTabItem?.querySelector('.active')) {
                     const dadosTabBtn = document.getElementById('dados-tab');
                     if (dadosTabBtn) {
                         const tab = new bootstrap.Tab(dadosTabBtn);
@@ -403,14 +487,273 @@
                     }
                 }
             }
+
+            // Inicializar mapa se a aba for visível
+            if (isFiscalizacao && typeof initMapa === 'function') {
+                // Timeout para garantir que o container está pronto se a aba for aberta
+                document.getElementById('mapa-tab').addEventListener('shown.bs.tab', function () {
+                    initMapa();
+                }, { once: true });
+            }
         }
 
         if (tipoAcaoSelect) {
-            tipoAcaoSelect.addEventListener('change', toggleFotosTab);
-            // Executar no load para definir estado inicial
-            toggleFotosTab();
+            tipoAcaoSelect.addEventListener('change', toggleFiscalizacaoTabs);
+            toggleFiscalizacaoTabs();
         }
     });
+</script>
+
+
+<script>
+    // ===== LÓGICA DO MAPA DE FISCALIZAÇÃO (LEAFLET) =====
+    let leafletMap = null;
+    let marcadoresLayer = null;
+    const acaoId = "{{ object.id|default:'' }}";
+
+    function initMapa() {
+        if (leafletMap) {
+            leafletMap.invalidateSize();
+            return;
+        }
+
+        if (!document.getElementById('mapa-fiscalizacao')) return;
+
+        // Centralizar em MS por padrão se não houver marcadores
+        const defaultLat = -20.4697;
+        const defaultLng = -54.6201;
+
+        leafletMap = L.map('mapa-fiscalizacao').setView([defaultLat, defaultLng], 13);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(leafletMap);
+
+        marcadoresLayer = L.layerGroup().addTo(leafletMap);
+
+        // Carregar marcadores existentes se a ação já estiver salva
+        if (acaoId) {
+            carregarMarcadores();
+        } else {
+            L.popup()
+                .setLatLng([defaultLat, defaultLng])
+                .setContent('<div class="p-2"><strong>Aviso:</strong> Salve a Ação primeiro para poder registrar pontos no mapa.</div>')
+                .openOn(leafletMap);
+        }
+
+        // Adicionar novo marcador ao clicar
+        leafletMap.on('click', function (e) {
+            if (!acaoId) return;
+            showNovoMarcadorPopup(e.latlng);
+        });
+    }
+
+    function carregarMarcadores() {
+        const body = document.getElementById('lista-marcadores-body');
+
+        fetch(`/acoes/acao/${acaoId}/marcadores/`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    marcadoresLayer.clearLayers();
+                    if (body) body.innerHTML = '';
+
+                    if (data.marcadores.length === 0) {
+                        if (body) body.innerHTML = '<tr><td colspan="5" class="text-center py-3 text-muted">Nenhum ponto registrado neste mapa.</td></tr>';
+                    } else {
+                        data.marcadores.forEach(m => {
+                            addMarcadorAoMapa(m);
+                            addMarcadorALista(m);
+                        });
+                    }
+                }
+            })
+            .catch(err => {
+                console.error("Erro ao carregar marcadores:", err);
+                if (body) body.innerHTML = '<tr><td colspan="5" class="text-center text-danger">Erro ao carregar lista.</td></tr>';
+            });
+    }
+
+    function addMarcadorAoMapa(m) {
+        const marker = L.marker([m.latitude, m.longitude]).addTo(marcadoresLayer);
+
+        let fotosHtml = '';
+        if (m.fotos && m.fotos.length > 0) {
+            fotosHtml = '<div class="mt-2 d-flex gap-1 flex-wrap">';
+            m.fotos.forEach(f => {
+                fotosHtml += `<img src="${f.url}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px;" class="border">`;
+            });
+            fotosHtml += '</div>';
+        }
+
+        const content = `
+            <div class="marcador-info p-1" style="min-width: 150px;">
+                <h6 class="mb-1 fw-bold">${m.titulo}</h6>
+                <p class="small text-muted mb-1">${m.descricao || 'Sem descrição'}</p>
+                <div class="small mb-2" style="font-size: 0.75rem;">
+                    <i class="bi bi-clock me-1"></i>${m.data_criacao}<br>
+                    <i class="bi bi-person me-1"></i>${m.usuario}
+                </div>
+                ${fotosHtml}
+                <hr class="my-2">
+                <button class="btn btn-sm btn-outline-danger w-100" style="font-size: 0.7rem;" onclick="deletarMarcador(${m.id})">
+                    <i class="bi bi-trash me-1"></i>Remover do Mapa
+                </button>
+            </div>
+        `;
+        marker.bindPopup(content);
+    }
+
+    function addMarcadorALista(m) {
+        const body = document.getElementById('lista-marcadores-body');
+        if (!body) return;
+
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td><strong>${m.titulo}</strong></td>
+            <td><span class="text-muted small">${m.descricao || '-'}</span></td>
+            <td><code class="text-primary small">${parseFloat(m.latitude).toFixed(6)}, ${parseFloat(m.longitude).toFixed(6)}</code></td>
+            <td class="text-center">
+                <span class="badge ${m.fotos.length > 0 ? 'bg-success' : 'bg-secondary'} rounded-pill">
+                    <i class="bi bi-camera me-1"></i>${m.fotos.length}
+                </span>
+            </td>
+            <td class="text-center">
+                <div class="btn-group btn-group-sm">
+                    <button type="button" class="btn btn-outline-primary" onclick="focarNoMapa(${m.latitude}, ${m.longitude}, ${m.id})" title="Ver no Mapa">
+                        <i class="bi bi-geo-alt"></i>
+                    </button>
+                    <button type="button" class="btn btn-outline-danger" onclick="deletarMarcador(${m.id})" title="Excluir">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </div>
+            </td>
+        `;
+        body.appendChild(row);
+    }
+
+    function focarNoMapa(lat, lng, id) {
+        leafletMap.setView([lat, lng], 18);
+        marcadoresLayer.eachLayer(layer => {
+            if (layer instanceof L.Marker && layer.getLatLng().lat == lat && layer.getLatLng().lng == lng) {
+                layer.openPopup();
+            }
+        });
+        document.getElementById('mapa-fiscalizacao').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    function showNovoMarcadorPopup(latlng) {
+        const content = `
+            <div class="marcador-form-popup p-2" style="min-width: 250px;">
+                <h6 class="mb-3 fw-bold"><i class="bi bi-plus-circle me-2"></i>Registrar Ponto</h6>
+                <form id="form-novo-marcador">
+                    <div class="mb-2">
+                        <label>Título / Identificação do Ponto:</label>
+                        <input type="text" id="m-titulo" class="form-control form-control-sm" required placeholder="Ex: Poste A32 ou Vazamento">
+                    </div>
+                    <div class="mb-2">
+                        <label>Observações/Descritivo:</label>
+                        <textarea id="m-descricao" class="form-control form-control-sm" rows="3" placeholder="Detalhes da ocorrência..."></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label>Fotos da Evidência:</label>
+                        <input type="file" id="m-fotos" class="form-control form-control-sm" multiple accept="image/*">
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-sm btn-secondary w-100" onclick="leafletMap.closePopup()">Cancelar</button>
+                        <button type="button" id="btn-salvar-marcador" class="btn btn-sm btn-primary w-100" onclick="salvarMarcador(${latlng.lat}, ${latlng.lng})">
+                            <i class="bi bi-save me-1"></i>Salvar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        `;
+
+        L.popup()
+            .setLatLng(latlng)
+            .setContent(content)
+            .openOn(leafletMap);
+    }
+
+    function salvarMarcador(lat, lng) {
+        const titulo = document.getElementById('m-titulo').value;
+        const descricao = document.getElementById('m-descricao').value;
+        const fotoInput = document.getElementById('m-fotos');
+        const btn = document.getElementById('btn-salvar-marcador');
+
+        if (!titulo) {
+            alert("Por favor, preencha o título do ponto.");
+            return;
+        }
+
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+        }
+
+        const formData = new FormData();
+        formData.append('titulo', titulo);
+        formData.append('descricao', descricao);
+        formData.append('latitude', lat);
+        formData.append('longitude', lng);
+
+        if (fotoInput && fotoInput.files.length > 0) {
+            for (let i = 0; i < fotoInput.files.length; i++) {
+                formData.append('fotos', fotoInput.files[i]);
+            }
+        }
+
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+        fetch(`/acoes/acao/${acaoId}/marcador/salvar/`, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': csrfToken
+            }
+        })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    leafletMap.closePopup();
+                    carregarMarcadores();
+                    if (data.marcador.fotos_count > 0 && typeof renderExistingAssets === 'function') {
+                        renderExistingAssets('fotos');
+                    }
+                } else {
+                    alert('Erro ao salvar: ' + (data.message || 'Erro desconhecido'));
+                    if (btn) {
+                        btn.disabled = false;
+                        btn.innerHTML = '<i class="bi bi-save me-1"></i>Salvar';
+                    }
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                alert('Falha na comunicação com o servidor ao salvar.');
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="bi bi-save me-1"></i>Salvar';
+                }
+            });
+    }
+
+    function deletarMarcador(id) {
+        if (!confirm('Tem certeza que deseja remover este marcador? As fotos vinculadas serão mantidas na aba "Fotos", perdendo apenas a referência a este ponto.')) return;
+
+        fetch(`/acoes/marcador/${id}/deletar/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+        })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    carregarMarcadores();
+                }
+            });
+    }
 </script>
 
 

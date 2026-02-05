@@ -99,6 +99,9 @@ urlpatterns = [
     # Filtro Dinâmico de Obrigações
     path('acoes/obrigacoes/', get_obrigacoes_por_instrumento, name='get_obrigacoes_por_instrumento'),
 
+    # ✅ Inclui as novas rotas de Mapa e APIs de Ações
+    path('acoes/', include('acoes.urls')),
+
     # Indicadores
     path('indicadores/', IndicadorListView.as_view(), name='indicador_list'),
     path('indicadores/criar/', IndicadorCreateView.as_view(), name='indicador_create'),

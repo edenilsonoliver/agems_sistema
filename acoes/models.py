@@ -263,11 +263,48 @@ class AcaoDocumento(models.Model):
         return self.descricao
 
 
+class AcaoMarcador(models.Model):
+    """
+    Pontos georeferenciados capturados no mapa durante a fiscalização.
+    """
+    acao = models.ForeignKey(Acao, related_name='marcadores', on_delete=models.CASCADE)
+    titulo = models.CharField('Título/Identificação', max_length=200)
+    descricao = models.TextField('Descritivo da Ocorrência', blank=True)
+    
+    # Coordenadas
+    latitude = models.DecimalField(max_digits=22, decimal_places=16)
+    longitude = models.DecimalField(max_digits=22, decimal_places=16)
+    
+    usuario = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        verbose_name='Criado por'
+    )
+    data_criacao = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Marcador de Mapa'
+        verbose_name_plural = 'Marcadores de Mapa'
+        ordering = ['-data_criacao']
+
+    def __str__(self):
+        return f"{self.titulo} - {self.acao.nome}"
+
+
 class AcaoFoto(models.Model):
     """
     Registro fotográfico de fiscalizações ou visitas.
     """
     acao = models.ForeignKey(Acao, related_name='fotos', on_delete=models.CASCADE)
+    marcador = models.ForeignKey(
+        AcaoMarcador, 
+        related_name='fotos', 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True,
+        verbose_name='Marcador Associado'
+    )
     imagem = models.ImageField(upload_to='evidencias/fotos/%Y/%m/')
     legenda = models.CharField('Legenda', max_length=255, blank=True)
     usuario = models.ForeignKey(

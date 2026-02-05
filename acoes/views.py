@@ -5,12 +5,14 @@ from core.views import ModernListView, ModernCreateView, ModernUpdateView, Moder
 from django.shortcuts import render, get_object_or_404, redirect
 from django.views.generic import TemplateView
 from django.db.models import Q
-from .models import Acao, ChecklistItem
+from .models import Acao, ChecklistItem, AcaoMarcador, AcaoFoto
 from django.urls import reverse_lazy
 from .forms import AcaoForm, ChecklistItemFormSet, AcaoDocumentoFormSet, AcaoFotoFormSet
 from instrumentos.models import Instrumento, Obrigacao
 from django.http import JsonResponse
 from core.models import TipoAcao
+from django.views.decorators.http import require_POST
+from django.views.decorators.csrf import csrf_exempt
 
 
 # Endpoint AJAX para obrigações (usado na criação de Ações)
@@ -355,3 +357,101 @@ def cor_status(status):
         'finalizado': '#2e7d32',      # verde
     }
     return cores.get(status, '#607d8b')
+
+
+# --- ENDPOINTS PARA MAPA (FASE 5) ---
+
+@permission_required('acoes.view_acao', raise_exception=True)
+def listar_marcadores_ajax(request, acao_id):
+    """Lista todos os marcadores de uma ação específica"""
+    acao = get_object_or_404(Acao, id=acao_id)
+    marcadores = acao.marcadores.all()
+    
+    data = []
+    for m in marcadores:
+        fotos = m.fotos.all()
+        data.append({
+            'id': m.id,
+            'titulo': m.titulo,
+            'descricao': m.descricao,
+            'latitude': float(m.latitude),
+            'longitude': float(m.longitude),
+            'data_criacao': m.data_criacao.strftime('%d/%m/%Y %H:%M'),
+            'usuario': m.usuario.get_full_name() if m.usuario else "Sistema",
+            'fotos': [{'id': f.id, 'url': f.imagem.url, 'legenda': f.legenda} for f in fotos]
+        })
+    
+    return JsonResponse({'status': 'success', 'marcadores': data})
+
+
+@csrf_exempt
+@require_POST
+@permission_required('acoes.change_acao', raise_exception=True)
+def salvar_marcador_ajax(request, acao_id):
+    """Cria ou edita um marcador no mapa via AJAX"""
+    try:
+        acao = get_object_or_404(Acao, id=acao_id)
+        marcador_id = request.POST.get('marcador_id')
+        
+        titulo = request.POST.get('titulo')
+        latitude = request.POST.get('latitude')
+        longitude = request.POST.get('longitude')
+        
+        if not titulo or not latitude or not longitude:
+            return JsonResponse({
+                'status': 'error', 
+                'message': 'Título, Latitude e Longitude são obrigatórios.'
+            }, status=400)
+
+        if marcador_id:
+            marcador = AcaoMarcador.objects.get(id=marcador_id, acao=acao)
+        else:
+            marcador = AcaoMarcador(acao=acao, usuario=request.user)
+            
+        marcador.titulo = titulo
+        marcador.descricao = request.POST.get('descricao', '')
+        marcador.latitude = latitude
+        marcador.longitude = longitude
+        marcador.save()
+        
+        # Processar novas fotos específicas do marcador se enviadas
+        fotos_count = 0
+        if 'fotos' in request.FILES:
+            for f in request.FILES.getlist('fotos'):
+                AcaoFoto.objects.create(
+                    acao=acao,
+                    marcador=marcador,
+                    imagem=f,
+                    usuario=request.user,
+                    legenda=f"Foto do marcador: {marcador.titulo}",
+                    coordenadas=f"{marcador.latitude}, {marcador.longitude}"
+                )
+                fotos_count += 1
+        
+        return JsonResponse({
+            'status': 'success',
+            'marcador': {
+                'id': marcador.id,
+                'titulo': marcador.titulo,
+                'latitude': float(marcador.latitude),
+                'longitude': float(marcador.longitude),
+                'fotos_count': fotos_count
+            }
+        })
+    except Exception as e:
+        import traceback
+        print(traceback.format_exc())
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+
+@csrf_exempt
+@require_POST
+@permission_required('acoes.change_acao', raise_exception=True)
+def deletar_marcador_ajax(request, marcador_id):
+    """Deleta um marcador do mapa"""
+    marcador = get_object_or_404(AcaoMarcador, id=marcador_id)
+    # Fotos vinculadas não são deletadas, apenas perdem o vínculo com o marcador
+    # Isso garante que a evidência de campo continue na aba Fotos.
+    marcador.delete()
+    return JsonResponse({'status': 'success'})
+

@@ -6,8 +6,8 @@ services:
     command: python manage.py runserver 0.0.0.0:8000
     volumes:
       - .:/app
-      - static_volume:/app/staticfiles
-      - media_volume:/app/media
+      - ./staticfiles:/app/staticfiles
+      - ./media:/app/media
     ports:
       - "8000:8000"
     env_file:
@@ -23,11 +23,6 @@ services:
     networks:
       - agems_network
     restart: unless-stopped
-
-volumes:
-  static_volume:
-  media_volume:
-
 
 networks:
   agems_network:

@@ -16,4 +16,9 @@ urlpatterns = [
     # Rotas AJAX/JSON para Documentos
     path('acao/<int:pk>/doc/upload/', views_json.acao_documento_upload, name='acao_documento_upload'),
     path('doc/<int:doc_id>/delete/', views_json.acao_documento_delete, name='acao_documento_delete'),
+
+    # Rotas AJAX/JSON para Mapa (Fase 5)
+    path('acao/<int:acao_id>/marcadores/', views.listar_marcadores_ajax, name='listar_marcadores_ajax'),
+    path('acao/<int:acao_id>/marcador/salvar/', views.salvar_marcador_ajax, name='salvar_marcador_ajax'),
+    path('marcador/<int:marcador_id>/deletar/', views.deletar_marcador_ajax, name='deletar_marcador_ajax'),
 ]
