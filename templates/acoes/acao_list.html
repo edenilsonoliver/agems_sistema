@@ -22,6 +22,14 @@
         {% endfor %}
     </select>
 </div>
+<div class="col-md-3">
+    <select name="tipo_acao" id="tipo_acao" class="form-select" style="height: 40px;">
+        <option value=""> Filtrar por Tipo...</option>
+        {% for tipo in tipos_acao %}
+        <option value="{{tipo.id}}" {% if tipo_acao_selecionado == tipo.id %}selected{% endif %}>{{tipo.nome}}</option>
+        {% endfor %}
+    </select>
+</div>
 <script>
     document.addEventListener("DOMContentLoaded", function () {
         const instrumentoSelect = document.getElementById("instrumento");
@@ -49,6 +57,7 @@
 {% block table_headers %}
 <th>Nome da Ação</th>
 <th>Obrigação</th>
+<th>Tipo</th>
 <th>Responsável</th>
 <th>Período</th>
 <th>Progresso</th>
@@ -80,6 +89,7 @@
         </div>
     </td>
     <td><small>{{acao.obrigacao.titulo}}</small></td>
+    <td><small>{{acao.tipo_acao.nome|default:"-"}}</small></td>
     <td><small>{{acao.responsavel.get_full_name|default:acao.responsavel.username}}</small></td>
     <td><small><i class="bi bi-calendar me-1"></i>{{acao.data_inicio|date:"d/m/Y"}} -
             {{acao.data_fim|date:"d/m/Y"}}</small></td>

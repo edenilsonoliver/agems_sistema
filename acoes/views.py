@@ -42,7 +42,7 @@ class AcaoListView(PermissionRequiredMixin, ModernListView):
         user = self.request.user
 
         # OTIMIZAÇÃO: Carregamento antecipado de chaves estrangeiras
-        queryset = Acao.objects.select_related('responsavel', 'obrigacao', 'obrigacao__instrumento')
+        queryset = Acao.objects.select_related('responsavel', 'obrigacao', 'obrigacao__instrumento', 'tipo_acao')
 
         # FILTRO DE ESCOPO: Técnicos veem apenas suas ações (Responsável ou Executor)
         if user.perfil in [3, 4]:
@@ -54,6 +54,10 @@ class AcaoListView(PermissionRequiredMixin, ModernListView):
             queryset = queryset.filter(obrigacao__instrumento_id=instrumento_id)
         if obrigacao_id:
             queryset = queryset.filter(obrigacao_id=obrigacao_id)
+        
+        tipo_acao_id = self.request.GET.get('tipo_acao')
+        if tipo_acao_id:
+            queryset = queryset.filter(tipo_acao_id=tipo_acao_id)
 
         return queryset.order_by('data_inicio', 'prioridade', 'nome')
 
@@ -73,6 +77,13 @@ class AcaoListView(PermissionRequiredMixin, ModernListView):
             context['obrigacao_selecionada'] = int(self.request.GET.get('obrigacao')) if self.request.GET.get('obrigacao') else None
         except (ValueError, TypeError):
             context['obrigacao_selecionada'] = None
+
+        from acoes.models import TipoAcao
+        context['tipos_acao'] = TipoAcao.objects.all().order_by('nome')
+        try:
+            context['tipo_acao_selecionado'] = int(self.request.GET.get('tipo_acao')) if self.request.GET.get('tipo_acao') else None
+        except (ValueError, TypeError):
+            context['tipo_acao_selecionado'] = None
 
         return context
 
