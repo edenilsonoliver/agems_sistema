@@ -549,6 +549,16 @@
             </li>
             {% endif %}
 
+            {% if perms.georeferencias.view_camadareferencia %}
+            <li class="sidebar-nav-item">
+                <a href="{% url 'georeferencias:camada_list' %}" class="sidebar-nav-link">
+                    <i class="bi bi-map"></i>
+                    <span>Mapas/Referências</span>
+                </a>
+            </li>
+            {% endif %}
+
+
             {% if perms.indicadores.view_indicador %}
             <li class="sidebar-nav-item">
                 <a href="{% url 'indicador_list' %}" class="sidebar-nav-link">

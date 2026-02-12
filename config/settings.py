@@ -94,6 +94,8 @@ INSTALLED_APPS = [
     'alertas',
     'documentos',
     'dashboards',
+    'georeferencias',
+
 ]
 
 MIDDLEWARE = [

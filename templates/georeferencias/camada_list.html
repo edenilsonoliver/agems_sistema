@@ -1,0 +1,53 @@
+{% extends 'components/list_view.html' %}
+
+{% block table_headers %}
+    <th>Nome</th>
+    <th>Ativo</th>
+    <th class="text-center">Ícone/Cor</th>
+    <th class="text-center">Pontos</th>
+    <th>Criado Em</th>
+{% endblock %}
+
+{% block table_rows %}
+    {% for camada in object_list %}
+    <tr>
+        <td>
+            <strong>{{ camada.nome }}</strong>
+            {% if camada.descricao %}
+                <br><small class="text-muted">{{ camada.descricao|truncatechars:50 }}</small>
+            {% endif %}
+        </td>
+        <td>
+            {% if camada.ativo %}
+                <span class="badge bg-success">Sim</span>
+            {% else %}
+                <span class="badge bg-secondary">Não</span>
+            {% endif %}
+        </td>
+        <td class="text-center">
+            <span class="badge rounded-pill" style="background-color: {{ camada.cor_marcador }}; color: #fff;">
+                <i class="bi bi-{{ camada.icone|default:'circle' }}"></i>
+                {{ camada.cor_marcador }}
+            </span>
+        </td>
+        <td class="text-center">
+            <span class="badge bg-light text-dark border">{{ camada.pontos.count }}</span>
+        </td>
+        <td>{{ camada.data_criacao|date:"d/m/Y H:i" }}</td>
+        <td>
+            <div class="btn-group btn-group-sm">
+                {% if perms.georeferencias.change_camadareferencia %}
+                <a href="{% url 'georeferencias:camada_update' camada.pk %}" class="btn btn-outline-primary" title="Editar">
+                    <i class="bi bi-pencil"></i>
+                </a>
+                {% endif %}
+                {% if perms.georeferencias.delete_camadareferencia %}
+                <a href="{% url 'georeferencias:camada_delete' camada.pk %}" class="btn btn-outline-danger" title="Excluir">
+                    <i class="bi bi-trash"></i>
+                </a>
+                {% endif %}
+            </div>
+        </td>
+    </tr>
+    {% endfor %}
+{% endblock %}

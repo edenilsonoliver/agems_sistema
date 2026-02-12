@@ -12,3 +12,7 @@ gunicorn==23.0.0
 python-dotenv==1.0.1
 python-magic-bin==0.4.14 ; sys_platform == 'win32'
 python-magic==0.4.27
+
+fastkml==1.0.1
+lxml>=4.9.0
+shapely>=2.0.0

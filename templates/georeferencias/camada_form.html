@@ -1,0 +1,112 @@
+{% extends 'base_modern.html' %}
+{% load crispy_forms_tags %}
+
+{% block content %}
+<div class="container-fluid px-4">
+    <h2 class="mt-4">
+        {% if object %}
+        Editar Camada: {{ object.nome }}
+        {% else %}
+        Nova Camada de Referência
+        {% endif %}
+    </h2>
+    <ol class="breadcrumb mb-4">
+        <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'georeferencias:camada_list' %}">Camadas</a></li>
+        <li class="breadcrumb-item active">{% if object %}Editar{% else %}Nova{% endif %}</li>
+    </ol>
+
+    <div class="row">
+        <div class="col-xl-8">
+            <div class="card mb-4 shadow rounded-3 border-0">
+                <div class="card-header bg-primary text-white">
+                    <i class="fas fa-map-marked-alt me-1"></i>
+                    Dados da Camada
+                </div>
+                <div class="card-body">
+                    {% if not object and form.arquivo_kml %}
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle-fill me-2"></i>
+                        O sistema irá processar o arquivo KML e extrair apenas os pontos geométricos (Placemarks).
+                        O processamento pode levar alguns instantes.
+                    </div>
+                    {% endif %}
+
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        <div class="row">
+                            <div class="col-md-8">
+                                {{ form.nome|as_crispy_field }}
+                            </div>
+                            <div class="col-md-4">
+                                {{ form.ativo|as_crispy_field }}
+                            </div>
+                        </div>
+
+                        {{ form.descricao|as_crispy_field }}
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                {{ form.cor_marcador|as_crispy_field }}
+                                <small class="text-muted">Cor hexadecimal (ex: #FF0000 para vermelho)</small>
+                            </div>
+                            <div class="col-md-6">
+                                {{ form.icone|as_crispy_field }}
+                                <small class="text-muted">Nome do ícone Bootstrap Icons (ex: circle, geo-alt)</small>
+                            </div>
+                        </div>
+
+                        {% if not object %}
+                        <div class="mt-3 p-3 bg-light rounded border border-dashed text-center">
+                            <label for="id_arquivo_kml" class="form-label d-block fw-bold display-6">
+                                <i class="bi bi-cloud-upload"></i> Upload KML
+                            </label>
+                            {{ form.arquivo_kml|as_crispy_field }}
+                            <small class="d-block mt-2">Arraste seu arquivo KML ou clique para selecionar. (Máx:
+                                5MB)</small>
+                        </div>
+                        {% else %}
+                        <div class="alert alert-warning mt-3">
+                            <strong>Nota:</strong> O arquivo KML original não pode ser editado. Para alterar os pontos,
+                            exclua esta camada e crie uma nova.
+                        </div>
+                        {% endif %}
+
+                        <div class="mt-4 d-flex justify-content-end gap-2">
+                            <a href="{% url 'georeferencias:camada_list' %}" class="btn btn-secondary">Cancelar</a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-lg me-1"></i> Salvar Camada
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-4">
+            <div class="card mb-4 shadow-sm">
+                <div class="card-header bg-light">
+                    <i class="bi bi-question-circle me-1"></i>
+                    Ajuda
+                </div>
+                <div class="card-body">
+                    <h6>Arquivos Aceitos</h6>
+                    <p class="small text-muted">Apenas arquivos <code>.kml</code> são suportados. Arquivos compactados
+                        (<code>.kmz</code>) devem ser extraídos antes.</p>
+
+                    <h6>Estrutura do KML</h6>
+                    <p class="small text-muted">O sistema lê os <code>Placemarks</code> que contêm geometria de Ponto.
+                        Polígonos e Linhas são ignorados nesta versão.</p>
+
+                    <h6>Atributos Importados</h6>
+                    <ul class="small text-muted ps-3">
+                        <li>Nome do Ponto</li>
+                        <li>Descrição (HTML básico)</li>
+                        <li>Coordenadas (Lat/Long)</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

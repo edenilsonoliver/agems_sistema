@@ -155,7 +155,12 @@ urlpatterns = [
     path('subunidades/<int:pk>/editar/', SubunidadeUpdateView.as_view(), name='subunidade_edit'),
     path('subunidades/<int:pk>/excluir/', SubunidadeDeleteView.as_view(), name='subunidade_delete'),
 
+
+    # Georeferencias
+    path('georeferencias/', include('georeferencias.urls')),
+
     # Alertas
+
     path('alertas/', include('alertas.urls')),
 ]
 

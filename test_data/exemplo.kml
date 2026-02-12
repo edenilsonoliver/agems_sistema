@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>Exemplo de Referência</name>
+    <description>Pontos de teste para o sistema AGEMS (Campo Grande).</description>
+    <Placemark>
+      <name>Ponto A (Centro)</name>
+      <description>Referência central de teste.</description>
+      <Point>
+        <coordinates>-54.6201,-20.4697,0</coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>Ponto B (Norte)</name>
+      <description>Referência ao norte.</description>
+      <Point>
+        <coordinates>-54.6201,-20.4500,0</coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>Ponto C (Leste)</name>
+      <description>Referência ao leste.</description>
+      <Point>
+        <coordinates>-54.6000,-20.4697,0</coordinates>
+      </Point>
+    </Placemark>
+  </Document>
+</kml>
