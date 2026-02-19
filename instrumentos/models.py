@@ -15,7 +15,7 @@ class Instrumento(models.Model):
     ]
     
     # Informações Básicas
-    numero = models.CharField('Número do Instrumento', max_length=50, unique=True)
+    numero = models.CharField('Nome do Instrumento', max_length=50, unique=True)
     tipo_instrumento = models.ForeignKey(
         TipoInstrumento,
         on_delete=models.PROTECT,

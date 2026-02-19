@@ -37,5 +37,5 @@ EXPOSE 8000
 # Define o entrypoint
 ENTRYPOINT ["/app/docker-entrypoint.sh"]
 
-# Comando padrão (executa o servidor Django)
+# Comando padrão (No desenvolvimento usa runserver, em produção o docker-compose.prod.yml sobrescreve para gunicorn)
 CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
