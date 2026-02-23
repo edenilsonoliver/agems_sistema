@@ -292,6 +292,87 @@ class AcaoMarcador(models.Model):
         return f"{self.titulo} - {self.acao.nome}"
 
 
+class Conformidade(models.Model):
+    """Grupos de verificação dentro de uma Ação de Fiscalização."""
+    acao = models.ForeignKey(Acao, related_name='conformidades', on_delete=models.CASCADE)
+    nome = models.CharField('Nome da Conformidade', max_length=255)
+    
+    class Meta:
+        verbose_name = 'Conformidade'
+        verbose_name_plural = 'Conformidades'
+        ordering = ['id']
+
+    def __str__(self):
+        return f"{self.nome} (Ação: {self.acao.nome})"
+
+
+class ItemConformidade(models.Model):
+    """Itens verificáveis dentro de uma Conformidade."""
+    STATUS_CHOICES = [
+        (0, 'Neutro'),
+        (1, 'Conforme'),
+        (-1, 'Não Conforme'),
+    ]
+    
+    conformidade = models.ForeignKey(Conformidade, related_name='itens', on_delete=models.CASCADE)
+    nome = models.CharField('Descrição do Item', max_length=255)
+    status = models.IntegerField('Estado de Verificação', choices=STATUS_CHOICES, default=0)
+    ordem = models.IntegerField(default=0)
+
+    class Meta:
+        verbose_name = 'Item de Conformidade'
+        verbose_name_plural = 'Itens de Conformidade'
+        ordering = ['ordem', 'id']
+
+    def __str__(self):
+        return self.nome
+
+
+class Constatacao(models.Model):
+    """Registros textuais descritivos vinculados a um Item de Conformidade."""
+    item = models.ForeignKey(ItemConformidade, related_name='constatacoes', on_delete=models.CASCADE)
+    texto = models.TextField('Descrição da Constatação')
+    data_criacao = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Constatação'
+        verbose_name_plural = 'Constatações'
+        ordering = ['-data_criacao']
+
+    def __str__(self):
+        return f"Constatação em {self.item.nome}"
+
+
+class ConformidadeTemplate(models.Model):
+    """Template pré-definido de grupos de fiscalização."""
+    nome = models.CharField('Nome do Template', max_length=255)
+    descricao = models.TextField('Descrição', blank=True)
+    ativo = models.BooleanField(default=True)
+
+    class Meta:
+        verbose_name = 'Template de Conformidade'
+        verbose_name_plural = 'Templates de Conformidade'
+
+    def __str__(self):
+        return self.nome
+
+
+class ItemConformidadeTemplate(models.Model):
+    """Itens pré-definidos dentro de um template."""
+    template = models.ForeignKey(ConformidadeTemplate, related_name='itens', on_delete=models.CASCADE)
+    nome = models.CharField('Descrição do Item', max_length=255)
+    ordem = models.IntegerField(default=0)
+
+    class Meta:
+        verbose_name = 'Item de Template'
+        verbose_name_plural = 'Itens de Template'
+        ordering = ['ordem', 'id']
+
+    def __str__(self):
+        return self.nome
+
+
+
 class AcaoFoto(models.Model):
     """
     Registro fotográfico de fiscalizações ou visitas.
@@ -304,6 +385,15 @@ class AcaoFoto(models.Model):
         null=True, 
         blank=True,
         verbose_name='Marcador Associado'
+    )
+    # Vínculo com conformidades (especialização)
+    item_conformidade = models.ForeignKey(
+        ItemConformidade,
+        related_name='fotos',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        verbose_name='Item de Conformidade'
     )
     imagem = models.ImageField(upload_to='evidencias/fotos/%Y/%m/')
     legenda = models.CharField('Legenda', max_length=255, blank=True)
@@ -324,3 +414,4 @@ class AcaoFoto(models.Model):
 
     def __str__(self):
         return self.legenda or f"Foto {self.id}"
+

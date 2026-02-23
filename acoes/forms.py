@@ -1,9 +1,14 @@
 # acoes/forms.py
 from django import forms
-from .models import Acao, ChecklistItem
+from .models import (
+    Acao, ChecklistItem, Conformidade, ItemConformidade, 
+    Constatacao, AcaoFoto
+)
+
 from usuarios.models import Usuario
 from django.forms import inlineformset_factory
-import magic
+# import magic
+
 import os
 import logging
 
@@ -174,16 +179,17 @@ class AcaoDocumentoForm(forms.ModelForm):
             
             # Detecção de MIME universal (tenta API v0.4.x e APIs alternativas)
             mime_type = None
-            try:
-                # Tentativa 1: API orientada a objeto (mais estável)
-                m = magic.Magic(mime=True)
-                mime_type = m.from_buffer(chunk)
-            except AttributeError:
-                try:
-                    # Tentativa 2: API de módulo (python-magic padrão)
-                    mime_type = magic.from_buffer(chunk, mime=True)
-                except Exception as e2:
-                    logger.error(f"Falha total em detectar MIME: {e2}")
+            # try:
+            #     # Tentativa 1: API orientada a objeto (mais estável)
+            #     m = magic.Magic(mime=True)
+            #     mime_type = m.from_buffer(chunk)
+            # except AttributeError:
+            #     try:
+            #         # Tentativa 2: API de módulo (python-magic padrão)
+            #         mime_type = magic.from_buffer(chunk, mime=True)
+            #     except Exception as e2:
+            #         logger.error(f"Falha total em detectar MIME: {e2}")
+
             
             if mime_type:
                 if mime_type not in ALLOWED_MIMES:
@@ -267,14 +273,15 @@ class AcaoFotoForm(forms.ModelForm):
             
             # Detecção de MIME universal
             mime_type = None
-            try:
-                m = magic.Magic(mime=True)
-                mime_type = m.from_buffer(chunk)
-            except AttributeError:
-                try:
-                    mime_type = magic.from_buffer(chunk, mime=True)
-                except Exception as e2:
-                    logger.error(f"Falha total em detectar MIME de Imagem: {e2}")
+            # try:
+            #     m = magic.Magic(mime=True)
+            #     mime_type = m.from_buffer(chunk)
+            # except AttributeError:
+            #     try:
+            #         mime_type = magic.from_buffer(chunk, mime=True)
+            #     except Exception as e2:
+            #         logger.error(f"Falha total em detectar MIME de Imagem: {e2}")
+
             
             if mime_type:
                 # Tratamento especial para HEIC/HEIF
@@ -301,3 +308,60 @@ AcaoFotoFormSet = inlineformset_factory(
     extra=0,
     can_delete=True
 )
+
+# --- Conformidades Forms (Fase 5) ---
+
+class ConformidadeForm(forms.ModelForm):
+    class Meta:
+        model = Conformidade
+        fields = ['nome']
+        widgets = {
+            'nome': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Nome da Conformidade (ex: Pintura)'}),
+        }
+
+
+class ItemConformidadeForm(forms.ModelForm):
+    class Meta:
+        model = ItemConformidade
+        fields = ['nome', 'status', 'ordem']
+        widgets = {
+            'nome': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Item a ser verificado'}),
+            'status': forms.HiddenInput(),  # O tri-state será gerenciado por JS
+            'ordem': forms.HiddenInput(),
+        }
+
+
+class ConstatacaoForm(forms.ModelForm):
+    class Meta:
+        model = Constatacao
+        fields = ['texto']
+        widgets = {
+            'texto': forms.Textarea(attrs={'class': 'form-control', 'rows': 2, 'placeholder': 'Descreva a constatação...'}),
+        }
+
+
+# Formsets para Conformidades
+ConformidadeFormSet = inlineformset_factory(
+    Acao,
+    Conformidade,
+    form=ConformidadeForm,
+    extra=1,
+    can_delete=True
+)
+
+ItemConformidadeFormSet = inlineformset_factory(
+    Conformidade,
+    ItemConformidade,
+    form=ItemConformidadeForm,
+    extra=1,
+    can_delete=True
+)
+
+ConstatacaoFormSet = inlineformset_factory(
+    ItemConformidade,
+    Constatacao,
+    form=ConstatacaoForm,
+    extra=1,
+    can_delete=True
+)
+

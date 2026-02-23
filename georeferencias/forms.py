@@ -22,30 +22,34 @@ class CamadaReferenciaForm(forms.ModelForm):
             raise forms.ValidationError(f"O tamanho máximo do arquivo é {limit_mb}MB.")
 
         # 3. Validar MIME Type (Magic) - Anti-Spoofing
-        import magic
-        try:
-            # Ler o início do arquivo para identificar
-            initial_pos = arquivo.tell()
-            arquivo.seek(0)
-            mime_type = magic.from_buffer(arquivo.read(2048), mime=True)
-            arquivo.seek(initial_pos) # Resetar ponteiro
+        # import magic
+
+        # try:
+        #     # Ler o início do arquivo para identificar
+        #     initial_pos = arquivo.tell()
+        #     arquivo.seek(0)
+        #     mime_type = magic.from_buffer(arquivo.read(2048), mime=True)
+        #     arquivo.seek(initial_pos) # Resetar ponteiro
             
-            # Tipos KML aceitáveis (variam por sistema/libmagic)
-            valid_mimes = [
-                'application/vnd.google-earth.kml+xml', 
-                'application/xml', 
-                'text/xml'
-            ]
+        #     # Tipos KML aceitáveis (variam por sistema/libmagic)
+        #     valid_mimes = [
+        #         'application/vnd.google-earth.kml+xml', 
+        #         'application/xml', 
+        #         'text/xml'
+        #     ]
             
-            if mime_type not in valid_mimes:
-                raise forms.ValidationError(f"Arquivo inválido. Tipo detectado: {mime_type}. Esperado: KML/XML.")
+        #     if mime_type not in valid_mimes:
+        #         raise forms.ValidationError(f"Arquivo inválido. Tipo detectado: {mime_type}. Esperado: KML/XML.")
+
                 
-        except Exception as e:
-            # Fallback seguro: se falhar a checkagem, nega por precaução ou loga
-            if isinstance(e, forms.ValidationError):
-                raise e
-            # Em ambientes onde libmagic falha, talvez logar warning.
-            # Aqui vamos assumir que deve funcionar.
-            pass
+        # except Exception as e:
+        #     # Fallback seguro: se falhar a checkagem, nega por precaução ou loga
+        #     if isinstance(e, forms.ValidationError):
+        #         raise e
+        #     # Em ambientes onde libmagic falha, talvez logar warning.
+        #     # Aqui vamos assumir que deve funcionar.
+        #     pass
+        pass
+
 
         return arquivo

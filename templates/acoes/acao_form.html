@@ -30,7 +30,59 @@
     .marcador-form-popup textarea {
         margin-bottom: 8px;
     }
+
+    /* Conformidades (Fase 5) */
+    .status-btn {
+        cursor: pointer;
+        padding: 5px;
+        border-radius: 4px;
+        transition: all 0.2s;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
+    }
+
+    .status-btn:hover {
+        background-color: #f8f9fa;
+    }
+
+    .status-btn.status-0 {
+        color: #6c757d;
+    }
+
+    /* Neutro - Cinza */
+    .status-btn.status-1 {
+        color: #198754;
+    }
+
+    /* Conforme - Verde */
+    .status-btn.status--1 {
+        color: #dc3545;
+    }
+
+    /* Não Conforme - Vermelho */
+
+    .conformidade-group {
+        border-left: 4px solid #0d6efd;
+        background-color: #fff;
+    }
+
+    .item-conformidade {
+        border-bottom: 1px solid #eee;
+    }
+
+    .item-conformidade:last-child {
+        border-bottom: none;
+    }
+
+    .constatacao-badge {
+        font-size: 0.7rem;
+        cursor: pointer;
+    }
 </style>
+
 {% endblock %}
 
 {% block extra_js %}
@@ -62,25 +114,22 @@
                 <form method="post" enctype="multipart/form-data" novalidate id="acao-form">
                     {% csrf_token %}
 
-                    {% if form.errors or checklist_formset.errors or docs_formset.errors or fotos_formset.errors %}
+                    {% if form.errors or checklist_formset.non_form_errors or docs_formset.non_form_errors or
+                    fotos_formset.non_form_errors %}
                     <div class="alert alert-danger alert-dismissible fade show" role="alert">
                         <i class="bi bi-exclamation-triangle me-2"></i>
                         <strong>Erro!</strong> Por favor, verifique os dados preenchidos.
                         <ul class="mb-0 mt-2 small">
                             {% if form.errors %}
-                            <li>Dados Gerais: {{ form.non_field_errors }}{{ form.errors }}</li>
+                            <li>Dados Gerais: {{ form.non_field_errors }} Verifique os campos marcados em vermelho.</li>
                             {% endif %}
 
-                            {% if checklist_formset.errors %}
-                            <li>Checklist: {{ checklist_formset.non_form_errors }}{{checklist_formset.errors }}</li>
+                            {% if checklist_formset.non_form_errors %}
+                            <li>Checklist: {{ checklist_formset.non_form_errors }}</li>
                             {% endif %}
 
-                            {% if docs_formset.errors %}
-                            <li>Documentos: {{ docs_formset.non_form_errors }}{{docs_formset.errors }}</li>
-                            {% endif %}
-
-                            {% if fotos_formset.errors %}
-                            <li>Fotos: {{ fotos_formset.non_form_errors }}{{fotos_formset.errors }}</li>
+                            {% if docs_formset.non_form_errors %}
+                            <li>Documentos: {{ docs_formset.non_form_errors }}</li>
                             {% endif %}
                         </ul>
                         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
@@ -108,7 +157,13 @@
                                 type="button" role="tab"><i class="bi bi-camera me-2"></i>Fotos/Evidências de
                                 Campo</button>
                         </li>
+                        <li class="nav-item" role="presentation" id="conformidades-tab-item" style="display: none;">
+                            <button class="nav-link" id="conformidades-tab" data-bs-toggle="tab"
+                                data-bs-target="#conformidades-content" type="button" role="tab"><i
+                                    class="bi bi-check2-square me-2"></i>Conformidades</button>
+                        </li>
                         <li class="nav-item" role="presentation" id="mapa-tab-item" style="display: none;">
+
                             <button class="nav-link" id="mapa-tab" data-bs-toggle="tab" data-bs-target="#mapa-content"
                                 type="button" role="tab"><i class="bi bi-geo-alt me-2"></i>Mapa de Ocorrências</button>
                         </li>
@@ -319,8 +374,59 @@
                             </div>
                         </div>
 
-                        <!-- ABA 4: Mapa de Ocorrências (FASE 5) -->
+                        <!-- ABA 4: Conformidades (FASE 5) -->
+                        <div class="tab-pane fade" id="conformidades-content" role="tabpanel"
+                            aria-labelledby="conformidades-tab">
+                            <div class="row mb-4">
+                                <div class="col-md-8">
+                                    <h5 class="fw-bold"><i class="bi bi-check2-square me-2"></i>Verificação de
+                                        Conformidade</h5>
+                                    <p class="text-muted small">Gerencie os itens de verificação para esta fiscalização.
+                                        Clique no ícone de status para alternar entre: Neutro, Conforme e Não Conforme.
+                                    </p>
+                                </div>
+                                <div class="col-md-4 text-end">
+                                    {% if object %}
+                                    <div class="btn-group btn-group-sm">
+                                        <button type="button" class="btn btn-outline-primary"
+                                            id="btn-carregar-template">
+                                            <i class="bi bi-list-check me-1"></i> Template
+                                        </button>
+                                        <button type="button" class="btn btn-outline-primary"
+                                            id="btn-add-conformidade-grupo">
+                                            <i class="bi bi-folder-plus me-1"></i> Novo Grupo
+                                        </button>
+                                    </div>
+                                    {% endif %}
+                                </div>
+
+                            </div>
+
+                            <div id="conformidades-list">
+                                <!-- Lista de Conformidades (Grupos) carregada via AJAX ou Formset -->
+                                <div class="text-center py-5" id="conformidades-loader">
+                                    <div class="spinner-border text-primary" role="status">
+                                        <span class="visually-hidden">Carregando...</span>
+                                    </div>
+                                    <p class="text-muted mt-2">Carregando itens de conformidade...</p>
+                                </div>
+                            </div>
+
+                            {% if not object %}
+                            <div class="alert alert-warning shadow-sm border-0 d-flex align-items-center">
+                                <i class="bi bi-exclamation-circle-fill fs-4 me-3"></i>
+                                <div>
+                                    <strong>Ação ainda não salva.</strong><br>
+                                    Salve os dados básicos da ação primeiro para poder gerenciar os itens de
+                                    conformidade detalhadamente.
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- ABA 5: Mapa de Ocorrências (FASE 5) -->
                         <div class="tab-pane fade" id="mapa-content" role="tabpanel" aria-labelledby="mapa-tab">
+
                             <div class="alert alert-info shadow-sm border-0 d-flex align-items-center mb-4">
                                 <i class="bi bi-info-circle-fill fs-4 me-3"></i>
                                 <div>
@@ -484,6 +590,7 @@
 
         const tipoAcaoSelect = document.getElementById('id_tipo_acao');
         const fotosTabItem = document.getElementById('fotos-tab-item');
+        const conformidadesTabItem = document.getElementById('conformidades-tab-item');
         const mapaTabItem = document.getElementById('mapa-tab-item');
 
         function toggleFiscalizacaoTabs() {
@@ -495,11 +602,15 @@
             console.log("DEBUG: Fiscalização Check:", isFiscalizacao);
 
             if (fotosTabItem) fotosTabItem.style.display = isFiscalizacao ? 'block' : 'none';
+            if (conformidadesTabItem) conformidadesTabItem.style.display = isFiscalizacao ? 'block' : 'none';
             if (mapaTabItem) mapaTabItem.style.display = isFiscalizacao ? 'block' : 'none';
 
             // Se as abas estavam ativas e sumiram, volta para Dados
             if (!isFiscalizacao) {
-                if (fotosTabItem?.querySelector('.active') || mapaTabItem?.querySelector('.active')) {
+                if (fotosTabItem?.querySelector('.active') ||
+                    conformidadesTabItem?.querySelector('.active') ||
+                    mapaTabItem?.querySelector('.active')) {
+
                     const dadosTabBtn = document.getElementById('dados-tab');
                     if (dadosTabBtn) {
                         const tab = new bootstrap.Tab(dadosTabBtn);
@@ -1512,6 +1623,340 @@
             });
         });
 
+        // --- CONFORMIDADES (FASE 5) ---
+        const conformidadesTabBtn = document.getElementById('conformidades-tab');
+        if (conformidadesTabBtn && acaoId) {
+            conformidadesTabBtn.addEventListener('shown.bs.tab', function () {
+                initConformidades();
+            }, { once: true });
+        }
+
+        window.initConformidades = function () {
+            const container = document.getElementById('conformidades-list');
+            const loader = document.getElementById('conformidades-loader');
+
+            fetch(`/acoes/acao/${acaoId}/conformidades/data/`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        if (loader) loader.style.display = 'none';
+                        renderConformidades(data.data);
+                    }
+                })
+                .catch(err => {
+                    console.error("Erro ao carregar conformidades:", err);
+                    container.innerHTML = '<div class="alert alert-danger">Erro ao carregar dados de conformidade.</div>';
+                });
+        };
+
+        function renderConformidades(conformidades) {
+            const container = document.getElementById('conformidades-list');
+            container.innerHTML = '';
+
+            if (conformidades.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-5 bg-light rounded border border-secondary border-opacity-25 border-dashed" 
+                         style="border-style: dashed !important; cursor: pointer;"
+                         onclick="document.getElementById('btn-carregar-template').click()">
+                        <i class="bi bi-list-check fs-1 text-muted opacity-50"></i>
+                        <h6 class="text-muted mt-3">Nenhum grupo de conformidade definido.</h6>
+                        <p class="small text-muted mb-0">Clique para carregar de um template ou use os botões acima.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            conformidades.forEach(conf => {
+                const groupCard = document.createElement('div');
+                groupCard.className = 'card mb-3 shadow-sm border-0 conformidade-group';
+                groupCard.innerHTML = `
+                    <div class="card-header bg-light d-flex justify-content-between align-items-center py-2">
+                        <h6 class="mb-0 fw-bold text-primary small"><i class="bi bi-folder2-open me-2"></i>${conf.nome}</h6>
+                        <div class="d-flex align-items-center gap-3">
+                            <button class="btn btn-sm btn-link p-0 text-primary text-decoration-none small fw-semibold" onclick="promptAddItem(${conf.id})" style="font-size: 0.75rem;">
+                                <i class="bi bi-plus-circle me-1"></i>Novo Item
+                            </button>
+                            <small class="text-muted small">${conf.itens.length} itens</small>
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="list-group list-group-flush">
+                            ${conf.itens.map(item => renderItemRow(item)).join('')}
+                        </div>
+                    </div>
+                `;
+                container.appendChild(groupCard);
+            });
+
+        }
+
+        function renderItemRow(item) {
+            const statusIcon = getStatusIcon(item.status);
+            const constatacoesCount = item.constatacoes.length;
+
+            return `
+                <div class="list-group-item item-conformidade p-2 d-flex align-items-center gap-3" id="item-row-${item.id}">
+                    <div class="status-btn status-${item.status}" onclick="cycleItemStatus(${item.id}, ${item.status})" id="status-btn-${item.id}" title="Alternar Status">
+                        ${statusIcon}
+                    </div>
+                    <div class="flex-grow-1">
+                        <div class="fw-semibold text-dark mb-0 small" id="item-nome-${item.id}">${item.nome}</div>
+                        <div class="d-flex gap-1 flex-wrap mt-1" id="constatacoes-container-${item.id}">
+                            ${item.constatacoes.map(c => `
+                                <span class="badge bg-light text-dark border constatacao-badge py-1 px-2" onclick="alert('${c.texto.replace(/'/g, "\\'")}')" title="${c.texto.replace(/"/g, '&quot;')}">
+                                    <i class="bi bi-chat-left-text me-1 text-primary"></i> ${c.texto.substring(0, 20)}${c.texto.length > 20 ? '...' : ''}
+                                </span>
+                            `).join('')}
+                            <button type="button" class="btn btn-sm btn-link p-0 text-primary small text-decoration-none" onclick="promptAddConstatacao(${item.id})" style="font-size: 0.7rem;">
+                                <i class="bi bi-plus-circle me-1"></i>Constatação
+                            </button>
+                        </div>
+                    </div>
+                    <div class="text-end">
+                        <div class="text-muted" style="font-size: 0.65rem;"><i class="bi bi-camera me-1"></i>${item.fotos_count} fotos</div>
+                        <div class="btn-group btn-group-sm mt-1">
+                            <button type="button" class="btn btn-link p-0 text-secondary" onclick="promptRenameItem(${item.id}, '${item.nome.replace(/'/g, "\\'")}')" title="Renomear">
+                                <i class="bi bi-pencil" style="font-size: 0.75rem;"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function getStatusIcon(status) {
+            if (status === 1) return '<i class="bi bi-check-circle-fill fs-5"></i>';
+            if (status === -1) return '<i class="bi bi-x-circle-fill fs-5"></i>';
+            return '<i class="bi bi-circle fs-5"></i>';
+        }
+
+        window.cycleItemStatus = function (itemId, currentStatus) {
+            const statusSequence = [0, 1, -1];
+            let nextIndex = (statusSequence.indexOf(currentStatus) + 1) % statusSequence.length;
+            const nextStatus = statusSequence[nextIndex];
+
+            const btn = document.getElementById(`status-btn-${itemId}`);
+            const oldContent = btn.innerHTML;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+
+            const formData = new FormData();
+            formData.append('item_id', itemId);
+            formData.append('status', nextStatus);
+
+            fetch('/acoes/conformidades/item/status/update/', {
+                method: 'POST',
+                headers: { 'X-CSRFToken': '{{ csrf_token }}' },
+                body: formData
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        btn.className = `status-btn status-${data.status_value}`;
+                        btn.innerHTML = getStatusIcon(data.status_value);
+                        btn.setAttribute('onclick', `cycleItemStatus(${itemId}, ${data.status_value})`);
+                    } else {
+                        btn.innerHTML = oldContent;
+                    }
+                })
+                .catch(err => {
+                    console.error(err);
+                    btn.innerHTML = oldContent;
+                });
+        };
+
+        window.promptAddConstatacao = function (itemId) {
+            const texto = prompt("Descreva a constatacao para este item:");
+            if (texto && texto.trim()) {
+                addConstatacao(itemId, texto.trim());
+            }
+        };
+
+        function addConstatacao(itemId, texto) {
+            const formData = new FormData();
+            formData.append('item_id', itemId);
+            formData.append('texto', texto);
+
+            fetch('/acoes/conformidades/item/constatacao/add/', {
+                method: 'POST',
+                headers: { 'X-CSRFToken': '{{ csrf_token }}' },
+                body: formData
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        const container = document.getElementById(`constatacoes-container-${itemId}`);
+                        const btnPlus = container.querySelector('button');
+
+                        const badge = document.createElement('span');
+                        badge.className = 'badge bg-light text-dark border constatacao-badge py-1 px-2';
+                        badge.title = data.texto;
+                        badge.onclick = () => alert(data.texto);
+                        badge.innerHTML = `<i class="bi bi-chat-left-text me-1 text-primary"></i> ${data.texto.substring(0, 20)}${data.texto.length > 20 ? '...' : ''}`;
+
+                        container.insertBefore(badge, btnPlus);
+                    }
+                });
+        }
+
+        window.promptRenameItem = function (itemId, oldNome) {
+            const novoNome = prompt("Novo nome do item:", oldNome);
+            if (novoNome && novoNome.trim() && novoNome !== oldNome) {
+                const formData = new FormData();
+                formData.append('item_id', itemId);
+                formData.append('nome', novoNome.trim());
+
+                fetch('/acoes/conformidades/item/rename/', {
+                    method: 'POST',
+                    headers: { 'X-CSRFToken': '{{ csrf_token }}' },
+                    body: formData
+                })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.status === 'success') {
+                            document.getElementById(`item-nome-${itemId}`).innerText = data.nome;
+                        }
+                    });
+            }
+        };
+
+        const btnCarregar = document.getElementById('btn-carregar-template');
+        if (btnCarregar) {
+            btnCarregar.addEventListener('click', () => {
+                const modalEl = document.getElementById('modal-conformidade-templates');
+                const modal = new bootstrap.Modal(modalEl);
+                modal.show();
+                loadTemplates();
+            });
+        }
+
+        const btnNovoGrupo = document.getElementById('btn-add-conformidade-grupo');
+        if (btnNovoGrupo) {
+            btnNovoGrupo.addEventListener('click', () => {
+                const nome = prompt("Nome do novo grupo de conformidade:");
+                if (nome && nome.trim()) {
+                    criarGrupo(nome.trim());
+                }
+            });
+        }
+
+        window.promptAddItem = function (confId) {
+            const nome = prompt("Nome do novo item de verificação:");
+            if (nome && nome.trim()) {
+                adicionarItem(confId, nome.trim());
+            }
+        };
+
+        function loadTemplates() {
+            const container = document.getElementById('templates-list-container');
+            const loader = document.getElementById('templates-loading');
+
+            loader.style.display = 'block';
+            container.innerHTML = '';
+
+            fetch('/acoes/conformidades/templates/list/')
+                .then(res => res.json())
+                .then(data => {
+                    loader.style.display = 'none';
+                    if (data.status === 'success') {
+                        if (data.templates.length === 0) {
+                            container.innerHTML = '<div class="text-center py-4 text-muted fst-italic">Nenhum template cadastrado.</div>';
+                        } else {
+                            data.templates.forEach(t => {
+                                const btn = document.createElement('button');
+                                btn.type = 'button';
+                                btn.className = 'list-group-item list-group-item-action py-3';
+                                btn.innerHTML = `
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <h6 class="mb-1 fw-bold">${t.nome}</h6>
+                                            <p class="small text-muted mb-0">${t.descricao || 'Sem descrição'}</p>
+                                        </div>
+                                        <i class="bi bi-chevron-right text-muted"></i>
+                                    </div>
+                                `;
+                                btn.onclick = () => aplicarTemplate(t.id);
+                                container.appendChild(btn);
+                            });
+                        }
+                    }
+                });
+        }
+
+        function aplicarTemplate(templateId) {
+            if (!confirm("Isso adicionará novos itens ao formulário. Deseja prosseguir?")) return;
+
+            const formData = new FormData();
+            formData.append('template_id', templateId);
+
+            fetch(`/acoes/acao/${acaoId}/conformidades/aplicar-template/`, {
+                method: 'POST',
+                headers: { 'X-CSRFToken': '{{ csrf_token }}' },
+                body: formData
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        const modalEl = document.getElementById('modal-conformidade-templates');
+                        const modal = bootstrap.Modal.getInstance(modalEl);
+                        if (modal) modal.hide();
+                        initConformidades();
+                    }
+                });
+        }
+
+        function criarGrupo(nome) {
+            const formData = new FormData();
+            formData.append('nome', nome);
+
+            fetch(`/acoes/acao/${acaoId}/conformidades/grupo/criar/`, {
+                method: 'POST',
+                headers: { 'X-CSRFToken': '{{ csrf_token }}' },
+                body: formData
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === 'success') initConformidades();
+                });
+        }
+
+        function adicionarItem(confId, nome) {
+            const formData = new FormData();
+            formData.append('conformidade_id', confId);
+            formData.append('nome', nome);
+
+            fetch('/acoes/conformidades/item/adicionar/', {
+                method: 'POST',
+                headers: { 'X-CSRFToken': '{{ csrf_token }}' },
+                body: formData
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === 'success') initConformidades();
+                });
+        }
+
     });
 </script>
+
+<!-- Modal para Selecionar Template -->
+<div class="modal fade" id="modal-conformidade-templates" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-light py-3">
+                <h6 class="modal-title fw-bold"><i class="bi bi-list-check me-2"></i>Templates de Fiscalização</h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-0">
+                <div id="templates-loading" class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status"></div>
+                    <p class="text-muted mt-2">Buscando templates disponíveis...</p>
+                </div>
+                <div class="list-group list-group-flush" id="templates-list-container">
+                    <!-- Preenchido via AJAX -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 {% endblock %}

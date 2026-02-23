@@ -7,7 +7,11 @@ from django.views.generic import TemplateView
 from django.db.models import Q
 from .models import Acao, ChecklistItem, AcaoMarcador, AcaoFoto
 from django.urls import reverse_lazy
-from .forms import AcaoForm, ChecklistItemFormSet, AcaoDocumentoFormSet, AcaoFotoFormSet
+from .forms import (
+    AcaoForm, ChecklistItemFormSet, AcaoDocumentoFormSet, 
+    AcaoFotoFormSet, ConformidadeFormSet
+)
+
 from instrumentos.models import Instrumento, Obrigacao
 from django.http import JsonResponse
 from core.models import TipoAcao
@@ -101,10 +105,13 @@ class AcaoCreateView(PermissionRequiredMixin, ModernCreateView):
             context['checklist_formset'] = ChecklistItemFormSet(self.request.POST, prefix='checklist_itens')
             context['docs_formset'] = AcaoDocumentoFormSet(self.request.POST, self.request.FILES, prefix='docs')
             context['fotos_formset'] = AcaoFotoFormSet(self.request.POST, self.request.FILES, prefix='fotos')
+            context['conformidade_formset'] = ConformidadeFormSet(self.request.POST, prefix='conformidades')
         else:
             context['checklist_formset'] = ChecklistItemFormSet(prefix='checklist_itens')
             context['docs_formset'] = AcaoDocumentoFormSet(prefix='docs')
             context['fotos_formset'] = AcaoFotoFormSet(prefix='fotos')
+            context['conformidade_formset'] = ConformidadeFormSet(prefix='conformidades')
+
         
         # Contexto para Fiscalização (Fase 5)
         # Passar IDs dos tipos que são "Fiscalização" para lógica no frontend
@@ -152,6 +159,7 @@ class AcaoCreateView(PermissionRequiredMixin, ModernCreateView):
             fotos_formset.is_valid()
         ])
 
+
         if is_valid:
             # Validar checklist obrigatório (mínimo 1 item válido)
             itens_validos = 0
@@ -174,6 +182,12 @@ class AcaoCreateView(PermissionRequiredMixin, ModernCreateView):
             
             # Ativos
             self.save_assets(self.object, docs_formset, fotos_formset)
+            
+            # Conformidades (Grupos)
+            conformidades = context['conformidade_formset']
+            conformidades.instance = self.object
+            conformidades.save()
+
 
             messages.success(self.request, f'Ação "{self.object.nome}" criada com sucesso!')
             return super().form_valid(form)
@@ -216,10 +230,13 @@ class AcaoUpdateView(PermissionRequiredMixin, ModernUpdateView):
             context['checklist_formset'] = ChecklistItemFormSet(self.request.POST, instance=self.object, prefix='checklist_itens')
             context['docs_formset'] = AcaoDocumentoFormSet(self.request.POST, self.request.FILES, instance=self.object, prefix='docs')
             context['fotos_formset'] = AcaoFotoFormSet(self.request.POST, self.request.FILES, instance=self.object, prefix='fotos')
+            context['conformidade_formset'] = ConformidadeFormSet(self.request.POST, instance=self.object, prefix='conformidades')
         else:
             context['checklist_formset'] = ChecklistItemFormSet(instance=self.object, prefix='checklist_itens')
             context['docs_formset'] = AcaoDocumentoFormSet(instance=self.object, prefix='docs')
             context['fotos_formset'] = AcaoFotoFormSet(instance=self.object, prefix='fotos')
+            context['conformidade_formset'] = ConformidadeFormSet(instance=self.object, prefix='conformidades')
+
             
         # Contexto para Fiscalização (Fase 5)
         context['fiscalizacao_ids'] = list(TipoAcao.objects.filter(
@@ -268,6 +285,7 @@ class AcaoUpdateView(PermissionRequiredMixin, ModernUpdateView):
             fotos_formset.is_valid()
         ])
 
+
         if is_valid:
             # Validar checklist obrigatório (mínimo 1 item válido)
             itens_validos = 0
@@ -290,6 +308,12 @@ class AcaoUpdateView(PermissionRequiredMixin, ModernUpdateView):
             
             # Ativos (Docs e Fotos)
             self.save_assets(self.object, docs_formset, fotos_formset)
+            
+            # Conformidades
+            conformidades = context['conformidade_formset']
+            conformidades.instance = self.object
+            conformidades.save()
+
 
             messages.success(self.request, f'Ação "{self.object.nome}" atualizada com sucesso!')
             return super().form_valid(form)
@@ -465,4 +489,182 @@ def deletar_marcador_ajax(request, marcador_id):
     # Isso garante que a evidência de campo continue na aba Fotos.
     marcador.delete()
     return JsonResponse({'status': 'success'})
+
+
+# --- AJAX ENDPOINTS PARA CONFORMIDADES (FASE 5) ---
+
+from .models import Conformidade, ItemConformidade, Constatacao
+
+@permission_required('acoes.view_acao', raise_exception=True)
+def conformidades_data_ajax(request, acao_id):
+    """Retorna a estrutura completa de conformidades para o frontend."""
+    acao = get_object_or_404(Acao, id=acao_id)
+    conformidades = acao.conformidades.all().prefetch_related('itens', 'itens__constatacoes')
+    
+    data = []
+    for conf in conformidades:
+        itens_data = []
+        for item in conf.itens.all():
+            constatacoes_data = []
+            for const in item.constatacoes.all():
+                constatacoes_data.append({
+                    'id': const.id,
+                    'texto': const.texto,
+                    'data': const.data_criacao.strftime('%d/%m/%Y %H:%M')
+                })
+            
+            itens_data.append({
+                'id': item.id,
+                'nome': item.nome,
+                'status': item.status,
+                'ordem': item.ordem,
+                'constatacoes': constatacoes_data,
+                'fotos_count': item.fotos.count()
+            })
+            
+        data.append({
+            'id': conf.id,
+            'nome': conf.nome,
+            'itens': itens_data
+        })
+        
+    return JsonResponse({'status': 'success', 'data': data})
+
+
+@csrf_exempt
+@require_POST
+@permission_required('acoes.change_acao', raise_exception=True)
+def update_item_status_ajax(request):
+    """Atualiza o status tri-state de um item de conformidade."""
+    item_id = request.POST.get('item_id')
+    new_status = request.POST.get('status')
+    
+    if item_id is None or new_status is None:
+        return JsonResponse({'status': 'error', 'message': 'Dados incompletos.'}, status=400)
+        
+    item = get_object_or_404(ItemConformidade, id=item_id)
+    try:
+        item.status = int(new_status)
+        item.save()
+        return JsonResponse({'status': 'success', 'item_id': item.id, 'status_value': item.status})
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+
+@csrf_exempt
+@require_POST
+@permission_required('acoes.change_acao', raise_exception=True)
+def add_constatacao_ajax(request):
+    """Adiciona uma constatação textual a um item."""
+    item_id = request.POST.get('item_id')
+    texto = request.POST.get('texto')
+    
+    if not item_id or not texto:
+        return JsonResponse({'status': 'error', 'message': 'Item e texto são obrigatórios.'}, status=400)
+        
+    item = get_object_or_404(ItemConformidade, id=item_id)
+    constatacao = Constatacao.objects.create(item=item, texto=texto)
+    
+    return JsonResponse({
+        'status': 'success', 
+        'id': constatacao.id, 
+        'texto': constatacao.texto,
+        'data': constatacao.data_criacao.strftime('%d/%m/%Y %H:%M')
+    })
+
+
+@csrf_exempt
+@require_POST
+@permission_required('acoes.change_acao', raise_exception=True)
+def remove_constatacao_ajax(request):
+    """Remove uma constatação."""
+    const_id = request.POST.get('const_id')
+    constatacao = get_object_or_404(Constatacao, id=const_id)
+    constatacao.delete()
+    return JsonResponse({'status': 'success'})
+
+
+@csrf_exempt
+@require_POST
+@permission_required('acoes.change_acao', raise_exception=True)
+def rename_item_ajax(request):
+    """Renomeia um item de conformidade."""
+    item_id = request.POST.get('item_id')
+    novo_nome = request.POST.get('nome')
+    
+    if not item_id or not novo_nome:
+        return JsonResponse({'status': 'error', 'message': 'Dados incompletos.'}, status=400)
+        
+    item = get_object_or_404(ItemConformidade, id=item_id)
+    item.nome = novo_nome
+    item.save()
+    return JsonResponse({'status': 'success', 'nome': item.nome})
+
+
+from .models import ConformidadeTemplate, ItemConformidadeTemplate
+
+@permission_required('acoes.view_acao', raise_exception=True)
+def listar_templates_ajax(request):
+    """Lista templates disponíveis."""
+    templates = ConformidadeTemplate.objects.filter(ativo=True)
+    data = [{'id': t.id, 'nome': t.nome, 'descricao': t.descricao} for t in templates]
+    return JsonResponse({'status': 'success', 'templates': data})
+
+
+@csrf_exempt
+@require_POST
+@permission_required('acoes.change_acao', raise_exception=True)
+def aplicar_template_ajax(request, acao_id):
+    """Aplica um template a uma ação."""
+    acao = get_object_or_404(Acao, id=acao_id)
+    template_id = request.POST.get('template_id')
+    
+    if not template_id:
+        return JsonResponse({'status': 'error', 'message': 'Template não selecionado.'}, status=400)
+    
+    template = get_object_or_404(ConformidadeTemplate, id=template_id)
+    
+    # Criar um grupo de conformidade baseado no template
+    conf = Conformidade.objects.create(acao=acao, nome=template.nome)
+    for item_t in template.itens.all():
+        ItemConformidade.objects.create(
+            conformidade=conf,
+            nome=item_t.nome,
+            ordem=item_t.ordem
+        )
+        
+    return JsonResponse({'status': 'success'})
+
+
+@csrf_exempt
+@require_POST
+@permission_required('acoes.change_acao', raise_exception=True)
+def criar_grupo_ajax(request, acao_id):
+    """Cria um novo grupo (Conformidade) manualmente."""
+    acao = get_object_or_404(Acao, id=acao_id)
+    nome = request.POST.get('nome')
+    
+    if not nome:
+        return JsonResponse({'status': 'error', 'message': 'Nome é obrigatório.'}, status=400)
+        
+    conf = Conformidade.objects.create(acao=acao, nome=nome)
+    return JsonResponse({'status': 'success', 'id': conf.id, 'nome': conf.nome})
+
+
+@csrf_exempt
+@require_POST
+@permission_required('acoes.change_acao', raise_exception=True)
+def adicionar_item_ajax(request):
+    """Adiciona um item a um grupo existente."""
+    conf_id = request.POST.get('conformidade_id')
+    nome = request.POST.get('nome')
+    
+    if not conf_id or not nome:
+        return JsonResponse({'status': 'error', 'message': 'Dados incompletos.'}, status=400)
+        
+    conf = get_object_or_404(Conformidade, id=conf_id)
+    item = ItemConformidade.objects.create(conformidade=conf, nome=nome)
+    
+    return JsonResponse({'status': 'success', 'id': item.id, 'nome': item.nome})
+
 

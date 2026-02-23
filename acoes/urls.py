@@ -21,4 +21,18 @@ urlpatterns = [
     path('acao/<int:acao_id>/marcadores/', views.listar_marcadores_ajax, name='listar_marcadores_ajax'),
     path('acao/<int:acao_id>/marcador/salvar/', views.salvar_marcador_ajax, name='salvar_marcador_ajax'),
     path('marcador/<int:marcador_id>/deletar/', views.deletar_marcador_ajax, name='deletar_marcador_ajax'),
+
+    # Rotas AJAX/JSON para Conformidades (Fase 5)
+    path('acao/<int:acao_id>/conformidades/data/', views.conformidades_data_ajax, name='conformidades_data_ajax'),
+    path('conformidades/item/status/update/', views.update_item_status_ajax, name='update_item_status_ajax'),
+    path('conformidades/item/constatacao/add/', views.add_constatacao_ajax, name='add_constatacao_ajax'),
+    path('conformidades/constatacao/remove/', views.remove_constatacao_ajax, name='remove_constatacao_ajax'),
+    path('conformidades/item/rename/', views.rename_item_ajax, name='rename_item_ajax'),
+    
+    # Gerenciamento de Templates e Grupos
+    path('conformidades/templates/list/', views.listar_templates_ajax, name='listar_templates_ajax'),
+    path('acao/<int:acao_id>/conformidades/aplicar-template/', views.aplicar_template_ajax, name='aplicar_template_ajax'),
+    path('acao/<int:acao_id>/conformidades/grupo/criar/', views.criar_grupo_ajax, name='criar_grupo_ajax'),
+    path('conformidades/item/adicionar/', views.adicionar_item_ajax, name='adicionar_item_ajax'),
+
 ]
