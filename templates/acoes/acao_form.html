@@ -60,6 +60,40 @@
         cursor: pointer;
     }
 
+    /* Estilos para Edição Inline e Exclusão */
+    .editable-name {
+        cursor: pointer;
+        padding: 2px 5px;
+        border-radius: 4px;
+        transition: background 0.2s;
+    }
+
+    .editable-name:hover {
+        background-color: rgba(0, 102, 179, 0.05);
+    }
+
+    .btn-delete-item,
+    .btn-delete-group {
+        opacity: 0;
+        transition: opacity 0.2s;
+        color: #dc3545;
+    }
+
+    .item-conformidade:hover .btn-delete-item,
+    .conformidade-group:hover .btn-delete-group {
+        opacity: 1;
+    }
+
+    .editing-input {
+        border: 1px solid var(--primary-color);
+        padding: 0 5px;
+        border-radius: 4px;
+        font-size: inherit;
+        font-family: inherit;
+        font-weight: inherit;
+        width: 100%;
+    }
+
     .upload-drop-zone {
         border: 2px dashed #dee2e6;
         transition: all 0.3s ease;
@@ -410,10 +444,14 @@
                 card.className = 'card mb-3 shadow-sm conformidade-group';
                 card.innerHTML = `
                 <div class="card-header bg-light d-flex justify-content-between align-items-center py-2">
-                    <h6 class="mb-0 fw-bold text-primary small"><i class="bi bi-folder me-2"></i>${group.nome}</h6>
-                    <button type="button" class="btn btn-sm btn-link text-decoration-none" onclick="promptAddItem(${group.id})"><i class="bi bi-plus-circle me-1"></i>Novo Item</button>
+                    <h6 class="mb-0 fw-bold text-primary small d-flex align-items-center gap-2">
+                        <i class="bi bi-folder me-1"></i>
+                        <span class="editable-name" onclick="startEditGroup(${group.id}, this)">${group.nome}</span>
+                        <button type="button" class="btn btn-sm btn-link btn-delete-group p-0" onclick="deleteGroup(${group.id})"><i class="bi bi-trash"></i></button>
+                    </h6>
+                    <button type="button" class="btn btn-sm btn-link text-decoration-none" onclick="addNewItemInline(${group.id})"><i class="bi bi-plus-circle me-1"></i>Novo Item</button>
                 </div>
-                <div class="list-group list-group-flush">
+                <div class="list-group list-group-flush" id="items-container-${group.id}">
                     ${group.itens.map(item => renderItemRow(item)).join('')}
                 </div>
             `;
@@ -429,7 +467,10 @@
             <div class="list-group-item item-conformidade p-2 d-flex align-items-center gap-3" id="item-row-${item.id}">
                 <div class="status-btn status-${item.status}" onclick="cycleItemStatus(${item.id}, ${item.status})" id="status-btn-${item.id}">${icon}</div>
                 <div class="flex-grow-1">
-                    <div class="fw-semibold small" id="item-nome-${item.id}">${item.nome}</div>
+                    <div class="fw-semibold small d-flex align-items-center gap-2">
+                        <span class="editable-name" onclick="startEditItem(${item.id}, this)">${item.nome}</span>
+                        <button type="button" class="btn btn-sm btn-link btn-delete-item p-0" onclick="deleteItem(${item.id})"><i class="bi bi-trash"></i></button>
+                    </div>
                     <div class="d-flex gap-1 flex-wrap mt-1" id="constatacoes-${item.id}">
                         ${item.constatacoes.map(c => `<span class="badge bg-light text-dark border constatacao-badge" onclick="alert('${c.texto.replace(/'/g, "\\'")}')" title="${c.texto}"><i class="bi bi-chat-left-text me-1 text-primary"></i> ${c.texto.substring(0, 20)}...</span>`).join('')}
                         <button type="button" class="btn btn-sm btn-link p-0 small text-decoration-none" onclick="promptAddConstatacao(${item.id})" style="font-size:0.75rem">+ Constatação</button>
@@ -439,6 +480,95 @@
             </div>
         `;
         }
+
+        // --- EDIÇÃO INLINE ---
+        window.startEditGroup = function (id, el) {
+            const old = el.innerText;
+            const input = document.createElement('input');
+            input.className = 'editing-input';
+            input.value = old;
+            el.replaceWith(input);
+            input.focus();
+            input.onblur = () => finishEditGroup(id, input, old);
+            input.onkeydown = e => { if (e.key === 'Enter') input.blur(); if (e.key === 'Escape') { input.value = old; input.blur(); } };
+        };
+
+        function finishEditGroup(id, input, old) {
+            const val = input.value.trim();
+            if (!val || val === old) { input.replaceWith(createSpan(val || old, 'startEditGroup', id)); return; }
+            const fd = new FormData(); fd.append('conformidade_id', id); fd.append('nome', val);
+            fetch('/acoes/conformidades/grupo/renomear/', { method: 'POST', headers: { 'X-CSRFToken': csrfToken }, body: fd })
+                .then(r => r.json()).then(d => { if (d.status === 'success') input.replaceWith(createSpan(d.nome, 'startEditGroup', id)); });
+        }
+
+        window.startEditItem = function (id, el) {
+            const old = el.innerText;
+            const input = document.createElement('input');
+            input.className = 'editing-input';
+            input.value = old;
+            el.replaceWith(input);
+            input.focus();
+            input.onblur = () => finishEditItem(id, input, old);
+            input.onkeydown = e => { if (e.key === 'Enter') input.blur(); if (e.key === 'Escape') { input.value = old; input.blur(); } };
+        };
+
+        function finishEditItem(id, input, old) {
+            const val = input.value.trim();
+            if (!val || val === old) { input.replaceWith(createSpan(val || old, 'startEditItem', id)); return; }
+            const fd = new FormData(); fd.append('item_id', id); fd.append('nome', val);
+            fetch('/acoes/conformidades/item/rename/', { method: 'POST', headers: { 'X-CSRFToken': csrfToken }, body: fd })
+                .then(r => r.json()).then(d => { if (d.status === 'success') input.replaceWith(createSpan(d.nome, 'startEditItem', id)); });
+        }
+
+        function createSpan(text, fn, id) {
+            const s = document.createElement('span'); s.className = 'editable-name';
+            s.innerText = text; s.onclick = () => window[fn](id, s);
+            return s;
+        }
+
+        // --- CRIAÇÃO DIRETA ---
+        document.getElementById('btn-add-conformidade-grupo')?.addEventListener('click', () => {
+            const fd = new FormData(); fd.append('nome', 'Novo Grupo');
+            fetch(`/acoes/acao/${acaoId}/conformidades/grupo/criar/`, { method: 'POST', headers: { 'X-CSRFToken': csrfToken }, body: fd })
+                .then(r => r.json()).then(d => {
+                    if (d.status === 'success') {
+                        initConformidades();
+                        setTimeout(() => {
+                            const newGroup = document.querySelector(`.conformidade-group:last-child .editable-name`);
+                            if (newGroup) newGroup.click();
+                        }, 500);
+                    }
+                });
+        });
+
+        window.addNewItemInline = function (groupId) {
+            const fd = new FormData(); fd.append('conformidade_id', groupId); fd.append('nome', 'Novo Item');
+            fetch('/acoes/conformidades/item/adicionar/', { method: 'POST', headers: { 'X-CSRFToken': csrfToken }, body: fd })
+                .then(r => r.json()).then(d => {
+                    if (d.status === 'success') {
+                        initConformidades();
+                        setTimeout(() => {
+                            const newItem = document.querySelector(`#item-row-${d.id} .editable-name`);
+                            if (newItem) newItem.click();
+                        }, 500);
+                    }
+                });
+        };
+
+        // --- EXCLUSÃO ---
+        window.deleteGroup = function (id) {
+            if (!confirm("Excluir este grupo e todos os seus itens?")) return;
+            const fd = new FormData(); fd.append('conformidade_id', id);
+            fetch('/acoes/conformidades/grupo/remover/', { method: 'POST', headers: { 'X-CSRFToken': csrfToken }, body: fd })
+                .then(r => r.json()).then(d => { if (d.status === 'success') initConformidades(); });
+        };
+
+        window.deleteItem = function (id) {
+            if (!confirm("Excluir este item?")) return;
+            const fd = new FormData(); fd.append('item_id', id);
+            fetch('/acoes/conformidades/item/remover/', { method: 'POST', headers: { 'X-CSRFToken': csrfToken }, body: fd })
+                .then(r => r.json()).then(d => { if (d.status === 'success') initConformidades(); });
+        };
 
         window.cycleItemStatus = function (itemId, curr) {
             const sequence = [0, 1, -1];
