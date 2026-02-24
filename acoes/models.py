@@ -296,11 +296,12 @@ class Conformidade(models.Model):
     """Grupos de verificação dentro de uma Ação de Fiscalização."""
     acao = models.ForeignKey(Acao, related_name='conformidades', on_delete=models.CASCADE)
     nome = models.CharField('Nome da Conformidade', max_length=255)
+    ordem = models.IntegerField(default=0)
     
     class Meta:
         verbose_name = 'Conformidade'
         verbose_name_plural = 'Conformidades'
-        ordering = ['id']
+        ordering = ['ordem', 'id']
 
     def __str__(self):
         return f"{self.nome} (Ação: {self.acao.nome})"

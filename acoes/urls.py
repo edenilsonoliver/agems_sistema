@@ -37,6 +37,7 @@ urlpatterns = [
     path('conformidades/grupo/remover/', views.remover_grupo_ajax, name='remover_grupo_ajax'),
     path('conformidades/item/adicionar/', views.adicionar_item_ajax, name='adicionar_item_ajax'),
     path('conformidades/item/remover/', views.remover_item_ajax, name='remover_item_ajax'),
+    path('conformidades/grupos/reordenar/', views.reordenar_grupos_ajax, name='reordenar_grupos_ajax'),
     path('conformidades/itens/reordenar/', views.reordenar_itens_ajax, name='reordenar_itens_ajax'),
     path('instrumento/<int:instrumento_id>/obrigacoes/', views.listar_obrigacoes_instrumento_ajax, name='listar_obrigacoes_instrumento_ajax'),
 

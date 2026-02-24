@@ -704,6 +704,25 @@ def remover_item_ajax(request):
 @csrf_exempt
 @require_POST
 @permission_required('acoes.change_acao', raise_exception=True)
+@login_required
+def reordenar_grupos_ajax(request):
+    """Atualiza a ordem dos grupos (Conformidade) de uma ação."""
+    import json
+    try:
+        data = json.loads(request.body)
+        ordem = data.get('ordem', []) # Lista de IDs na ordem correta
+        
+        for i, group_id in enumerate(ordem):
+            Conformidade.objects.filter(id=group_id).update(ordem=i)
+            
+        return JsonResponse({'status': 'success'})
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
+
+
+@csrf_exempt
+@require_POST
+@permission_required('acoes.change_acao', raise_exception=True)
 def reordenar_itens_ajax(request):
     """Atualiza a ordem dos itens dentro de um grupo."""
     import json

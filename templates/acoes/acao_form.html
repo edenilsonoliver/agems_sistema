@@ -94,6 +94,16 @@
         width: 100%;
     }
 
+    .drag-handle {
+        cursor: grab;
+        color: #adb5bd;
+        margin-right: 5px;
+    }
+
+    .drag-handle:active {
+        cursor: grabbing;
+    }
+
     .upload-drop-zone {
         border: 2px dashed #dee2e6;
         transition: all 0.3s ease;
@@ -442,20 +452,31 @@
             list.forEach(group => {
                 const card = document.createElement('div');
                 card.className = 'card mb-3 shadow-sm conformidade-group';
+                card.dataset.id = group.id;
                 card.innerHTML = `
                 <div class="card-header bg-light d-flex justify-content-between align-items-center py-2">
                     <h6 class="mb-0 fw-bold text-primary small d-flex align-items-center gap-2">
-                        <i class="bi bi-folder me-1"></i>
+                        <i class="bi bi-grip-vertical group-drag-handle drag-handle"></i>
                         <span class="editable-name" onclick="startEditGroup(${group.id}, this)">${group.nome}</span>
                         <button type="button" class="btn btn-sm btn-link btn-delete-group p-0" onclick="deleteGroup(${group.id})"><i class="bi bi-trash"></i></button>
                     </h6>
                     <button type="button" class="btn btn-sm btn-link text-decoration-none" onclick="addNewItemInline(${group.id})"><i class="bi bi-plus-circle me-1"></i>Novo Item</button>
                 </div>
-                <div class="list-group list-group-flush" id="items-container-${group.id}">
+                <div class="list-group list-group-flush sortable-items" id="items-container-${group.id}">
                     ${group.itens.map(item => renderItemRow(item)).join('')}
                 </div>
             `;
                 container.appendChild(card);
+                initSortableItems(group.id);
+            });
+
+            new Sortable(container, {
+                animation: 150,
+                handle: '.group-drag-handle',
+                onEnd: function () {
+                    const order = Array.from(container.children).map(c => c.dataset.id);
+                    saveGroupOrder(order);
+                }
             });
         }
 
@@ -464,7 +485,8 @@
                 (item.status === -1 ? '<i class="bi bi-x-circle-fill fs-5"></i>' : '<i class="bi bi-circle fs-5"></i>');
 
             return `
-            <div class="list-group-item item-conformidade p-2 d-flex align-items-center gap-3" id="item-row-${item.id}">
+            <div class="list-group-item item-conformidade p-2 d-flex align-items-center gap-3" id="item-row-${item.id}" data-id="${item.id}">
+                <i class="bi bi-grip-vertical item-drag-handle drag-handle"></i>
                 <div class="status-btn status-${item.status}" onclick="cycleItemStatus(${item.id}, ${item.status})" id="status-btn-${item.id}">${icon}</div>
                 <div class="flex-grow-1">
                     <div class="fw-semibold small d-flex align-items-center gap-2">
@@ -481,7 +503,35 @@
         `;
         }
 
-        // --- EDIÇÃO INLINE ---
+        function initSortableItems(groupId) {
+            const list = document.getElementById(`items-container-${groupId}`);
+            if (!list) return;
+            new Sortable(list, {
+                animation: 150,
+                handle: '.item-drag-handle',
+                onEnd: function () {
+                    const order = Array.from(list.children).map(c => c.dataset.id);
+                    saveItemOrder(order);
+                }
+            });
+        }
+
+        function saveGroupOrder(order) {
+            fetch('/acoes/conformidades/grupos/reordenar/', {
+                method: 'POST',
+                headers: { 'X-CSRFToken': csrfToken, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ordem: order })
+            });
+        }
+
+        function saveItemOrder(order) {
+            fetch('/acoes/conformidades/itens/reordenar/', {
+                method: 'POST',
+                headers: { 'X-CSRFToken': csrfToken, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ordem: order })
+            });
+        }
+
         window.startEditGroup = function (id, el) {
             const old = el.innerText;
             const input = document.createElement('input');
@@ -526,7 +576,6 @@
             return s;
         }
 
-        // --- CRIAÇÃO DIRETA ---
         document.getElementById('btn-add-conformidade-grupo')?.addEventListener('click', () => {
             const fd = new FormData(); fd.append('nome', 'Novo Grupo');
             fetch(`/acoes/acao/${acaoId}/conformidades/grupo/criar/`, { method: 'POST', headers: { 'X-CSRFToken': csrfToken }, body: fd })
@@ -534,9 +583,9 @@
                     if (d.status === 'success') {
                         initConformidades();
                         setTimeout(() => {
-                            const newGroup = document.querySelector(`.conformidade-group:last-child .editable-name`);
+                            const newGroup = document.querySelector(`.conformidade-group[data-id="${d.id}"] .editable-name`);
                             if (newGroup) newGroup.click();
-                        }, 500);
+                        }, 600);
                     }
                 });
         });
@@ -550,12 +599,11 @@
                         setTimeout(() => {
                             const newItem = document.querySelector(`#item-row-${d.id} .editable-name`);
                             if (newItem) newItem.click();
-                        }, 500);
+                        }, 600);
                     }
                 });
         };
 
-        // --- EXCLUSÃO ---
         window.deleteGroup = function (id) {
             if (!confirm("Excluir este grupo e todos os seus itens?")) return;
             const fd = new FormData(); fd.append('conformidade_id', id);
@@ -595,24 +643,6 @@
                     .then(r => r.json()).then(d => { if (d.status === 'success') initConformidades(); });
             }
         };
-
-        window.promptAddItem = function (groupId) {
-            const name = prompt("Nome do item:");
-            if (name && name.trim()) {
-                const fd = new FormData(); fd.append('conformidade_id', groupId); fd.append('nome', name.trim());
-                fetch('/acoes/conformidades/item/adicionar/', { method: 'POST', headers: { 'X-CSRFToken': csrfToken }, body: fd })
-                    .then(r => r.json()).then(d => { if (d.status === 'success') initConformidades(); });
-            }
-        };
-
-        document.getElementById('btn-add-conformidade-grupo')?.addEventListener('click', () => {
-            const name = prompt("Nome do grupo:");
-            if (name && name.trim()) {
-                const fd = new FormData(); fd.append('nome', name.trim());
-                fetch(`/acoes/acao/${acaoId}/conformidades/grupo/criar/`, { method: 'POST', headers: { 'X-CSRFToken': csrfToken }, body: fd })
-                    .then(r => r.json()).then(d => { if (d.status === 'success') initConformidades(); });
-            }
-        });
 
         document.getElementById('btn-carregar-template')?.addEventListener('click', () => {
             const modal = new bootstrap.Modal(document.getElementById('modal-templates'));
