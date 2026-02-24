@@ -58,6 +58,45 @@ class AcaoForm(forms.ModelForm):
         self.fields['descricao'].required = False
         self.fields['data_conclusao'].required = False
         self.fields['observacoes'].required = False
+        from instrumentos.models import Instrumento, Obrigacao
+        self.fields['instrumento'] = forms.ModelChoiceField(
+            queryset=Instrumento.objects.all(),
+            required=True,
+            label="Instrumento",
+            widget=forms.Select(attrs={'class': 'form-select'})
+        )
+        
+        # Lógica para Cascading Dropdown (Instrumento -> Obrigação)
+        # 1. Tentar pegar o Instrumento do POST (se houver erro ou submissão)
+        # 2. Se não, tentar da Obrigação inicial/instância
+        
+        instrumento_id = None
+        if 'instrumento' in self.data:
+            try:
+                instrumento_id = int(self.data.get('instrumento'))
+            except (ValueError, TypeError):
+                pass
+        
+        # Se não tem no POST, mas tem obrigação definida (edição/inicial)
+        if not instrumento_id:
+            obrigacao_id = self.initial.get('obrigacao') or (self.instance.obrigacao_id if self.instance.pk else None)
+            if obrigacao_id:
+                try:
+                    obrigacao = Obrigacao.objects.select_related('instrumento').get(id=obrigacao_id)
+                    instrumento_id = obrigacao.instrumento.id
+                    self.initial['instrumento'] = instrumento_id
+                except Obrigacao.DoesNotExist:
+                    pass
+
+        # Aplicar o filtro no queryset de Obrigações
+        if instrumento_id:
+            self.fields['obrigacao'].queryset = Obrigacao.objects.filter(instrumento_id=instrumento_id)
+        else:
+            self.fields['obrigacao'].queryset = Obrigacao.objects.none()
+
+        # Configurações de campos
+        self.fields['nome'].widget.attrs.update({'placeholder': 'Ex: Vistoria Técnica de Campo'})
+        self.fields['obrigacao'].widget.attrs.update({'class': 'form-select'})
         self.fields['tipo_acao'].required = False
         
         # Remover 'Finalizado' das opções manuais (será automático pelo checklist)

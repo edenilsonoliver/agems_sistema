@@ -1,6 +1,6 @@
 from django.contrib import messages
 from django.contrib.auth.mixins import PermissionRequiredMixin
-from django.contrib.auth.decorators import permission_required
+from django.contrib.auth.decorators import permission_required, login_required
 from core.views import ModernListView, ModernCreateView, ModernUpdateView, ModernDeleteView
 from django.shortcuts import render, get_object_or_404, redirect
 from django.views.generic import TemplateView
@@ -206,12 +206,16 @@ class AcaoCreateView(PermissionRequiredMixin, ModernCreateView):
             messages.success(self.request, f'Ação "{self.object.nome}" criada com sucesso!')
             return redirect(self.success_url)
         else:
-            # Coleta erros dos formsets para exibição
-            for fs in [docs_formset, fotos_formset]:
-                for error_dict in fs.errors:
-                    for field, msgs in error_dict.items():
-                        for msg in msgs:
-                            messages.error(self.request, f"Erro {fs.prefix}: {msg}")
+            # Coleta erros de tudo para exibição clara
+            all_forms = [
+                ('Dados Gerais', form),
+                ('Checklist', checklist_formset),
+                ('Documentação', docs_formset),
+                ('Fotos', fotos_formset)
+            ]
+            for label, fs in all_forms:
+                if hasattr(fs, 'errors') and fs.errors:
+                    messages.error(self.request, f"Erro em {label}. Verifique os campos.")
             
             return self.render_to_response(self.get_context_data(form=form))
 
@@ -317,12 +321,16 @@ class AcaoUpdateView(PermissionRequiredMixin, ModernUpdateView):
             messages.success(self.request, f'Ação "{self.object.nome}" atualizada com sucesso!')
             return redirect(self.success_url)
         else:
-            # Tratamento de Erros
-            for fs in [docs_formset, fotos_formset]:
-                for error_dict in fs.errors:
-                    for field, msgs in error_dict.items():
-                        for msg in msgs:
-                            messages.error(self.request, f"Erro {fs.prefix}: {msg}")
+            # Coleta erros de tudo para exibição clara
+            all_forms = [
+                ('Dados Gerais', form),
+                ('Checklist', checklist_formset),
+                ('Documentação', docs_formset),
+                ('Fotos', fotos_formset)
+            ]
+            for label, fs in all_forms:
+                if hasattr(fs, 'errors') and fs.errors:
+                    messages.error(self.request, f"Erro em {label}. Verifique os campos.")
 
             return self.render_to_response(self.get_context_data(form=form))
 
@@ -654,3 +662,65 @@ def adicionar_item_ajax(request):
     return JsonResponse({'status': 'success', 'id': item.id, 'nome': item.nome})
 
 
+@csrf_exempt
+@require_POST
+@permission_required('acoes.change_acao', raise_exception=True)
+def renomear_grupo_ajax(request):
+    """Renomeia um grupo de conformidade."""
+    conf_id = request.POST.get('conformidade_id')
+    novo_nome = request.POST.get('nome')
+    
+    if not conf_id or not novo_nome:
+        return JsonResponse({'status': 'error', 'message': 'Dados incompletos.'}, status=400)
+        
+    conf = get_object_or_404(Conformidade, id=conf_id)
+    conf.nome = novo_nome
+    conf.save()
+    return JsonResponse({'status': 'success', 'nome': conf.nome})
+
+
+@csrf_exempt
+@require_POST
+@permission_required('acoes.change_acao', raise_exception=True)
+def remover_grupo_ajax(request):
+    """Remove um grupo de conformidade e todos os seus itens."""
+    conf_id = request.POST.get('conformidade_id')
+    conf = get_object_or_404(Conformidade, id=conf_id)
+    conf.delete()
+    return JsonResponse({'status': 'success'})
+
+
+@csrf_exempt
+@require_POST
+@permission_required('acoes.change_acao', raise_exception=True)
+def remover_item_ajax(request):
+    """Remove um item de conformidade."""
+    item_id = request.POST.get('item_id')
+    item = get_object_or_404(ItemConformidade, id=item_id)
+    item.delete()
+    return JsonResponse({'status': 'success'})
+
+
+@csrf_exempt
+@require_POST
+@permission_required('acoes.change_acao', raise_exception=True)
+def reordenar_itens_ajax(request):
+    """Atualiza a ordem dos itens dentro de um grupo."""
+    import json
+    try:
+        data = json.loads(request.body)
+        ordem = data.get('ordem', []) # Lista de IDs na ordem correta
+        
+        for i, item_id in enumerate(ordem):
+            ItemConformidade.objects.filter(id=item_id).update(ordem=i)
+            
+        return JsonResponse({'status': 'success'})
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
+
+
+@login_required
+def listar_obrigacoes_instrumento_ajax(request, instrumento_id):
+    from instrumentos.models import Obrigacao
+    obrigacoes = Obrigacao.objects.filter(instrumento_id=instrumento_id).values('id', 'titulo')
+    return JsonResponse({'status': 'success', 'data': list(obrigacoes)})

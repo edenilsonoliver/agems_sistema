@@ -33,6 +33,11 @@ urlpatterns = [
     path('conformidades/templates/list/', views.listar_templates_ajax, name='listar_templates_ajax'),
     path('acao/<int:acao_id>/conformidades/aplicar-template/', views.aplicar_template_ajax, name='aplicar_template_ajax'),
     path('acao/<int:acao_id>/conformidades/grupo/criar/', views.criar_grupo_ajax, name='criar_grupo_ajax'),
+    path('conformidades/grupo/renomear/', views.renomear_grupo_ajax, name='renomear_grupo_ajax'),
+    path('conformidades/grupo/remover/', views.remover_grupo_ajax, name='remover_grupo_ajax'),
     path('conformidades/item/adicionar/', views.adicionar_item_ajax, name='adicionar_item_ajax'),
+    path('conformidades/item/remover/', views.remover_item_ajax, name='remover_item_ajax'),
+    path('conformidades/itens/reordenar/', views.reordenar_itens_ajax, name='reordenar_itens_ajax'),
+    path('instrumento/<int:instrumento_id>/obrigacoes/', views.listar_obrigacoes_instrumento_ajax, name='listar_obrigacoes_instrumento_ajax'),
 
 ]
