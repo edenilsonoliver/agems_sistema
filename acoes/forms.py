@@ -97,7 +97,7 @@ ChecklistItemFormSet = inlineformset_factory(
     Acao,
     ChecklistItem,
     fields=['nome', 'concluido', 'ordem'],
-    extra=0,
+    extra=1,
     can_delete=True,
     widgets={
         'nome': forms.TextInput(attrs={
@@ -213,11 +213,12 @@ class AcaoDocumentoForm(forms.ModelForm):
 
         return arquivo
 
+# Formset para documentos com extra=1 para permitir clonagem em JS se vazio
 AcaoDocumentoFormSet = inlineformset_factory(
     Acao,
     AcaoDocumento,
     form=AcaoDocumentoForm,
-    extra=0,
+    extra=1,
     can_delete=True
 )
 

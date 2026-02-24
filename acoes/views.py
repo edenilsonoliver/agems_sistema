@@ -99,22 +99,42 @@ class AcaoCreateView(PermissionRequiredMixin, ModernCreateView):
     success_url = reverse_lazy('acao_list')
     template_name = 'acoes/acao_form.html'
 
+    def get_initial(self):
+        initial = super().get_initial()
+        # Captura parâmetros da URL (útil quando vem de uma Obrigação específica)
+        obrigacao_id = self.request.GET.get('obrigacao')
+        if obrigacao_id:
+            initial['obrigacao'] = obrigacao_id
+        
+        tipo_acao_id = self.request.GET.get('tipo_acao')
+        if tipo_acao_id:
+            initial['tipo_acao'] = tipo_acao_id
+            
+        return initial
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         if self.request.method == 'POST':
             context['checklist_formset'] = ChecklistItemFormSet(self.request.POST, prefix='checklist_itens')
             context['docs_formset'] = AcaoDocumentoFormSet(self.request.POST, self.request.FILES, prefix='docs')
             context['fotos_formset'] = AcaoFotoFormSet(self.request.POST, self.request.FILES, prefix='fotos')
-            context['conformidade_formset'] = ConformidadeFormSet(self.request.POST, prefix='conformidades')
         else:
             context['checklist_formset'] = ChecklistItemFormSet(prefix='checklist_itens')
             context['docs_formset'] = AcaoDocumentoFormSet(prefix='docs')
             context['fotos_formset'] = AcaoFotoFormSet(prefix='fotos')
-            context['conformidade_formset'] = ConformidadeFormSet(prefix='conformidades')
+
+        # Popula obrigatoriedade no instance para exibição no template quando em criação
+        form = context.get('form')
+        if form and not form.instance.pk and form.initial.get('obrigacao'):
+            try:
+                from instrumentos.models import Obrigacao
+                form.instance.obrigacao = Obrigacao.objects.get(id=form.initial['obrigacao'])
+            except:
+                pass
+
 
         
         # Contexto para Fiscalização (Fase 5)
-        # Passar IDs dos tipos que são "Fiscalização" para lógica no frontend
         context['fiscalizacao_ids'] = list(TipoAcao.objects.filter(
             nome__icontains='Fiscalização'
         ).values_list('id', flat=True))
@@ -142,7 +162,6 @@ class AcaoCreateView(PermissionRequiredMixin, ModernCreateView):
             for obj in fotos_formset.deleted_objects:
                 obj.delete()
         except Exception as e:
-            from django.contrib import messages
             messages.error(self.request, f"Erro ao salvar arquivos: {str(e)}")
             print(f"CRITICAL ERROR SAVING ASSETS (CREATE): {str(e)}")
 
@@ -152,15 +171,15 @@ class AcaoCreateView(PermissionRequiredMixin, ModernCreateView):
         docs_formset = context['docs_formset']
         fotos_formset = context['fotos_formset']
         
-        is_valid = all([
-            form.is_valid(),
+        # O Django já validou o 'form' antes de chamar form_valid.
+        # Validamos apenas os formsets adicionais.
+        formsets_valid = all([
             checklist_formset.is_valid(),
             docs_formset.is_valid(),
             fotos_formset.is_valid()
         ])
 
-
-        if is_valid:
+        if formsets_valid:
             # Validar checklist obrigatório (mínimo 1 item válido)
             itens_validos = 0
             for c_form in checklist_formset:
@@ -174,47 +193,28 @@ class AcaoCreateView(PermissionRequiredMixin, ModernCreateView):
                     'É obrigatório adicionar pelo menos 1 item no checklist de tarefas operativas.'
                 )
                 return self.render_to_response(self.get_context_data(form=form))
+            
+            # Salvar objeto principal
             self.object = form.save()
             
-            # Checklist
+            # Salvar formsets
             checklist_formset.instance = self.object
             checklist_formset.save()
             
-            # Ativos
             self.save_assets(self.object, docs_formset, fotos_formset)
             
-            # Conformidades (Grupos)
-            conformidades = context['conformidade_formset']
-            conformidades.instance = self.object
-            conformidades.save()
-
-
             messages.success(self.request, f'Ação "{self.object.nome}" criada com sucesso!')
-            return super().form_valid(form)
+            return redirect(self.success_url)
         else:
-            # Tratamento de Erros Amigável (UX)
-            # Extrair mensagens de erro dos formsets para exibir no topo como toast/alert
-            
-            # Erros de Documentos
-            for form_erro in docs_formset.errors:
-                if form_erro:
-                    for campo, msgs in form_erro.items():
-                         for msg in msgs:
-                             # Se o erro for no campo arquivo, mostra mensagem específica
-                             prefixo = "Erro no arquivo: " if campo == 'arquivo' else ""
-                             messages.error(self.request, f"{prefixo}{msg}")
-
-            # Erros de Fotos
-            for form_erro in fotos_formset.errors:
-                if form_erro:
-                    for campo, msgs in form_erro.items():
+            # Coleta erros dos formsets para exibição
+            for fs in [docs_formset, fotos_formset]:
+                for error_dict in fs.errors:
+                    for field, msgs in error_dict.items():
                         for msg in msgs:
-                            messages.error(self.request, f"Erro na foto: {msg}")
-
-            if not docs_formset.errors and not fotos_formset.errors:
-                 messages.error(self.request, "Verifique os dados do formulário.")
-                 
+                            messages.error(self.request, f"Erro {fs.prefix}: {msg}")
+            
             return self.render_to_response(self.get_context_data(form=form))
+
 
 
 class AcaoUpdateView(PermissionRequiredMixin, ModernUpdateView):
@@ -230,7 +230,10 @@ class AcaoUpdateView(PermissionRequiredMixin, ModernUpdateView):
             context['checklist_formset'] = ChecklistItemFormSet(self.request.POST, instance=self.object, prefix='checklist_itens')
             context['docs_formset'] = AcaoDocumentoFormSet(self.request.POST, self.request.FILES, instance=self.object, prefix='docs')
             context['fotos_formset'] = AcaoFotoFormSet(self.request.POST, self.request.FILES, instance=self.object, prefix='fotos')
-            context['conformidade_formset'] = ConformidadeFormSet(self.request.POST, instance=self.object, prefix='conformidades')
+            if 'conformidades-TOTAL_FORMS' in self.request.POST:
+                context['conformidade_formset'] = ConformidadeFormSet(self.request.POST, instance=self.object, prefix='conformidades')
+            else:
+                context['conformidade_formset'] = ConformidadeFormSet(instance=self.object, prefix='conformidades')
         else:
             context['checklist_formset'] = ChecklistItemFormSet(instance=self.object, prefix='checklist_itens')
             context['docs_formset'] = AcaoDocumentoFormSet(instance=self.object, prefix='docs')
@@ -276,8 +279,6 @@ class AcaoUpdateView(PermissionRequiredMixin, ModernUpdateView):
         docs_formset = context['docs_formset']
         fotos_formset = context['fotos_formset']
 
-
-
         is_valid = all([
             form.is_valid(),
             checklist_formset.is_valid(),
@@ -300,6 +301,7 @@ class AcaoUpdateView(PermissionRequiredMixin, ModernUpdateView):
                     'É obrigatório adicionar pelo menos 1 item no checklist de tarefas operativas.'
                 )
                 return self.render_to_response(self.get_context_data(form=form))
+            
             self.object = form.save()
             
             # Checklist
@@ -309,34 +311,18 @@ class AcaoUpdateView(PermissionRequiredMixin, ModernUpdateView):
             # Ativos (Docs e Fotos)
             self.save_assets(self.object, docs_formset, fotos_formset)
             
-            # Conformidades
-            conformidades = context['conformidade_formset']
-            conformidades.instance = self.object
-            conformidades.save()
-
+            # Conformidades são geridas via AJAX na Fase 5
+            # Removido conformidades.save() para evitar crash
 
             messages.success(self.request, f'Ação "{self.object.nome}" atualizada com sucesso!')
-            return super().form_valid(form)
+            return redirect(self.success_url)
         else:
-            # Tratamento de Erros Amigável (UX) - UpdateView
-            
-            # Erros de Documentos
-            for form_erro in docs_formset.errors:
-                if form_erro:
-                    for campo, msgs in form_erro.items():
-                         for msg in msgs:
-                             prefixo = "Erro no arquivo: " if campo == 'arquivo' else ""
-                             messages.error(self.request, f"{prefixo}{msg}")
-
-            # Erros de Fotos
-            for form_erro in fotos_formset.errors:
-                if form_erro:
-                    for campo, msgs in form_erro.items():
+            # Tratamento de Erros
+            for fs in [docs_formset, fotos_formset]:
+                for error_dict in fs.errors:
+                    for field, msgs in error_dict.items():
                         for msg in msgs:
-                            messages.error(self.request, f"Erro na foto: {msg}")
-
-            if not docs_formset.errors and not fotos_formset.errors:
-                 messages.error(self.request, "Verifique os dados do formulário.")
+                            messages.error(self.request, f"Erro {fs.prefix}: {msg}")
 
             return self.render_to_response(self.get_context_data(form=form))
 

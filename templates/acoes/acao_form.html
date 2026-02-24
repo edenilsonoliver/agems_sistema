@@ -113,28 +113,33 @@
             <div class="card-body p-4">
                 <form method="post" enctype="multipart/form-data" novalidate id="acao-form">
                     {% csrf_token %}
+                    <input type="hidden" name="obrigacao" value="{{ form.obrigacao.value|default:'' }}">
+                    {% if form.instance.obrigacao %}
+                    <input type="hidden" name="obrigacao" value="{{ form.instance.obrigacao.id }}">
+                    {% endif %}
 
+
+                    {% if form.is_bound %}
                     {% if form.errors or checklist_formset.non_form_errors or docs_formset.non_form_errors or
                     fotos_formset.non_form_errors %}
                     <div class="alert alert-danger alert-dismissible fade show" role="alert">
                         <i class="bi bi-exclamation-triangle me-2"></i>
                         <strong>Erro!</strong> Por favor, verifique os dados preenchidos.
                         <ul class="mb-0 mt-2 small">
-                            {% if form.errors %}
-                            <li>Dados Gerais: {{ form.non_field_errors }} Verifique os campos marcados em vermelho.</li>
+                            {% if form.errors %}<li>Dados Gerais: {{ form.non_field_errors }} Verifique os campos
+                                marcados em vermelho.</li>{% endif %}
+                            {% if checklist_formset.non_form_errors %}<li>Checklist: {{
+                                checklist_formset.non_form_errors }}</li>{% endif %}
+                            {% if docs_formset.non_form_errors %}<li>Documentos: {{ docs_formset.non_form_errors }}</li>
                             {% endif %}
-
-                            {% if checklist_formset.non_form_errors %}
-                            <li>Checklist: {{ checklist_formset.non_form_errors }}</li>
-                            {% endif %}
-
-                            {% if docs_formset.non_form_errors %}
-                            <li>Documentos: {{ docs_formset.non_form_errors }}</li>
-                            {% endif %}
+                            {% if fotos_formset.non_form_errors %}<li>Fotos: {{ fotos_formset.non_form_errors }}</li>{%
+                            endif %}
                         </ul>
                         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                     </div>
                     {% endif %}
+                    {% endif %}
+
 
                     <p class="small text-muted mb-4">
                         <i class="bi bi-info-circle me-1"></i>
@@ -150,409 +155,296 @@
                         <li class="nav-item" role="presentation">
                             <button class="nav-link" id="docs-tab" data-bs-toggle="tab" data-bs-target="#docs"
                                 type="button" role="tab"><i
-                                    class="bi bi-paperclip me-2"></i>Documentos/Evidências</button>
+                                    class="bi bi-file-earmark-arrow-up me-2"></i>Documentação</button>
                         </li>
-                        <li class="nav-item" role="presentation" id="fotos-tab-item">
+                        <li class="nav-item" role="presentation">
                             <button class="nav-link" id="fotos-tab" data-bs-toggle="tab" data-bs-target="#fotos"
-                                type="button" role="tab"><i class="bi bi-camera me-2"></i>Fotos/Evidências de
-                                Campo</button>
+                                type="button" role="tab"><i class="bi bi-camera me-2"></i>Fotos/Evidências</button>
                         </li>
-                        <li class="nav-item" role="presentation" id="conformidades-tab-item" style="display: none;">
-                            <button class="nav-link" id="conformidades-tab" data-bs-toggle="tab"
-                                data-bs-target="#conformidades-content" type="button" role="tab"><i
-                                    class="bi bi-check2-square me-2"></i>Conformidades</button>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="mapa-tab" data-bs-toggle="tab" data-bs-target="#mapa"
+                                type="button" role="tab"><i class="bi bi-geo-alt me-2"></i>Mapa/Georef</button>
                         </li>
-                        <li class="nav-item" role="presentation" id="mapa-tab-item" style="display: none;">
 
-                            <button class="nav-link" id="mapa-tab" data-bs-toggle="tab" data-bs-target="#mapa-content"
-                                type="button" role="tab"><i class="bi bi-geo-alt me-2"></i>Mapa de Ocorrências</button>
+                        <!-- ABA CONFORMIDADES (DINÂMICA) -->
+                        <li class="nav-item" role="presentation" id="conformidades-nav-item" style="display: none;">
+                            <button class="nav-link" id="conformidades-tab" data-bs-toggle="tab"
+                                data-bs-target="#conformidades" type="button" role="tab">
+                                <i class="bi bi-list-check me-2"></i>Conformidades
+                            </button>
                         </li>
                     </ul>
 
-                    <div class="tab-content" id="acaoTabsContent">
+                    <div class="tab-content">
+                        <!-- Aba Dados Gerais -->
+                        <div class="tab-pane fade show active" id="dados" role="tabpanel">
+                            <div class="row">
+                                <div class="col-md-12 mb-4">
+                                    <div class="bg-light p-3 rounded border">
+                                        <h6 class="text-primary fw-bold mb-3"><i
+                                                class="bi bi-info-circle me-2"></i>Sobre
+                                            esta Ação</h6>
+                                        <div class="row g-3">
+                                            <div class="col-md-4">
+                                                <label class="form-label fw-bold small">Instrumento</label>
+                                                <div class="p-2 bg-white border rounded">
+                                                    {{form.instance.obrigacao.instrumento.numero|default:"-"}}
+                                                </div>
+                                            </div>
+                                            <div class="col-md-8">
+                                                <label class="form-label fw-bold small">Obrigação Vinculada</label>
+                                                <div class="p-2 bg-white border rounded">
+                                                    {{form.instance.obrigacao.titulo|default:"-"}}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
 
-                        <!-- ABA 1: Dados Gerais e Checklist -->
-                        <div class="tab-pane fade show active" id="dados" role="tabpanel" aria-labelledby="dados-tab">
-                            {{form|crispy}}
+                                <div class="col-md-6">
+                                    {{ form.nome|as_crispy_field }}
+                                    {{ form.tipo_acao|as_crispy_field }}
+                                    <div class="row">
+                                        <div class="col-md-6">{{ form.data_inicio|as_crispy_field }}</div>
+                                        <div class="col-md-6">{{ form.data_fim|as_crispy_field }}</div>
+                                    </div>
+
+
+
+                                </div>
+                                <div class="col-md-6">
+                                    {{ form.responsavel|as_crispy_field }}
+                                    {{ form.status|as_crispy_field }}
+                                    {{ form.executores|as_crispy_field }}
+
+                                </div>
+                                <div class="col-12 mt-3">
+                                    {{ form.descricao|as_crispy_field }}
+                                </div>
+                            </div>
 
                             <hr class="my-4">
 
-                            <h5 class="mt-3">
-                                <i class="bi bi-list-check me-2"></i> Checklist de Tarefas Operativas
-                            </h5>
-                            <p class="text-muted small">Defina o passo-a-passo detalhado para execução desta Ação.
-                                Arraste para reordenar.</p>
+                            <!-- Checklist -->
+                            <h5 class="section-title text-primary"><i class="bi bi-card-checklist me-2"></i>Checklist de
+                                Tarefas Operativas</h5>
+                            <p class="text-muted small mb-4">Defina os itens técnicos que serão validados nesta ação de
+                                campo.</p>
 
-                            <div id="checklist-toggle-container" {% if checklist_formset.forms %}style="display:none;"
-                                {% else %}style="display:block;" {% endif %}>
-                                <button type="button" class="btn btn-sm btn-outline-primary" id="show-checklist-btn">
-                                    <i class="bi bi-plus-circle me-1"></i> Adicionar Itens de Tarefa
+                            {{ checklist_formset.management_form }}
+                            <div class="table-responsive">
+                                <table class="table table-sm table-hover border rounded">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Tarefa/Item de Verificação</th>
+                                            <th width="120" class="text-center">Concluído</th>
+                                            <th width="100" class="text-center">Excluir</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="checklist-container">
+                                        {% for c_form in checklist_formset %}
+                                        <tr class="checklist-item">
+                                            <td>
+                                                {{ c_form.id }}
+                                                {{ c_form.ordem }}
+                                                {{ c_form.nome|as_crispy_field }}
+
+                                            </td>
+                                            <td class="text-center">{{ c_form.concluido|as_crispy_field }}</td>
+                                            <td class="text-center">{{ c_form.DELETE|as_crispy_field }}</td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+
+                                </table>
+                            </div>
+                            <button type="button" class="btn btn-outline-primary btn-sm mt-2" id="add-checklist-item">
+                                <i class="bi bi-plus-circle me-1"></i>Adicionar Tarefa
+                            </button>
+                        </div>
+
+                        <!-- Aba Docs -->
+                        <div class="tab-pane fade" id="docs" role="tabpanel">
+                            <div class="mb-4">
+                                <h5 class="text-primary"><i class="bi bi-file-earmark-arrow-up me-2"></i>Documentos e
+                                    Evidências Digitais</h5>
+                                <p class="text-muted small">Anexe ofícios, relatórios externos ou qualquer documento
+                                    relevante.</p>
+                            </div>
+
+                            {{ docs_formset.management_form }}
+                            <div id="docs-zone"
+                                class="upload-drop-zone border-dashed p-5 text-center bg-light rounded mb-4"
+                                style="cursor: pointer;">
+                                <i class="bi bi-cloud-arrow-up display-4 text-primary"></i>
+                                <h6 class="mt-2">Arraste arquivos ou clique para selecionar</h6>
+                                <p class="small text-muted mb-0">PDF, DOCX, XLSX ou Imagens</p>
+                                <input type="file" id="docs-input-hidden" multiple style="display: none;">
+                            </div>
+
+                            <div class="row row-cols-1 row-cols-md-2 g-3" id="docs-container">
+                                {% for d_form in docs_formset %}
+                                <div class="col doc-item-card">
+                                    <div class="card h-100 shadow-sm border">
+                                        <div class="card-body p-3">
+                                            <div class="d-flex align-items-center">
+                                                <div class="doc-icon me-3">
+                                                    {% if d_form.instance.pk %}
+                                                    <i class="bi bi-file-earmark-check fs-2 text-success"></i>
+                                                    {% else %}
+                                                    <i class="bi bi-file-earmark-plus fs-2 text-primary"></i>
+                                                    {% endif %}
+                                                </div>
+                                                <div class="flex-grow-1 overflow-hidden">
+                                                    {{ d_form.id }}
+                                                    {{ d_form.descricao|as_crispy_field }}
+
+                                                    {{ d_form.arquivo|as_crispy_field }}
+
+                                                    {% if d_form.instance.pk %}
+                                                    <div class="small text-muted mt-1 text-truncate">
+                                                        Arquivo atual: <a href="{{ d_form.instance.arquivo.url }}"
+                                                            target="_blank"
+                                                            class="text-decoration-none">{{d_form.instance.arquivo.name}}</a>
+                                                    </div>
+                                                    {% endif %}
+                                                </div>
+                                                <div class="ms-2">
+                                                    {{ d_form.DELETE|as_crispy_field }}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+
+                        </div>
+
+                        <!-- Aba Fotos -->
+                        <div class="tab-pane fade" id="fotos" role="tabpanel">
+                            <div class="mb-4 d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h5 class="text-primary"><i class="bi bi-camera me-2"></i>Galeria de Campo</h5>
+                                    <p class="text-muted small mb-0">Fotos enviadas via aplicativo ou anexadas aqui.</p>
+                                </div>
+                                <button type="button" class="btn btn-primary" id="btn-sync-fotos" title="Sincronizar">
+                                    <i class="bi bi-arrow-repeat me-1"></i>Sincronizar
                                 </button>
                             </div>
 
-                            <div id="checklist-container" {% if not checklist_formset.forms %}style="display:none;" {%
-                                else %}style="display:block;" {% endif %}>
-                                {{checklist_formset.management_form}}
+                            {{ fotos_formset.management_form }}
+                            <div id="fotos-zone"
+                                class="upload-drop-zone border-dashed p-4 text-center bg-light rounded mb-4"
+                                style="cursor: pointer;">
+                                <i class="bi bi-camera-fill fs-1 text-secondary"></i>
+                                <h6 class="mt-2">Adicionar novas fotos</h6>
+                                <input type="file" id="fotos-input-hidden" multiple accept="image/*"
+                                    style="display: none;">
+                            </div>
 
-                                <div id="checklist-items">
-                                    {% for c_form in checklist_formset %}
-                                    <div class="checklist-item mb-2 d-flex align-items-center gap-2 bg-white p-2 rounded border"
-                                        data-form-index="{{forloop.counter0}}">
-                                        <div class="drag-handle px-2 text-muted border-end" style="cursor: grab;">
-                                            <i class="bi bi-grip-vertical fs-5"></i>
+                            <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-3"
+                                id="fotos-container">
+                                {% for f_form in fotos_formset %}
+                                <div class="col foto-item-wrapper">
+                                    <div class="card h-100 shadow-sm border relative">
+                                        {% if f_form.instance.imagem %}
+                                        <img src="{{ f_form.instance.imagem.url }}" class="card-img-top"
+                                            style="height: 150px; object-fit: cover;">
+                                        {% else %}
+                                        <div class="bg-secondary bg-opacity-10 d-flex align-items-center justify-content-center"
+                                            style="height: 150px;">
+                                            <i class="bi bi-image fs-1 text-muted"></i>
                                         </div>
-                                        {{ c_form.id }}
-                                        {{ c_form.ordem }}
+                                        {% endif %}
 
-                                        <input type="text" name="{{c_form.nome.html_name}}"
-                                            id="{{c_form.nome.id_for_label}}" value="{{c_form.nome.value|default:''}}"
-                                            class="form-control" placeholder="Ex: Enviar ofício, Conferir documento...">
+                                        <div class="card-body p-2">
+                                            {{ f_form.id }}
+                                            {{ f_form.imagem|as_crispy_field }}
+                                            {{ f_form.legenda|as_crispy_field }}
 
-                                        <div class="form-check">
-                                            <input type="checkbox" name="{{c_form.concluido.html_name}}"
-                                                id="{{c_form.concluido.id_for_label}}" class="form-check-input"
-                                                {{c_form.concluido.value|yesno:"checked," }}>
-                                            <label class="form-check-label small text-muted"
-                                                for="{{c_form.concluido.id_for_label}}">
-                                                Concluído
-                                            </label>
+                                            <div class="d-flex justify-content-between align-items-center mt-2">
+                                                <div class="form-check m-0">{{ f_form.DELETE }} <label
+                                                        class="small text-danger">Excluir</label></div>
+                                                {% if f_form.instance.coordenadas %}
+                                                <span class="badge bg-info text-dark" style="font-size: 0.65rem;">
+                                                    <i class="bi bi-geo-alt"></i> GPS
+                                                </span>
+                                                {% endif %}
+                                            </div>
                                         </div>
-
-                                        <input type="checkbox" name="{{c_form.DELETE.html_name}}"
-                                            id="{{c_form.DELETE.id_for_label}}" class="d-none"
-                                            {{c_form.DELETE.value|yesno:"checked," }}>
-
-                                        <button type="button"
-                                            class="btn btn-sm btn-outline-danger remove-checklist-item"
-                                            title="Remover item">
-                                            <i class="bi bi-trash"></i>
-                                        </button>
                                     </div>
-                                    {% endfor %}
                                 </div>
+                                {% endfor %}
+                            </div>
+                        </div>
 
-                                <button type="button" class="btn btn-sm btn-outline-secondary mt-2"
-                                    id="add-checklist-item">
-                                    <i class="bi bi-plus me-1"></i> Adicionar tarefa operacional
-                                </button>
-
-                                <!-- Visualizador de Percentual Automático -->
-                                <div id="percentual-display" class="mt-4 p-3 bg-light rounded border"
-                                    style="display:none;">
-                                    <div class="d-flex justify-content-between align-items-center mb-2">
-                                        <span class="fw-bold text-muted">
-                                            <i class="bi bi-percent me-2"></i>Progresso da Ação
-                                        </span>
-                                        <span id="percentual-value" class="badge bg-primary fs-6">0%</span>
-                                    </div>
-                                    <div class="progress" style="height: 25px;">
-                                        <div id="percentual-bar"
-                                            class="progress-bar progress-bar-striped progress-bar-animated"
-                                            role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0"
-                                            aria-valuemax="100">
-                                            0%
+                        <!-- Aba Mapa -->
+                        <div class="tab-pane fade" id="mapa" role="tabpanel">
+                            <div class="row">
+                                <div class="col-md-9">
+                                    <div id="mapa-fiscalizacao" class="shadow-sm border"></div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="card border shadow-sm">
+                                        <div class="card-header bg-light"><i class="bi bi-list-stars me-2"></i>Pontos no
+                                            Mapa</div>
+                                        <div class="card-body p-0">
+                                            <div class="list-group list-group-flush" id="lista-marcadores"
+                                                style="max-height: 450px; overflow-y: auto;">
+                                                <div class="text-center py-4 text-muted fst-italic">Carregando mapa...
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
-                                    <small class="text-muted d-block mt-2">
-                                        <i class="bi bi-info-circle me-1"></i>
-                                        Calculado automaticamente com base nos itens marcados como concluídos
-                                    </small>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- ABA 2: Documentos -->
-                        <div class="tab-pane fade" id="docs" role="tabpanel" aria-labelledby="docs-tab">
-                            <div class="upload-zone" id="docs-upload-zone">
-                                <i class="bi bi-cloud-arrow-up"></i>
-                                <h5>Carregar Documentos</h5>
-                                <p class="text-muted">Arraste arquivos aqui ou clique para selecionar (PDF, DOCX, XLSX)
-                                </p>
-                                <input type="file" id="docs-input" multiple style="display: none;"
-                                    accept=".pdf,.docx,.xlsx,.doc,.xls,.txt,.zip">
-                            </div>
-
-                            <div class="table-responsive mt-4">
-                                <table class="table asset-table align-middle">
-                                    <thead>
-                                        <tr>
-                                            <th style="width: 50px;">Tipo</th>
-                                            <th>Nome do Arquivo</th>
-                                            <th>Descrição do Documento</th>
-                                            <th>Enviado por</th>
-                                            <th>Data</th>
-                                            <th style="width: 100px;" class="text-center">Ações</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="docs-table-body">
-                                        <!-- Preenchido via JS -->
-                                    </tbody>
-                                </table>
-                            </div>
-
-                            <!-- Formset Oculto (Persistência) -->
-                            <div id="docs-formset-container" style="display: none;">
-                                {{ docs_formset.management_form }}
-                                <div id="docs-hidden-forms">
-                                    {% for d_form in docs_formset %}
-                                    <div class="hidden-doc-form" data-index="{{ forloop.counter0 }}"
-                                        data-filename="{% if d_form.instance.arquivo %}{{ d_form.instance.arquivo.name }}{% endif %}"
-                                        data-url="{% if d_form.instance.arquivo %}{{ d_form.instance.arquivo.url }}{% endif %}"
-                                        data-usuario="{% if d_form.instance.usuario %}{{ d_form.instance.usuario.get_full_name|default:d_form.instance.usuario.username }}{% endif %}"
-                                        data-data="{{ d_form.instance.data_envio|date:'d/m/Y H:i' }}">
-                                        {{ d_form.id }}
-                                        {{ d_form.arquivo }}
-                                        {{ d_form.descricao }}
-                                        {{ d_form.DELETE }}
-                                    </div>
-                                    {% endfor %}
-                                </div>
-                                <div id="empty-doc-form-template">
-                                    {{ docs_formset.empty_form.id }}
-                                    {{ docs_formset.empty_form.arquivo }}
-                                    {{ docs_formset.empty_form.descricao }}
-                                    {{ docs_formset.empty_form.DELETE }}
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- ABA 3: Fotos -->
-                        <div class="tab-pane fade" id="fotos" role="tabpanel" aria-labelledby="fotos-tab">
-                            <div class="upload-zone" id="fotos-upload-zone">
-                                <i class="bi bi-camera"></i>
-                                <h5>Capturar Fotos</h5>
-                                <p class="text-muted">Arraste fotos aqui ou clique para selecionar (JPG, PNG)</p>
-                                <input type="file" id="fotos-input" multiple style="display: none;"
-                                    accept="image/jpeg,image/png,image/webp,image/heic,image/heif">
-                            </div>
-
-                            <div class="table-responsive mt-4">
-                                <table class="table asset-table align-middle">
-                                    <thead>
-                                        <tr>
-                                            <th style="width: 80px;">Miniatura</th>
-                                            <th>Descrição da Foto</th>
-                                            <th>GPS (Coordenadas)</th>
-                                            <th>Data/Hora Captura</th>
-                                            <th>Enviado por</th>
-                                            <th style="width: 100px;" class="text-center">Ações</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="fotos-table-body">
-                                        <!-- Preenchido via JS -->
-                                    </tbody>
-                                </table>
-                            </div>
-
-                            <!-- Formset Oculto (Persistência) -->
-                            <div id="fotos-formset-container" style="display: none;">
-                                {{ fotos_formset.management_form }}
-                                <div id="fotos-hidden-forms">
-                                    {% for f_form in fotos_formset %}
-                                    <div class="hidden-foto-form" data-index="{{ forloop.counter0 }}"
-                                        data-coordenadas="{{ f_form.instance.coordenadas|default:'' }}"
-                                        data-registro="{{ f_form.instance.data_registro|date:'d/m/Y H:i'|default:'' }}"
-                                        data-envio="{{ f_form.instance.data_envio|date:'d/m/Y H:i' }}"
-                                        data-usuario="{% if f_form.instance.usuario %}{{ f_form.instance.usuario.get_full_name|default:f_form.instance.usuario.username }}{% endif %}">
-                                        {{ f_form.id }}
-                                        {{ f_form.imagem }}
-                                        {{ f_form.legenda }}
-                                        {{ f_form.coordenadas }}
-                                        {{ f_form.data_registro }}
-                                        {{ f_form.DELETE }}
-                                    </div>
-                                    {% endfor %}
-                                </div>
-                                <div id="empty-foto-form-template">
-                                    {{ fotos_formset.empty_form.id }}
-                                    {{ fotos_formset.empty_form.imagem }}
-                                    {{ fotos_formset.empty_form.legenda }}
-                                    {{ fotos_formset.empty_form.coordenadas }}
-                                    {{ fotos_formset.empty_form.data_registro }}
-                                    {{ fotos_formset.empty_form.DELETE }}
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- ABA 4: Conformidades (FASE 5) -->
-                        <div class="tab-pane fade" id="conformidades-content" role="tabpanel"
-                            aria-labelledby="conformidades-tab">
-                            <div class="row mb-4">
-                                <div class="col-md-8">
-                                    <h5 class="fw-bold"><i class="bi bi-check2-square me-2"></i>Verificação de
+                        <!-- Aba Conformidades (Carregada via AJAX na Fase 5) -->
+                        <div class="tab-pane fade" id="conformidades" role="tabpanel">
+                            <div class="mb-4 d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h5 class="text-primary"><i class="bi bi-list-check me-2"></i>Verificação de
                                         Conformidade</h5>
-                                    <p class="text-muted small">Gerencie os itens de verificação para esta fiscalização.
-                                        Clique no ícone de status para alternar entre: Neutro, Conforme e Não Conforme.
+                                    <p class="text-muted small mb-0">Avaliação baseada em templates técnicos e normas.
                                     </p>
                                 </div>
-                                <div class="col-md-4 text-end">
-                                    {% if object %}
-                                    <div class="btn-group btn-group-sm">
-                                        <button type="button" class="btn btn-outline-primary"
-                                            id="btn-carregar-template">
-                                            <i class="bi bi-list-check me-1"></i> Template
-                                        </button>
-                                        <button type="button" class="btn btn-outline-primary"
-                                            id="btn-add-conformidade-grupo">
-                                            <i class="bi bi-folder-plus me-1"></i> Novo Grupo
-                                        </button>
-                                    </div>
-                                    {% endif %}
-                                </div>
-
-                            </div>
-
-                            <div id="conformidades-list">
-                                <!-- Lista de Conformidades (Grupos) carregada via AJAX ou Formset -->
-                                <div class="text-center py-5" id="conformidades-loader">
-                                    <div class="spinner-border text-primary" role="status">
-                                        <span class="visually-hidden">Carregando...</span>
-                                    </div>
-                                    <p class="text-muted mt-2">Carregando itens de conformidade...</p>
+                                <div class="d-flex gap-2">
+                                    <button type="button" class="btn btn-outline-primary btn-sm"
+                                        id="btn-carregar-template">
+                                        <i class="bi bi-file-earmark-text me-1"></i>Carregar Template
+                                    </button>
+                                    <button type="button" class="btn btn-primary btn-sm"
+                                        id="btn-add-conformidade-grupo">
+                                        <i class="bi bi-plus-circle me-1"></i>Novo Grupo
+                                    </button>
                                 </div>
                             </div>
 
-                            {% if not object %}
-                            <div class="alert alert-warning shadow-sm border-0 d-flex align-items-center">
-                                <i class="bi bi-exclamation-circle-fill fs-4 me-3"></i>
-                                <div>
-                                    <strong>Ação ainda não salva.</strong><br>
-                                    Salve os dados básicos da ação primeiro para poder gerenciar os itens de
-                                    conformidade detalhadamente.
-                                </div>
-                            </div>
-                            {% endif %}
-                        </div>
-
-                        <!-- ABA 5: Mapa de Ocorrências (FASE 5) -->
-                        <div class="tab-pane fade" id="mapa-content" role="tabpanel" aria-labelledby="mapa-tab">
-
-                            <div class="alert alert-info shadow-sm border-0 d-flex align-items-center mb-4">
-                                <i class="bi bi-info-circle-fill fs-4 me-3"></i>
-                                <div>
-                                    <strong>Mapa Interativo de Fiscalização</strong><br>
-                                    Clique em qualquer local do mapa para registrar uma ocorrência ou ponto de
-                                    interesse.
-                                    Você poderá adicionar fotos e descrições a cada ponto.
-                                </div>
-
+                            <div id="conformidades-loader" class="text-center py-5" style="display: none;">
+                                <div class="spinner-border text-primary" role="status"></div>
+                                <p class="text-muted mt-2">Carregando dados de fiscalização...</p>
                             </div>
 
-                            <!-- Controle de Camadas -->
-                            <div class="card mb-3 border shadow-sm">
-                                <div class="card-header bg-light py-2">
-                                    <h6 class="mb-0 fw-bold text-primary small"><i class="bi bi-layers me-1"></i>Camadas
-                                        de Referência</h6>
-                                </div>
-                                <div class="card-body p-2">
-                                    <div id="camadas-referencia-container" class="d-flex flex-wrap gap-2">
-                                        <span class="text-muted small fst-italic">Carregando camadas...</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Container do Mapa -->
-                            <div class="card border shadow-sm mb-4">
-                                <div class="card-body p-0">
-                                    <div id="mapa-fiscalizacao" style="height: 600px; width: 100%; z-index: 1;"></div>
-                                </div>
-                            </div>
-
-                            <!-- LISTA DE PINS ABAIXO DO MAPA -->
-                            <div class="mt-4">
-                                <h6 class="fw-bold mb-3"><i class="bi bi-list-ul me-2"></i>Lista de Ocorrências no Mapa
-                                </h6>
-                                <div class="table-responsive">
-                                    <table
-                                        class="table table-sm table-hover border align-middle shadow-sm bg-white rounded overflow-hidden">
-                                        <thead class="table-light">
-                                            <tr>
-                                                <th>Título/Ponto</th>
-                                                <th>Descrição</th>
-                                                <th>Coordenadas</th>
-                                                <th class="text-center">Evidências</th>
-                                                <th class="text-center">Ações</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="lista-marcadores-body">
-                                            <tr>
-                                                <td colspan="5" class="text-center py-3 text-muted">Carregando
-                                                    marcadores...
-                                                </td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-
-                            <div class="mt-3 text-muted small">
-                                <i class="bi bi-cursor me-1"></i>
-                                Coordenadas capturadas via mapa serão automaticamente vinculadas às fotos registradas em
-                                cada ponto.
-
+                            <div id="conformidades-list" class="mt-3">
+                                <!-- Preenchido dinamicamente -->
                             </div>
                         </div>
 
-                        <hr class="my-4">
+                    </div> <!-- End Tab Content -->
 
-                        <div class="d-flex gap-2">
-                            <button type="submit" class="btn btn-primary">
-                                <i class="bi bi-check-circle me-2"></i> Salvar
-                            </button>
-                            <button type="button" class="btn btn-outline-secondary" onclick="window.history.back()">
-                                <i class="bi bi-x-circle me-2"></i> Cancelar
-                            </button>
-                            {% if object %}
-                            <button type="button" class="btn btn-outline-danger ms-auto" data-bs-toggle="modal"
-                                data-bs-target="#deleteModal">
-                                <i class="bi bi-trash me-2"></i> Excluir
-                            </button>
-                            {% endif %}
+                    <div class="fixed-bottom bg-white border-top shadow-lg py-3" style="left: 260px;">
+                        <div class="container-fluid px-4">
+                            <div class="d-flex justify-content-end gap-3">
+                                <a href="{{list_url}}" class="btn btn-light"><i
+                                        class="bi bi-x-circle me-2"></i>Cancelar</a>
+                                <button type="submit" class="btn btn-primary px-4"><i
+                                        class="bi bi-check-circle me-2"></i>Salvar Ação</button>
+                            </div>
                         </div>
+                    </div>
                 </form>
-            </div>
-        </div>
-    </div>
-</div>
-
-{% if object %}
-<div class="modal fade" id="deleteModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Confirmar Exclusão</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <p>Tem certeza que deseja excluir este registro?</p>
-                <p class="text-danger"><strong>Esta ação não pode ser desfeita!</strong></p>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                <form method="post" action="{% url 'acao_delete' object.pk %}" class="d-inline">
-                    {% csrf_token %}
-                    <button type="submit" class="btn btn-danger">Excluir</button>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
-{% endif %}
-
-<!-- Modal de Validação de Datas -->
-<div class="modal fade" id="dateValidationModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header text-white bg-danger">
-                <h5 class="modal-title"><i class="bi bi-exclamation-triangle-fill me-2"></i>Atenção</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <p class="mb-0 fw-bold">Não é possível salvar com DATA DE FIM anterior a DATA DE INÍCIO.</p>
-                <p class="text-muted small mt-2">Por favor, corrija as datas e tente novamente.</p>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Entendi</button>
             </div>
         </div>
     </div>
@@ -560,348 +452,209 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function () {
-        const form = document.getElementById('acao-form');
-        const modalEl = document.getElementById('dateValidationModal');
-        const modal = new bootstrap.Modal(modalEl);
-
-        if (form) {
-            form.addEventListener('submit', function (event) {
-                const dataInicio = document.getElementById('id_data_inicio')?.value;
-                const dataFim = document.getElementById('id_data_fim')?.value;
-
-                if (dataInicio && dataFim) {
-                    if (new Date(dataFim) < new Date(dataInicio)) {
-                        event.preventDefault();
-                        modal.show();
-                    }
-                }
-            });
-        }
-    });
-</script>
-
-{{ fiscalizacao_ids|json_script:"fiscalizacao-ids-data" }}
-
-<script>
-    // ===== FASE 5: Interface Condicional para Fiscalização =====
-    document.addEventListener('DOMContentLoaded', function () {
-        // IDs vindos do Backend via json_script (mais seguro)
-        const fiscalizacaoIds = JSON.parse(document.getElementById('fiscalizacao-ids-data').textContent);
-
+        const acaoId = "{% if object %}{{object.id}}{% else %}null{% endif %}";
         const tipoAcaoSelect = document.getElementById('id_tipo_acao');
-        const fotosTabItem = document.getElementById('fotos-tab-item');
-        const conformidadesTabItem = document.getElementById('conformidades-tab-item');
-        const mapaTabItem = document.getElementById('mapa-tab-item');
-
-        function toggleFiscalizacaoTabs() {
-            if (!tipoAcaoSelect) return;
-
-            const selectedValue = parseInt(tipoAcaoSelect.value);
-            const isFiscalizacao = fiscalizacaoIds.includes(selectedValue);
-
-            console.log("DEBUG: Fiscalização Check:", isFiscalizacao);
-
-            if (fotosTabItem) fotosTabItem.style.display = isFiscalizacao ? 'block' : 'none';
-            if (conformidadesTabItem) conformidadesTabItem.style.display = isFiscalizacao ? 'block' : 'none';
-            if (mapaTabItem) mapaTabItem.style.display = isFiscalizacao ? 'block' : 'none';
-
-            // Se as abas estavam ativas e sumiram, volta para Dados
-            if (!isFiscalizacao) {
-                if (fotosTabItem?.querySelector('.active') ||
-                    conformidadesTabItem?.querySelector('.active') ||
-                    mapaTabItem?.querySelector('.active')) {
-
-                    const dadosTabBtn = document.getElementById('dados-tab');
-                    if (dadosTabBtn) {
-                        const tab = new bootstrap.Tab(dadosTabBtn);
-                        tab.show();
-                    }
-                }
-            }
-
-            // Inicializar mapa se a aba for visível
-            if (isFiscalizacao && typeof initMapa === 'function') {
-                // Timeout para garantir que o container está pronto se a aba for aberta
-                document.getElementById('mapa-tab').addEventListener('shown.bs.tab', function () {
-                    initMapa();
-                }, { once: true });
-            }
-        }
-
-        if (tipoAcaoSelect) {
-            tipoAcaoSelect.addEventListener('change', toggleFiscalizacaoTabs);
-            toggleFiscalizacaoTabs();
-        }
-    });
-</script>
+        const fiscalizacaoIds = {{ fiscalizacao_ids|default:"[]" }};
 
 
-<script>
-    // ===== LÓGICA DO MAPA DE FISCALIZAÇÃO (LEAFLET) =====
-    let leafletMap = null;
-    let marcadoresLayer = null;
-    let camadasReferencia = {}; // Armazena grupos de camadas de referência
-    const acaoId = "{{ object.id|default:'' }}";
 
-    function initMapa() {
-        if (leafletMap) {
-            leafletMap.invalidateSize();
-            return;
-        }
 
-        if (!document.getElementById('mapa-fiscalizacao')) return;
 
-        // Centralizar em MS por padrão se não houver marcadores
-        const defaultLat = -20.4697;
-        const defaultLng = -54.6201;
 
-        leafletMap = L.map('mapa-fiscalizacao').setView([defaultLat, defaultLng], 13);
 
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; OpenStreetMap contributors'
-        }).addTo(leafletMap);
 
-        // Inicializar camadas de referência
-        carregarCamadasDisponiveis();
 
-        marcadoresLayer = L.layerGroup().addTo(leafletMap);
 
-        // Carregar marcadores existentes se a ação já estiver salva
-        if (acaoId) {
-            carregarMarcadores();
+    // --- GESTÃO DE ABAS DINÂMICAS ---
+    function updateTabsVisibility() {
+        if (!tipoAcaoSelect) return;
+
+        const selectedValue = tipoAcaoSelect.value;
+        const selectedType = parseInt(selectedValue);
+        const conformidadesTab = document.getElementById('conformidades-nav-item');
+
+        console.log("Tipo Selecionado:", selectedValue, " (Parsed:", selectedType, ")");
+        console.log("IDs de Fiscalização:", fiscalizacaoIds);
+
+        if (fiscalizacaoIds.includes(selectedType)) {
+            console.log("Deveria mostrar a aba!");
+            if (conformidadesTab) conformidadesTab.style.display = 'block';
         } else {
-            L.popup()
-                .setLatLng([defaultLat, defaultLng])
-                .setContent('<div class="p-2"><strong>Aviso:</strong> Salve a Ação primeiro para poder registrar pontos no mapa.</div>')
-                .openOn(leafletMap);
+            if (conformidadesTab) conformidadesTab.style.display = 'none';
         }
+    }
 
-        // Adicionar novo marcador ao clicar
-        leafletMap.on('click', function (e) {
-            if (!acaoId) return;
-            showNovoMarcadorPopup(e.latlng);
+
+    if (tipoAcaoSelect) {
+        tipoAcaoSelect.addEventListener('change', updateTabsVisibility);
+        updateTabsVisibility(); // Check on load
+    }
+
+
+    // --- CHECKLIST DINÂMICO ---
+    const addChecklistItemBtn = document.getElementById('add-checklist-item');
+    const checklistContainer = document.getElementById('checklist-container');
+    const totalFormsChecklist = document.getElementById('id_checklist_itens-TOTAL_FORMS');
+
+    if (addChecklistItemBtn) {
+        addChecklistItemBtn.addEventListener('click', function () {
+            const count = parseInt(totalFormsChecklist.value);
+            const firstRow = checklistContainer.querySelector('tr.checklist-item');
+
+            if (!firstRow) {
+                console.warn("Nenhuma linha base encontrada para clonar no checklist.");
+                return;
+            }
+
+            const newRow = firstRow.cloneNode(true);
+
+
+            // Limpar campos
+            newRow.querySelectorAll('input').forEach(input => {
+                input.name = input.name.replace('-0-', `-${count}-`);
+                input.id = input.id.replace('-0-', `-${count}-`);
+                if (input.type !== 'checkbox' && input.type !== 'hidden') input.value = '';
+                if (input.type === 'checkbox') input.checked = false;
+                if (input.type === 'hidden' && input.name.includes('-id')) input.value = '';
+            });
+
+            newRow.querySelectorAll('select').forEach(select => {
+                select.name = select.name.replace('-0-', `-${count}-`);
+                select.id = select.id.replace('-0-', `-${count}-`);
+                select.selectedIndex = 0;
+            });
+
+            checklistContainer.appendChild(newRow);
+            totalFormsChecklist.value = count + 1;
         });
     }
 
-    function carregarCamadasDisponiveis() {
-        const container = document.getElementById('camadas-referencia-container');
-        if (!container) return;
+    // --- MAPA LEAFLET ---
+    let map;
+    let markers = [];
+    const mapaTabBtn = document.getElementById('mapa-tab');
 
-        container.innerHTML = '<span class="spinner-border spinner-border-sm text-secondary"></span>';
-
-        fetch('/georeferencias/api/camadas/')
-            .then(res => res.json())
-            .then(data => {
-                container.innerHTML = '';
-                if (data.camadas && data.camadas.length > 0) {
-                    data.camadas.forEach(camada => {
-                        const div = document.createElement('div');
-                        div.className = 'form-check form-check-inline m-0 border rounded px-2 py-1 bg-white shadow-sm';
-                        div.innerHTML = `
-                            <input class="form-check-input" type="checkbox" id="camada-${camada.id}" value="${camada.id}" onchange="toggleCamadaReferencia(this, '${camada.cor_marcador}', '${camada.icone}')">
-                            <label class="form-check-label small fw-bold" for="camada-${camada.id}" style="cursor: pointer;">
-                                <i class="bi bi-${camada.icone || 'circle'} me-1" style="color: ${camada.cor_marcador}"></i>${camada.nome}
-                            </label>
-                        `;
-                        container.appendChild(div);
-                    });
-                } else {
-                    container.innerHTML = '<span class="text-muted small">Nenhuma camada disponível.</span>';
-                }
-            })
-            .catch(err => {
-                console.error("Erro ao carregar camadas:", err);
-                container.innerHTML = '<span class="text-danger small">Erro ao carregar referências.</span>';
-            });
+    if (mapaTabBtn) {
+        mapaTabBtn.addEventListener('shown.bs.tab', function () {
+            initMap();
+        }, { once: true });
     }
 
-    function toggleCamadaReferencia(checkbox, cor, icone) {
-        const camadaId = checkbox.value;
-        if (checkbox.checked) {
-            if (camadasReferencia[camadaId]) {
-                leafletMap.addLayer(camadasReferencia[camadaId]);
-            } else {
-                carregarPontosCamada(camadaId, cor, icone);
-            }
-        } else {
-            if (camadasReferencia[camadaId]) {
-                leafletMap.removeLayer(camadasReferencia[camadaId]);
-            }
+    function initMap() {
+        if (map) return;
+
+        map = L.map('mapa-fiscalizacao').setView([-20.46, -54.61], 12);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(map);
+
+        if (acaoId !== "null") {
+            loadMarcadores();
         }
+
+        map.on('click', function (e) {
+            if (acaoId === "null") {
+                alert("Salve a ação antes de inserir marcadores no mapa.");
+                return;
+            }
+            showAddMarkerForm(e.latlng);
+        });
     }
 
-    function carregarPontosCamada(camadaId, cor, icone) {
-        fetch(`/georeferencias/api/camada/${camadaId}/pontos/`)
-            .then(res => res.json())
-            .then(data => {
-                if (data.pontos) {
-                    const layerGroup = L.layerGroup();
-                    data.pontos.forEach(p => {
-                        const marker = L.circleMarker([p.latitude, p.longitude], {
-                            radius: 6,
-                            fillColor: cor || '#3388ff',
-                            color: '#fff',
-                            weight: 1,
-                            opacity: 1,
-                            fillOpacity: 0.8
-                        });
-                        marker.bindPopup(`
-                            <div class="p-1" style="min-width: 150px;">
-                                <h6 class="mb-1 fw-bold text-primary">${p.nome}</h6>
-                                <p class="small text-muted mb-0">${p.descricao || ''}</p>
-                            </div>
-                        `);
-                        layerGroup.addLayer(marker);
-                    });
-                    camadasReferencia[camadaId] = layerGroup;
-                    leafletMap.addLayer(layerGroup);
-                }
-            })
-            .catch(err => console.error(`Erro:`, err));
-    }
-
-    function carregarMarcadores() {
-
-        const body = document.getElementById('lista-marcadores-body');
-
+    function loadMarcadores() {
         fetch(`/acoes/acao/${acaoId}/marcadores/`)
             .then(res => res.json())
             .then(data => {
                 if (data.status === 'success') {
-                    marcadoresLayer.clearLayers();
-                    if (body) body.innerHTML = '';
-
-                    if (data.marcadores.length === 0) {
-                        if (body) body.innerHTML = '<tr><td colspan="5" class="text-center py-3 text-muted">Nenhum ponto registrado neste mapa.</td></tr>';
-                    } else {
-                        data.marcadores.forEach(m => {
-                            addMarcadorAoMapa(m);
-                            addMarcadorALista(m);
-                        });
-                    }
+                    renderMarcadores(data.marcadores);
                 }
-            })
-            .catch(err => {
-                console.error("Erro ao carregar marcadores:", err);
-                if (body) body.innerHTML = '<tr><td colspan="5" class="text-center text-danger">Erro ao carregar lista.</td></tr>';
             });
     }
 
-    function addMarcadorAoMapa(m) {
-        const marker = L.marker([m.latitude, m.longitude]).addTo(marcadoresLayer);
+    function renderMarcadores(data) {
+        const listContainer = document.getElementById('lista-marcadores');
+        listContainer.innerHTML = '';
+        markers.forEach(m => map.removeLayer(m));
+        markers = [];
 
-        let fotosHtml = '';
-        if (m.fotos && m.fotos.length > 0) {
-            fotosHtml = '<div class="mt-2 d-flex gap-1 flex-wrap">';
-            m.fotos.forEach(f => {
-                fotosHtml += `<img src="${f.url}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px;" class="border">`;
-            });
-            fotosHtml += '</div>';
-        }
-
-        const content = `
-            <div class="marcador-info p-1" style="min-width: 150px;">
-                <h6 class="mb-1 fw-bold">${m.titulo}</h6>
-                <p class="small text-muted mb-1">${m.descricao || 'Sem descrição'}</p>
-                <div class="small mb-2" style="font-size: 0.75rem;">
-                    <i class="bi bi-clock me-1"></i>${m.data_criacao}<br>
-                    <i class="bi bi-person me-1"></i>${m.usuario}
-                </div>
-                ${fotosHtml}
-                <hr class="my-2">
-                <button class="btn btn-sm btn-outline-danger w-100" style="font-size: 0.7rem;" onclick="deletarMarcador(${m.id})">
-                    <i class="bi bi-trash me-1"></i>Remover do Mapa
-                </button>
-            </div>
-        `;
-        marker.bindPopup(content);
-    }
-
-    function addMarcadorALista(m) {
-        const body = document.getElementById('lista-marcadores-body');
-        if (!body) return;
-
-        const row = document.createElement('tr');
-        row.innerHTML = `
-            <td><strong>${m.titulo}</strong></td>
-            <td><span class="text-muted small">${m.descricao || '-'}</span></td>
-            <td><code class="text-primary small">${parseFloat(m.latitude).toFixed(6)}, ${parseFloat(m.longitude).toFixed(6)}</code></td>
-            <td class="text-center">
-                <span class="badge ${m.fotos.length > 0 ? 'bg-success' : 'bg-secondary'} rounded-pill">
-                    <i class="bi bi-camera me-1"></i>${m.fotos.length}
-                </span>
-            </td>
-            <td class="text-center">
-                <div class="btn-group btn-group-sm">
-                    <button type="button" class="btn btn-outline-primary" onclick="focarNoMapa(${m.latitude}, ${m.longitude}, ${m.id})" title="Ver no Mapa">
-                        <i class="bi bi-geo-alt"></i>
-                    </button>
-                    <button type="button" class="btn btn-outline-danger" onclick="deletarMarcador(${m.id})" title="Excluir">
-                        <i class="bi bi-trash"></i>
-                    </button>
-                </div>
-            </td>
-        `;
-        body.appendChild(row);
-    }
-
-    function focarNoMapa(lat, lng, id) {
-        leafletMap.setView([lat, lng], 18);
-        marcadoresLayer.eachLayer(layer => {
-            if (layer instanceof L.Marker && layer.getLatLng().lat == lat && layer.getLatLng().lng == lng) {
-                layer.openPopup();
-            }
-        });
-        document.getElementById('mapa-fiscalizacao').scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }
-
-    function showNovoMarcadorPopup(latlng) {
-        const content = `
-            <div class="marcador-form-popup p-2" style="min-width: 250px;">
-                <h6 class="mb-3 fw-bold"><i class="bi bi-plus-circle me-2"></i>Registrar Ponto</h6>
-                <form id="form-novo-marcador">
-                    <div class="mb-2">
-                        <label>Título / Identificação do Ponto:</label>
-                        <input type="text" id="m-titulo" class="form-control form-control-sm" required placeholder="Ex: Poste A32 ou Vazamento">
-                    </div>
-                    <div class="mb-2">
-                        <label>Observações/Descritivo:</label>
-                        <textarea id="m-descricao" class="form-control form-control-sm" rows="3" placeholder="Detalhes da ocorrência..."></textarea>
-                    </div>
-                    <div class="mb-3">
-                        <label>Fotos da Evidência:</label>
-                        <input type="file" id="m-fotos" class="form-control form-control-sm" multiple accept="image/*">
-                    </div>
-                    <div class="d-flex gap-2">
-                        <button type="button" class="btn btn-sm btn-secondary w-100" onclick="leafletMap.closePopup()">Cancelar</button>
-                        <button type="button" id="btn-salvar-marcador" class="btn btn-sm btn-primary w-100" onclick="salvarMarcador(${latlng.lat}, ${latlng.lng})">
-                            <i class="bi bi-save me-1"></i>Salvar
-                        </button>
-                    </div>
-                </form>
-            </div>
-        `;
-
-        L.popup()
-            .setLatLng(latlng)
-            .setContent(content)
-            .openOn(leafletMap);
-    }
-
-    function salvarMarcador(lat, lng) {
-        const titulo = document.getElementById('m-titulo').value;
-        const descricao = document.getElementById('m-descricao').value;
-        const fotoInput = document.getElementById('m-fotos');
-        const btn = document.getElementById('btn-salvar-marcador');
-
-        if (!titulo) {
-            alert("Por favor, preencha o título do ponto.");
+        if (data.length === 0) {
+            listContainer.innerHTML = '<div class="text-center py-4 text-muted fst-italic small">Nenhum ponto registrado. Clique no mapa para adicionar.</div>';
             return;
         }
 
-        if (btn) {
-            btn.disabled = true;
-            btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+        data.forEach(m => {
+            const marker = L.marker([m.latitude, m.longitude]).addTo(map);
+            const fotosHtml = m.fotos.map(f => `<img src="${f.url}" class="img-thumbnail mt-1" style="width: 45%; max-height: 80px; object-fit: cover;">`).join(' ');
+
+            const content = `
+                    <div class="marcador-info p-1" style="min-width: 150px;">
+                        <h6 class="mb-1 fw-bold">${m.titulo}</h6>
+                        <p class="small text-muted mb-1">${m.descricao || 'Sem descrição'}</p>
+                        <div class="small mb-2" style="font-size: 0.75rem;">
+                            <i class="bi bi-clock me-1"></i>${m.data_criacao}<br>
+                            <i class="bi bi-person me-1"></i>${m.usuario}
+                        </div>
+                        ${fotosHtml}
+                        <div class="mt-2 text-end">
+                            <button class="btn btn-sm btn-outline-danger py-0 border-0" onclick="deletarMarcador(${m.id})"><i class="bi bi-trash"></i></button>
+                        </div>
+                    </div>
+                `;
+            marker.bindPopup(content);
+            markers.push(marker);
+
+            // Add to side list
+            const item = document.createElement('button');
+            item.type = 'button';
+            item.className = 'list-group-item list-group-item-action p-2 small';
+            item.innerHTML = `
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="fw-bold text-truncate" style="max-width: 140px;">${m.titulo}</span>
+                        <span class="badge bg-light text-dark border">${m.fotos.length} f</span>
+                    </div>
+                    <div class="text-muted d-flex gap-2" style="font-size: 0.65rem;">
+                        <span>Lat: ${m.latitude.toFixed(4)}</span>
+                        <span>Lng: ${m.longitude.toFixed(4)}</span>
+                    </div>
+                `;
+            item.onclick = () => {
+                map.setView([m.latitude, m.longitude], 16);
+                marker.openPopup();
+            };
+            listContainer.appendChild(item);
+        });
+
+    }
+
+    function showAddMarkerForm(latlng) {
+        const popup = L.popup()
+            .setLatLng(latlng)
+            .setContent(`
+                    <div class="marcador-form-popup" style="width: 200px;">
+                        <h6 class="mb-2 fw-bold">Novo Marcador</h6>
+                        <form id="form-marcador-quick">
+                            <label>Título *</label>
+                            <input type="text" id="m-titulo" class="form-control form-control-sm" placeholder="Ex: Vazamento rede" required>
+                            <label>Descrição</label>
+                            <textarea id="m-desc" class="form-control form-control-sm" rows="2"></textarea>
+                            <label>Anexar Fotos</label>
+                            <input type="file" id="m-fotos" class="form-control form-control-sm" multiple accept="image/*">
+                            <button type="button" class="btn btn-primary btn-sm w-100 mt-2" onclick="salvarNovoMarcador(${latlng.lat}, ${latlng.lng})">Salvar Ponto</button>
+                        </form>
+                    </div>
+                `)
+            .openOn(map);
+
+    }
+
+    window.salvarNovoMarcador = function (lat, lng) {
+        const titulo = document.getElementById('m-titulo').value;
+        const descricao = document.getElementById('m-desc').value;
+        const fotosInput = document.getElementById('m-fotos');
+
+        if (!titulo) {
+            alert("Título é obrigatório");
+            return;
         }
 
         const formData = new FormData();
@@ -909,752 +662,190 @@
         formData.append('descricao', descricao);
         formData.append('latitude', lat);
         formData.append('longitude', lng);
-
-        if (fotoInput && fotoInput.files.length > 0) {
-            for (let i = 0; i < fotoInput.files.length; i++) {
-                formData.append('fotos', fotoInput.files[i]);
+        if (fotosInput.files.length > 0) {
+            for (let i = 0; i < fotosInput.files.length; i++) {
+                formData.append('fotos', fotosInput.files[i]);
             }
         }
-
-        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
 
         fetch(`/acoes/acao/${acaoId}/marcador/salvar/`, {
             method: 'POST',
-            body: formData,
-            headers: {
-                'X-CSRFToken': csrfToken
-            }
+            headers: { 'X-CSRFToken': '{{ csrf_token }}' },
+            body: formData
         })
             .then(res => res.json())
             .then(data => {
                 if (data.status === 'success') {
-                    leafletMap.closePopup();
-                    carregarMarcadores();
-                    if (data.marcador.fotos_count > 0 && typeof renderExistingAssets === 'function') {
-                        renderExistingAssets('fotos');
-                    }
+                    map.closePopup();
+                    loadMarcadores();
                 } else {
-                    alert('Erro ao salvar: ' + (data.message || 'Erro desconhecido'));
-                    if (btn) {
-                        btn.disabled = false;
-                        btn.innerHTML = '<i class="bi bi-save me-1"></i>Salvar';
-                    }
+                    alert("Erro: " + data.message);
+                }
+            });
+    };
+
+    window.deletarMarcador = function (id) {
+        if (!confirm("Deseja realmente excluir este marcador? As fotos vinculadas permanecerão na galeria da ação.")) return;
+
+        fetch(`/acoes/marcador/\${id}/deletar/`, {
+            method: 'POST',
+            headers: { 'X-CSRFToken': '{{ csrf_token }}' }
+        })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success') loadMarcadores();
+            });
+    };
+
+    // --- GESTÃO DE DOCUMENTOS E FOTOS (DRAG & DROP) ---
+    const docsZone = document.getElementById('docs-zone');
+    const fotosZone = document.getElementById('fotos-zone');
+    const docsHidden = document.getElementById('docs-input-hidden');
+    const fotosHidden = document.getElementById('fotos-input-hidden');
+
+    if (docsZone) docsZone.onclick = () => docsHidden.click();
+    if (fotosZone) fotosZone.onclick = () => fotosHidden.click();
+
+    docsHidden.onchange = (e) => processNewFiles(e.target.files, 'docs');
+    fotosHidden.onchange = (e) => processNewFiles(e.target.files, 'fotos');
+
+    function processNewFiles(files, type) {
+        const container = document.getElementById(`${type}-container`);
+        const totalForms = document.getElementById(`id_${type}-TOTAL_FORMS`);
+        const template = type === 'docs' ? generateDocFormTemplate : generateFotoFormTemplate;
+
+
+        Array.from(files).forEach(file => {
+            const count = parseInt(totalForms.value);
+            const html = template(count, file.name);
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = html;
+            const newForm = tempDiv.firstElementChild;
+
+            // Hack: Associar o arquivo físico ao input do form clonado
+            const fileInput = newForm.querySelector('input[type="file"]');
+            const dataTransfer = new DataTransfer();
+            dataTransfer.items.add(file);
+            fileInput.files = dataTransfer.files;
+
+            container.prepend(newForm);
+            totalForms.value = count + 1;
+        });
+    }
+
+    function generateDocFormTemplate(idx, fileName) {
+        return `
+                <div class="col doc-item-card animated zoomIn">
+                    <div class="card h-100 shadow-sm border border-primary">
+                        <div class="card-body p-3">
+                            <div class="d-flex align-items-center">
+                                <div class="doc-icon me-3">
+                                    <i class="bi bi-file-earmark-plus fs-2 text-primary"></i>
+                                </div>
+                                <div class="flex-grow-1 overflow-hidden">
+                                    <div class="mb-2">
+                                        <label class="small fw-bold">Descrição do Documento</label>
+                                        <input type="text" name="docs-${idx}-descricao" value="${fileName}" class="form-control form-control-sm">
+                                    </div>
+
+                                    <input type="file" name="docs-${idx}-arquivo" class="form-control form-control-sm">
+                                </div>
+                                <div class="ms-2">
+                                     <div class="form-check"><input type="checkbox" name="docs-${idx}-DELETE" class="form-check-input"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+    }
+
+
+    function generateFotoFormTemplate(idx, fileName) {
+        return `
+                <div class="col foto-item-wrapper animated zoomIn">
+                    <div class="card h-100 shadow-sm border border-primary">
+                        <div class="bg-light d-flex align-items-center justify-content-center" style="height: 150px;">
+                            <i class="bi bi-image fs-1 text-muted"></i>
+                            <div class="position-absolute fs-1 text-white opacity-25"><i class="bi bi-plus-circle"></i></div>
+                        </div>
+                        <div class="card-body p-2">
+                            <input type="file" name="fotos-${idx}-imagem" class="form-control form-control-sm mb-2">
+                            <div class="mb-1">
+                                <label class="small fw-bold">Legenda</label>
+                                <input type="text" name="fotos-${idx}-legenda" value="${fileName}" class="form-control form-control-sm">
+                            </div>
+                             <div class="form-check m-0"><input type="checkbox" name="fotos-${idx}-DELETE" class="form-check-input"> <label class="small text-danger">Excluir</label></div>
+                        </div>
+                    </div>
+                </div>
+            `;
+    }
+
+
+    // Helper para ícones de arquivos
+    function getIconByExt(fileName) {
+        const ext = fileName.split('.').pop().toLowerCase();
+        if (ext === 'pdf') return '<i class="bi bi-file-earmark-pdf text-danger file-icon"></i>';
+        if (['doc', 'docx'].includes(ext)) return '<i class="bi bi-file-earmark-word text-primary file-icon"></i>';
+        if (['xlsx', 'xls'].includes(ext)) return '<i class="bi bi-file-earmark-excel text-success file-icon"></i>';
+        return '<i class="bi bi-file-earmark-text text-secondary file-icon"></i>';
+    }
+
+    function convertDMSToDD(degrees, minutes, seconds, direction) {
+        let dd = degrees + minutes / 60 + seconds / 3600;
+        if (direction === "S" || direction === "W") dd = dd * -1;
+        return dd;
+    }
+
+    // Suporte a Drag and Drop nas zonas
+    [docsZone, fotosZone].forEach(zone => {
+        zone.addEventListener('dragover', (e) => { e.preventDefault(); zone.classList.add('dragover'); });
+        zone.addEventListener('dragleave', () => zone.classList.remove('dragover'));
+        zone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            zone.classList.remove('dragover');
+            const input = zone.querySelector('input[type="file"]');
+            const dataTransfer = new DataTransfer();
+            Array.from(e.dataTransfer.files).forEach(file => dataTransfer.items.add(file));
+            input.files = dataTransfer.files;
+            input.dispatchEvent(new Event('change'));
+        });
+    });
+
+    // --- CONFORMIDADES (FASE 5) ---
+    const conformidadesTabBtn = document.getElementById('conformidades-tab');
+    if (conformidadesTabBtn && acaoId) {
+        conformidadesTabBtn.addEventListener('shown.bs.tab', function () {
+            initConformidades();
+        }, { once: true });
+    }
+
+    window.initConformidades = function () {
+        const container = document.getElementById('conformidades-list');
+        const loader = document.getElementById('conformidades-loader');
+
+        fetch(`/acoes/acao/${acaoId}/conformidades/data/`)
+            .then(res => res.json())
+
+            .then(data => {
+                if (data.status === 'success') {
+                    if (loader) loader.style.display = 'none';
+                    renderConformidades(data.data);
                 }
             })
             .catch(err => {
-                console.error(err);
-                alert('Falha na comunicação com o servidor ao salvar.');
-                if (btn) {
-                    btn.disabled = false;
-                    btn.innerHTML = '<i class="bi bi-save me-1"></i>Salvar';
-                }
+                console.error("Erro ao carregar conformidades:", err);
+                container.innerHTML = '<div class="alert alert-danger">Erro ao carregar dados de conformidade.</div>';
             });
-    }
+    };
 
-    function deletarMarcador(id) {
-        if (!confirm('Tem certeza que deseja remover este marcador? As fotos vinculadas serão mantidas na aba "Fotos", perdendo apenas a referência a este ponto.')) return;
+    function renderConformidades(conformidades) {
+        const container = document.getElementById('conformidades-list');
+        container.innerHTML = '';
 
-        fetch(`/acoes/marcador/${id}/deletar/`, {
-            method: 'POST',
-            headers: {
-                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
-            }
-        })
-            .then(res => res.json())
-            .then(data => {
-                if (data.status === 'success') {
-                    carregarMarcadores();
-                }
-            });
-    }
-</script>
-
-
-<script>
-    document.addEventListener('DOMContentLoaded', function () {
-        console.log('Checklist JS initializing...');
-        const container = document.getElementById('checklist-container');
-        const toggleContainer = document.getElementById('checklist-toggle-container');
-        const showBtn = document.getElementById('show-checklist-btn');
-        const addBtn = document.getElementById('add-checklist-item');
-        const itemsContainer = document.getElementById('checklist-items');
-        const totalFormsInput = document.querySelector('input[name="checklist_itens-TOTAL_FORMS"]');
-
-        if (!itemsContainer) {
-            console.error('Checklist items container not found!');
-            return;
-        }
-
-        console.log('Sortable Check:', typeof Sortable);
-
-        function initSortable() {
-            if (typeof Sortable !== 'undefined') {
-                new Sortable(itemsContainer, {
-                    handle: '.drag-handle',
-                    animation: 150,
-                    ghostClass: 'sortable-ghost',
-                    chosenClass: 'sortable-chosen',
-                    dragClass: 'sortable-drag',
-                    onEnd: function () {
-                        updateOrders();
-                    }
-                });
-                console.log('Sortable initialized on', itemsContainer);
-            } else {
-                console.error('SortableJS library not loaded!');
-            }
-        }
-
-        initSortable();
-
-        if (showBtn) {
-            showBtn.addEventListener('click', function () {
-                container.style.display = 'block';
-                toggleContainer.style.display = 'none';
-                addNewChecklistItem();
-            });
-        }
-
-        if (addBtn) {
-            addBtn.addEventListener('click', function () {
-                addNewChecklistItem();
-            });
-        }
-
-        itemsContainer.addEventListener('click', function (e) {
-            const removeBtn = e.target.closest('.remove-checklist-item');
-            if (removeBtn) {
-                e.preventDefault();
-                const item = removeBtn.closest('.checklist-item');
-                const isNew = item.getAttribute('data-is-new') === 'true';
-                if (!isNew) {
-                    const deleteCheckbox = item.querySelector('input[name$="-DELETE"]');
-                    if (deleteCheckbox) deleteCheckbox.checked = true;
-                    item.style.setProperty('display', 'none', 'important');
-                } else {
-                    item.remove();
-                    updateOrders();
-                }
-            }
-        });
-
-        itemsContainer.addEventListener('input', function (e) {
-            if (e.target.type === 'text') {
-                const item = e.target.closest('.checklist-item');
-                updateCheckboxState(item);
-            }
-        });
-
-        function updateCheckboxState(itemDiv) {
-            const nameInput = itemDiv.querySelector('input[type="text"]');
-            const checkbox = itemDiv.querySelector('input[type="checkbox"]:not([name$="-DELETE"])');
-            if (nameInput && checkbox) {
-                const hasText = nameInput.value.trim().length > 0;
-                checkbox.disabled = !hasText;
-                if (!hasText) checkbox.checked = false;
-            }
-        }
-
-        itemsContainer.querySelectorAll('.checklist-item').forEach(updateCheckboxState);
-
-        function addNewChecklistItem() {
-            const newIndex = parseInt(totalFormsInput.value);
-            const prefix = 'checklist_itens';
-            const newItemDiv = document.createElement('div');
-            newItemDiv.className = 'checklist-item mb-2 d-flex align-items-center gap-2 bg-white p-2 rounded border';
-            newItemDiv.setAttribute('data-form-index', newIndex);
-            newItemDiv.setAttribute('data-is-new', 'true');
-
-            newItemDiv.innerHTML = `
-                <div class="drag-handle px-2 text-muted border-end" style="cursor: grab;"><i class="bi bi-grip-vertical fs-5"></i></div>
-                <input type="hidden" name="${prefix}-${newIndex}-ordem" id="id_${prefix}-${newIndex}-ordem" class="checklist-order-field" value="${newIndex}">
-                <input type="text" name="${prefix}-${newIndex}-nome" id="id_${prefix}-${newIndex}-nome" class="form-control" placeholder="Nova tarefa operacional">
-                <div class="form-check">
-                    <input type="checkbox" name="${prefix}-${newIndex}-concluido" id="id_${prefix}-${newIndex}-concluido" class="form-check-input">
-                    <label class="form-check-label small text-muted" for="id_${prefix}-${newIndex}-concluido">Concluído</label>
-                </div>
-                <button type="button" class="btn btn-sm btn-outline-danger remove-checklist-item" title="Remover item"><i class="bi bi-trash"></i></button>
-            `;
-
-            itemsContainer.appendChild(newItemDiv);
-            updateCheckboxState(newItemDiv);
-            totalFormsInput.value = newIndex + 1;
-            updateOrders();
-        }
-
-        function updateOrders() {
-            const items = itemsContainer.querySelectorAll('.checklist-item');
-            items.forEach((item, index) => {
-                const orderInput = item.querySelector('.checklist-order-field');
-                if (orderInput) orderInput.value = index;
-            });
-            console.log('Orders updated');
-            if (typeof atualizarPercentual === 'function') atualizarPercentual();
-        }
-
-        // --- LÓGICA DE PERCENTUAL AUTOMÁTICO ---
-        window.atualizarPercentual = function () {
-            const items = document.querySelectorAll('.checklist-item:not([style*="display: none"])');
-            const total = items.length;
-            const percentualDisplay = document.getElementById('percentual-display');
-
-            if (total === 0) {
-                if (percentualDisplay) percentualDisplay.style.display = 'none';
-                return;
-            } else {
-                if (percentualDisplay) percentualDisplay.style.display = 'block';
-            }
-
-            let concluidos = 0;
-            items.forEach(item => {
-                const checkbox = item.querySelector('input[type="checkbox"]:not([name$="-DELETE"])');
-                if (checkbox && checkbox.checked) {
-                    concluidos++;
-                }
-            });
-
-            // Evitar divisão por zero (redundante mas seguro)
-            const percentual = total > 0 ? Math.round((concluidos / total) * 100) : 0;
-
-            const valueEl = document.getElementById('percentual-value');
-            if (valueEl) valueEl.textContent = `${percentual}%`;
-
-            const bar = document.getElementById('percentual-bar');
-            if (bar) {
-                bar.style.width = `${percentual}%`;
-                bar.textContent = `${percentual}%`;
-                bar.setAttribute('aria-valuenow', percentual);
-
-                bar.className = 'progress-bar progress-bar-striped progress-bar-animated';
-                if (percentual >= 100) {
-                    bar.classList.add('bg-success');
-                } else if (percentual >= 50) {
-                    bar.classList.add('bg-primary');
-                } else if (percentual > 0) {
-                    bar.classList.add('bg-warning');
-                } else {
-                    bar.classList.add('bg-secondary');
-                }
-            }
-        };
-
-        // Listeners
-        itemsContainer.addEventListener('change', function (e) {
-            if (e.target.type === 'checkbox' && !e.target.name.endsWith('-DELETE')) {
-                atualizarPercentual();
-            }
-        });
-
-        // Observer para capturar adições/remoções
-        const observer = new MutationObserver(() => {
-            atualizarPercentual();
-        });
-        observer.observe(itemsContainer, { childList: true, subtree: true });
-
-        // Inicializar
-        atualizarPercentual();
-    });
-</script>
-
-<style>
-    .drag-handle {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background-color: #f8f9fa;
-        margin: -8px 0 -8px -8px;
-        padding: 8px 12px !important;
-        border-right: 1px solid #dee2e6;
-        color: #adb5bd !important;
-        transition: all 0.2s;
-        border-top-left-radius: 6px;
-        border-bottom-left-radius: 6px;
-        cursor: grab !important;
-    }
-
-    .drag-handle:active {
-        cursor: grabbing !important;
-    }
-
-    .drag-handle:hover {
-        background-color: #e9ecef;
-        color: var(--primary-color) !important;
-    }
-
-    .checklist-item {
-        transition: transform 0.2s, box-shadow 0.2s;
-        padding-left: 0 !important;
-        overflow: hidden;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-    }
-
-    .sortable-ghost {
-        opacity: 0.3;
-        background-color: #dee2e6 !important;
-        border: 2px dashed var(--primary-color) !important;
-    }
-
-    .sortable-chosen {
-        background-color: #f1f8ff !important;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
-    }
-
-    .sortable-drag {
-        opacity: 1 !important;
-        background-color: white !important;
-    }
-
-    /* Estilos Customizados para Upload de Docs e Fotos */
-    .upload-zone {
-        border: 2px dashed #dee2e6;
-        border-radius: 12px;
-        padding: 40px;
-        text-align: center;
-        background-color: #f8f9fa;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        margin-bottom: 2rem;
-    }
-
-    .upload-zone:hover {
-        border-color: var(--primary-color);
-        background-color: #f1f8ff;
-    }
-
-    .upload-zone i {
-        font-size: 3rem;
-        color: #adb5bd;
-        margin-bottom: 1rem;
-        display: block;
-    }
-
-    .upload-zone.dragover {
-        border-color: #198754;
-        background-color: #e8f5e9;
-    }
-
-    .asset-table th {
-        background-color: #f8f9fa;
-        font-weight: 600;
-        text-transform: uppercase;
-        font-size: 0.75rem;
-        letter-spacing: 0.5px;
-        color: #6c757d;
-        border-top: none;
-    }
-
-    .asset-row {
-        vertical-align: middle;
-        transition: background-color 0.2s;
-    }
-
-    .asset-row:hover {
-        background-color: #fcfcfc;
-    }
-
-    .thumb-preview {
-        width: 60px;
-        height: 60px;
-        object-fit: cover;
-        border-radius: 6px;
-        cursor: pointer;
-        transition: transform 0.2s;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    }
-
-    .thumb-preview:hover {
-        transform: scale(1.1);
-    }
-
-    .file-icon {
-        font-size: 1.5rem;
-    }
-
-    .btn-remove-asset {
-        color: #dc3545;
-        background: none;
-        border: none;
-        padding: 0.25rem 0.5rem;
-        border-radius: 4px;
-        transition: background-color 0.2s;
-    }
-
-    .btn-remove-asset:hover {
-        background-color: #fee2e2;
-    }
-
-    .gps-badge {
-        font-size: 0.7rem;
-        background-color: #e9ecef;
-        color: #495057;
-        padding: 2px 6px;
-        border-radius: 4px;
-    }
-</style>
-
-<script>
-    document.addEventListener('DOMContentLoaded', function () {
-        const form = document.getElementById('acao-form');
-        const submitBtn = form.querySelector('button[type="submit"]');
-
-        form.addEventListener('submit', function () {
-            if (submitBtn) {
-                submitBtn.disabled = true;
-                submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Salvando...';
-            }
-        });
-
-        // --- GESTÃO DE DOCUMENTOS ---
-        const docsZone = document.getElementById('docs-upload-zone');
-        const docsInput = document.getElementById('docs-input');
-        const docsTableBody = document.getElementById('docs-table-body');
-        const docsTotalForms = document.querySelector('input[name="docs-TOTAL_FORMS"]');
-        const docsHiddenContainer = document.getElementById('docs-hidden-forms');
-        const emptyDocTemplate = document.getElementById('empty-doc-form-template').innerHTML;
-
-        // Inicializar tabela com itens existentes
-        renderExistingAssets('docs');
-
-        docsZone.addEventListener('click', () => docsInput.click());
-        docsInput.addEventListener('change', handleDocsSelection);
-
-        function handleDocsSelection(e) {
-            const files = Array.from(e.target.files);
-
-            // FILTRO DE EXTENSÃO (Frontend Validation)
-            const allowedExtensions = ['.pdf', '.docx', '.xlsx', '.doc', '.xls', '.txt', '.zip', '.csv'];
-            const validFiles = files.filter(file => {
-                const ext = '.' + file.name.split('.').pop().toLowerCase();
-                if (!allowedExtensions.includes(ext)) {
-                    alert(`Arquivo NÃO PERMITIDO: "${file.name}".\n\nApenas PDF, DOCX, XLSX, TXT, CSV e ZIP são aceitos.`);
-                    return false;
-                }
-                return true;
-            });
-
-            // Se nenhum arquivo sobrou, limpa e sai
-            if (validFiles.length === 0) {
-                docsInput.value = '';
-                return;
-            }
-
-            validFiles.forEach(file => {
-                const nextIndex = parseInt(docsTotalForms.value);
-
-                // 1. Criar formulário oculto
-                const newFormHtml = emptyDocTemplate.replace(/__prefix__/g, nextIndex);
-                const wrapper = document.createElement('div');
-                wrapper.className = 'hidden-doc-form';
-                wrapper.dataset.index = nextIndex;
-                wrapper.innerHTML = newFormHtml;
-                docsHiddenContainer.appendChild(wrapper);
-
-                // 2. Injetar o arquivo no input oculto via DataTransfer
-                const dt = new DataTransfer();
-                dt.items.add(file);
-                wrapper.querySelector('input[type="file"]').files = dt.files;
-
-                // 3. Renderizar com FileReader para simetria com fotos
-                const reader = new FileReader();
-                reader.onload = function (re) {
-                    renderDocRow(file, nextIndex);
-                };
-                reader.readAsArrayBuffer(file);
-
-                // 4. Atualizar Management Form
-                docsTotalForms.value = nextIndex + 1;
-            });
-            docsInput.value = '';
-        }
-
-        function renderDocRow(file, index, isExisting = false, existingDoc = null) {
-            const row = document.createElement('tr');
-            row.className = 'asset-row';
-            row.id = `doc-row-${index}`;
-
-            const fileName = isExisting ? existingDoc.name : file.name;
-            const icon = getFileIcon(fileName);
-            let description = isExisting ? existingDoc.descricao : fileName.split('.').slice(0, -1).join('.');
-
-            row.innerHTML = `
-                <td class="text-center">${icon}</td>
-                <td><span class="text-truncate d-inline-block" style="max-width: 200px;" title="${fileName}">${fileName}</span></td>
-                <td>
-                    <input type="text" class="form-control form-control-sm doc-desc-input" 
-                           data-index="${index}" value="${description}" placeholder="Descrição do documento...">
-                </td>
-                <td><small class="text-muted">${isExisting && existingDoc.usuario ? existingDoc.usuario : 'Você'}</small></td>
-                <td><small class="text-muted">${isExisting && existingDoc.data ? existingDoc.data : 'Agora'}</small></td>
-                <td class="text-center">
-                    <button type="button" class="btn-remove-asset" onclick="removeAsset('docs', ${index})">
-                        <i class="bi bi-trash"></i>
-                    </button>
-                </td>
-            `;
-            docsTableBody.appendChild(row);
-
-            // Sync descrição inicial e em tempo real
-            setTimeout(() => {
-                const hiddenInput = document.querySelector(`input[name="docs-${index}-descricao"]`);
-                if (hiddenInput && !isExisting) hiddenInput.value = description;
-            }, 100);
-
-            row.querySelector('.doc-desc-input').addEventListener('input', function () {
-                const hInput = document.querySelector(`input[name="docs-${index}-descricao"]`);
-                if (hInput) hInput.value = this.value;
-            });
-        }
-
-        // --- GESTÃO DE FOTOS ---
-        const fotosZone = document.getElementById('fotos-upload-zone');
-        const fotosInput = document.getElementById('fotos-input');
-        const fotosTableBody = document.getElementById('fotos-table-body');
-        const fotosTotalForms = document.querySelector('input[name="fotos-TOTAL_FORMS"]');
-        const fotosHiddenContainer = document.getElementById('fotos-hidden-forms');
-        const emptyFotoTemplate = document.getElementById('empty-foto-form-template').innerHTML;
-
-        renderExistingAssets('fotos');
-
-        fotosZone.addEventListener('click', () => fotosInput.click());
-        fotosInput.addEventListener('change', handleFotosSelection);
-
-        function handleFotosSelection(e) {
-            const files = Array.from(e.target.files);
-
-            // FILTRO DE EXTENSÃO PARA FOTOS (Frontend Validation)
-            const allowedExtensions = ['.jpg', '.jpeg', '.png', '.webp', '.heic', '.heif'];
-            const validFiles = files.filter(file => {
-                const ext = '.' + file.name.split('.').pop().toLowerCase();
-                if (!allowedExtensions.includes(ext)) {
-                    alert(`Arquivo NÃO PERMITIDO: "${file.name}".\n\nApenas imagens JPG, PNG, WEBP, HEIC e HEIF são aceitas.`);
-                    return false;
-                }
-                return true;
-            });
-
-            // Se nenhum arquivo sobrou, limpa e sai
-            if (validFiles.length === 0) {
-                fotosInput.value = '';
-                return;
-            }
-
-            validFiles.forEach(file => {
-                const nextIndex = parseInt(fotosTotalForms.value);
-
-                // 1. Criar formulário oculto
-                const newFormHtml = emptyFotoTemplate.replace(/__prefix__/g, nextIndex);
-                const wrapper = document.createElement('div');
-                wrapper.className = 'hidden-foto-form';
-                wrapper.dataset.index = nextIndex;
-                wrapper.innerHTML = newFormHtml;
-                fotosHiddenContainer.appendChild(wrapper);
-
-                // 2. Injetar arquivo
-                const dataTransfer = new DataTransfer();
-                dataTransfer.items.add(file);
-                wrapper.querySelector('input[type="file"]').files = dataTransfer.files;
-
-                // 3. Extrair EXIF e Renderizar
-                processImageEXIF(file, nextIndex);
-
-                fotosTotalForms.value = nextIndex + 1;
-            });
-            fotosInput.value = '';
-        }
-
-        function processImageEXIF(file, index) {
-            const reader = new FileReader();
-            reader.onload = function (e) {
-                const img = new Image();
-                img.src = e.target.result;
-
-                EXIF.getData(file, function () {
-                    const lat = EXIF.getTag(this, "GPSLatitude");
-                    const lon = EXIF.getTag(this, "GPSLongitude");
-                    const latRef = EXIF.getTag(this, "GPSLatitudeRef") || "N";
-                    const lonRef = EXIF.getTag(this, "GPSLongitudeRef") || "W";
-                    const dateTime = EXIF.getTag(this, "DateTimeOriginal");
-
-                    let coordsStr = '';
-                    if (lat && lon) {
-                        const latitude = convertDMSToDD(lat[0], lat[1], lat[2], latRef);
-                        const longitude = convertDMSToDD(lon[0], lon[1], lon[2], lonRef);
-                        coordsStr = `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
-
-                        // Salvar no form oculto
-                        const coordsInput = document.querySelector(`input[name="fotos-${index}-coordenadas"]`);
-                        if (coordsInput) coordsInput.value = coordsStr;
-                    }
-
-                    // Salvar no form oculto
-                    const dateInput = document.querySelector(`input[name="fotos-${index}-data_registro"]`);
-                    if (dateInput && dateTime) {
-                        // Converter formato EXIF (YYYY:MM:DD HH:MM:SS) para ISO ou compatível Django
-                        const parts = dateTime.split(/[: ]/);
-                        const isoDate = `${parts[0]}-${parts[1]}-${parts[2]}T${parts[3]}:${parts[4]}:${parts[5]}`;
-                        dateInput.value = isoDate;
-                    }
-
-                    renderFotoRow(file, index, coordsStr, dateTime, img.src);
-                });
-            };
-            reader.readAsDataURL(file);
-        }
-
-        function renderFotoRow(file, index, coords, rawDate, thumbUrl, isExisting = false, existingData = null) {
-            const row = document.createElement('tr');
-            row.className = 'asset-row';
-            row.id = `foto-row-${index}`;
-
-            const displayCoords = coords ? `<span class="gps-badge"><i class="bi bi-geo-alt-fill me-1"></i>${coords}</span>` : '<span class="text-muted small">Sem GPS</span>';
-            const displayDate = rawDate || new Date().toLocaleString('pt-BR');
-            const description = isExisting ? existingData.legenda : '';
-            const finalThumb = isExisting ? existingData.url : thumbUrl;
-
-            row.innerHTML = `
-                <td><img src="${finalThumb}" class="thumb-preview" onclick="window.open('${finalThumb}', '_blank')"></td>
-                <td>
-                    <input type="text" class="form-control form-control-sm foto-desc-input" 
-                           data-index="${index}" value="${description}" placeholder="Legenda da foto...">
-                </td>
-                <td>${displayCoords}</td>
-                <td class="small text-muted">${displayDate}</td>
-                <td><small class="text-muted">${isExisting && existingData.usuario ? existingData.usuario : 'Você'}</small></td>
-                <td class="text-center">
-                    <button type="button" class="btn-remove-asset" onclick="removeAsset('fotos', ${index})">
-                        <i class="bi bi-trash"></i>
-                    </button>
-                </td>
-            `;
-            fotosTableBody.appendChild(row);
-
-            row.querySelector('.foto-desc-input').addEventListener('input', function () {
-                const hiddenInput = document.querySelector(`input[name="fotos-${index}-legenda"]`);
-                if (hiddenInput) hiddenInput.value = this.value;
-            });
-        }
-
-        // --- UTILITÁRIOS ---
-
-        function renderExistingAssets(type) {
-            const container = document.getElementById(`${type}-hidden-forms`);
-            const forms = container.querySelectorAll(`[class^="hidden-${type.slice(0, -1)}"]`);
-
-            forms.forEach(form => {
-                const index = form.dataset.index;
-                const idInput = form.querySelector('input[name$="-id"]');
-
-                // Só renderiza se for item existente (tem PK)
-                if (idInput && idInput.value) {
-                    if (type === 'docs') {
-                        const fileName = form.dataset.filename;
-                        const fileUrl = form.dataset.url;
-                        const descInput = form.querySelector('input[name$="-descricao"]');
-
-                        if (fileName && fileUrl) {
-                            renderDocRow(null, index, true, {
-                                name: fileName.split('/').pop(),
-                                url: fileUrl,
-                                descricao: descInput ? descInput.value : ''
-                            });
-                        }
-                    } else if (type === 'fotos') {
-                        const imgLink = form.querySelector('a');
-                        const descInput = document.querySelector(`input[name="fotos-${index}-legenda"]`);
-                        const coords = form.dataset.coordenadas;
-                        const dateReg = form.dataset.registro;
-                        const dateEnv = form.dataset.envio;
-
-                        if (imgLink) {
-                            renderFotoRow(null, index, coords, dateReg || dateEnv, null, true, {
-                                url: imgLink.href,
-                                legenda: descInput ? descInput.value : ''
-                            });
-                        }
-                    }
-                }
-            });
-        }
-
-        window.removeAsset = function (type, index) {
-            if (confirm('Deseja remover este item?')) {
-                const row = document.getElementById(`${type.slice(0, -1)}-row-${index}`);
-                const hiddenForm = document.querySelector(`[class^="hidden-${type.slice(0, -1)}"][data-index="${index}"]`);
-                const deleteCheckbox = hiddenForm ? hiddenForm.querySelector('input[name$="-DELETE"]') : null;
-
-                if (deleteCheckbox) {
-                    // Item existente: marcar para deleção
-                    deleteCheckbox.checked = true;
-                    row.style.display = 'none';
-                } else if (hiddenForm) {
-                    // Item novo: remover do DOM
-                    hiddenForm.remove();
-                    row.remove();
-                }
-            }
-        };
-
-        function getFileIcon(filename) {
-            const ext = filename.split('.').pop().toLowerCase();
-            if (ext === 'pdf') return '<i class="bi bi-file-earmark-pdf text-danger file-icon"></i>';
-            if (['docx', 'doc'].includes(ext)) return '<i class="bi bi-file-earmark-word text-primary file-icon"></i>';
-            if (['xlsx', 'xls'].includes(ext)) return '<i class="bi bi-file-earmark-excel text-success file-icon"></i>';
-            return '<i class="bi bi-file-earmark-text text-secondary file-icon"></i>';
-        }
-
-        function convertDMSToDD(degrees, minutes, seconds, direction) {
-            let dd = degrees + minutes / 60 + seconds / 3600;
-            if (direction === "S" || direction === "W") dd = dd * -1;
-            return dd;
-        }
-
-        // Suporte a Drag and Drop nas zonas
-        [docsZone, fotosZone].forEach(zone => {
-            zone.addEventListener('dragover', (e) => { e.preventDefault(); zone.classList.add('dragover'); });
-            zone.addEventListener('dragleave', () => zone.classList.remove('dragover'));
-            zone.addEventListener('drop', (e) => {
-                e.preventDefault();
-                zone.classList.remove('dragover');
-                const input = zone.querySelector('input[type="file"]');
-                const dataTransfer = new DataTransfer();
-                Array.from(e.dataTransfer.files).forEach(file => dataTransfer.items.add(file));
-                input.files = dataTransfer.files;
-                input.dispatchEvent(new Event('change'));
-            });
-        });
-
-        // --- CONFORMIDADES (FASE 5) ---
-        const conformidadesTabBtn = document.getElementById('conformidades-tab');
-        if (conformidadesTabBtn && acaoId) {
-            conformidadesTabBtn.addEventListener('shown.bs.tab', function () {
-                initConformidades();
-            }, { once: true });
-        }
-
-        window.initConformidades = function () {
-            const container = document.getElementById('conformidades-list');
-            const loader = document.getElementById('conformidades-loader');
-
-            fetch(`/acoes/acao/${acaoId}/conformidades/data/`)
-                .then(res => res.json())
-                .then(data => {
-                    if (data.status === 'success') {
-                        if (loader) loader.style.display = 'none';
-                        renderConformidades(data.data);
-                    }
-                })
-                .catch(err => {
-                    console.error("Erro ao carregar conformidades:", err);
-                    container.innerHTML = '<div class="alert alert-danger">Erro ao carregar dados de conformidade.</div>';
-                });
-        };
-
-        function renderConformidades(conformidades) {
-            const container = document.getElementById('conformidades-list');
-            container.innerHTML = '';
-
-            if (conformidades.length === 0) {
-                container.innerHTML = `
+        if (conformidades.length === 0) {
+            container.innerHTML = `
                     <div class="text-center py-5 bg-light rounded border border-secondary border-opacity-25 border-dashed" 
                          style="border-style: dashed !important; cursor: pointer;"
                          onclick="document.getElementById('btn-carregar-template').click()">
@@ -1663,13 +854,13 @@
                         <p class="small text-muted mb-0">Clique para carregar de um template ou use os botões acima.</p>
                     </div>
                 `;
-                return;
-            }
+            return;
+        }
 
-            conformidades.forEach(conf => {
-                const groupCard = document.createElement('div');
-                groupCard.className = 'card mb-3 shadow-sm border-0 conformidade-group';
-                groupCard.innerHTML = `
+        conformidades.forEach(conf => {
+            const groupCard = document.createElement('div');
+            groupCard.className = 'card mb-3 shadow-sm border-0 conformidade-group';
+            groupCard.innerHTML = `
                     <div class="card-header bg-light d-flex justify-content-between align-items-center py-2">
                         <h6 class="mb-0 fw-bold text-primary small"><i class="bi bi-folder2-open me-2"></i>${conf.nome}</h6>
                         <div class="d-flex align-items-center gap-3">
@@ -1685,16 +876,17 @@
                         </div>
                     </div>
                 `;
-                container.appendChild(groupCard);
-            });
 
-        }
+            container.appendChild(groupCard);
+        });
 
-        function renderItemRow(item) {
-            const statusIcon = getStatusIcon(item.status);
-            const constatacoesCount = item.constatacoes.length;
+    }
 
-            return `
+    function renderItemRow(item) {
+        const statusIcon = getStatusIcon(item.status);
+        const constatacoesCount = item.constatacoes.length;
+
+        return `
                 <div class="list-group-item item-conformidade p-2 d-flex align-items-center gap-3" id="item-row-${item.id}">
                     <div class="status-btn status-${item.status}" onclick="cycleItemStatus(${item.id}, ${item.status})" id="status-btn-${item.id}" title="Alternar Status">
                         ${statusIcon}
@@ -1722,218 +914,222 @@
                     </div>
                 </div>
             `;
-        }
 
-        function getStatusIcon(status) {
-            if (status === 1) return '<i class="bi bi-check-circle-fill fs-5"></i>';
-            if (status === -1) return '<i class="bi bi-x-circle-fill fs-5"></i>';
-            return '<i class="bi bi-circle fs-5"></i>';
-        }
+    }
 
-        window.cycleItemStatus = function (itemId, currentStatus) {
-            const statusSequence = [0, 1, -1];
-            let nextIndex = (statusSequence.indexOf(currentStatus) + 1) % statusSequence.length;
-            const nextStatus = statusSequence[nextIndex];
+    function getStatusIcon(status) {
+        if (status === 1) return '<i class="bi bi-check-circle-fill fs-5"></i>';
+        if (status === -1) return '<i class="bi bi-x-circle-fill fs-5"></i>';
+        return '<i class="bi bi-circle fs-5"></i>';
+    }
 
-            const btn = document.getElementById(`status-btn-${itemId}`);
-            const oldContent = btn.innerHTML;
-            btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+    window.cycleItemStatus = function (itemId, currentStatus) {
+        const statusSequence = [0, 1, -1];
+        let nextIndex = (statusSequence.indexOf(currentStatus) + 1) % statusSequence.length;
+        const nextStatus = statusSequence[nextIndex];
 
-            const formData = new FormData();
-            formData.append('item_id', itemId);
-            formData.append('status', nextStatus);
+        const btn = document.getElementById(`status-btn-\${itemId}`);
+        const oldContent = btn.innerHTML;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
 
-            fetch('/acoes/conformidades/item/status/update/', {
-                method: 'POST',
-                headers: { 'X-CSRFToken': '{{ csrf_token }}' },
-                body: formData
-            })
-                .then(res => res.json())
-                .then(data => {
-                    if (data.status === 'success') {
-                        btn.className = `status-btn status-${data.status_value}`;
-                        btn.innerHTML = getStatusIcon(data.status_value);
-                        btn.setAttribute('onclick', `cycleItemStatus(${itemId}, ${data.status_value})`);
-                    } else {
-                        btn.innerHTML = oldContent;
-                    }
-                })
-                .catch(err => {
-                    console.error(err);
+        const formData = new FormData();
+        formData.append('item_id', itemId);
+        formData.append('status', nextStatus);
+
+        fetch('/acoes/conformidades/item/status/update/', {
+            method: 'POST',
+            headers: { 'X-CSRFToken': '{{ csrf_token }}' },
+            body: formData
+        })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    btn.className = `status-btn status-\${data.status_value}`;
+                    btn.innerHTML = getStatusIcon(data.status_value);
+                    btn.setAttribute('onclick', `cycleItemStatus(\${itemId}, \${data.status_value})`);
+                } else {
                     btn.innerHTML = oldContent;
-                });
-        };
-
-        window.promptAddConstatacao = function (itemId) {
-            const texto = prompt("Descreva a constatacao para este item:");
-            if (texto && texto.trim()) {
-                addConstatacao(itemId, texto.trim());
-            }
-        };
-
-        function addConstatacao(itemId, texto) {
-            const formData = new FormData();
-            formData.append('item_id', itemId);
-            formData.append('texto', texto);
-
-            fetch('/acoes/conformidades/item/constatacao/add/', {
-                method: 'POST',
-                headers: { 'X-CSRFToken': '{{ csrf_token }}' },
-                body: formData
+                }
             })
-                .then(res => res.json())
-                .then(data => {
-                    if (data.status === 'success') {
-                        const container = document.getElementById(`constatacoes-container-${itemId}`);
-                        const btnPlus = container.querySelector('button');
-
-                        const badge = document.createElement('span');
-                        badge.className = 'badge bg-light text-dark border constatacao-badge py-1 px-2';
-                        badge.title = data.texto;
-                        badge.onclick = () => alert(data.texto);
-                        badge.innerHTML = `<i class="bi bi-chat-left-text me-1 text-primary"></i> ${data.texto.substring(0, 20)}${data.texto.length > 20 ? '...' : ''}`;
-
-                        container.insertBefore(badge, btnPlus);
-                    }
-                });
-        }
-
-        window.promptRenameItem = function (itemId, oldNome) {
-            const novoNome = prompt("Novo nome do item:", oldNome);
-            if (novoNome && novoNome.trim() && novoNome !== oldNome) {
-                const formData = new FormData();
-                formData.append('item_id', itemId);
-                formData.append('nome', novoNome.trim());
-
-                fetch('/acoes/conformidades/item/rename/', {
-                    method: 'POST',
-                    headers: { 'X-CSRFToken': '{{ csrf_token }}' },
-                    body: formData
-                })
-                    .then(res => res.json())
-                    .then(data => {
-                        if (data.status === 'success') {
-                            document.getElementById(`item-nome-${itemId}`).innerText = data.nome;
-                        }
-                    });
-            }
-        };
-
-        const btnCarregar = document.getElementById('btn-carregar-template');
-        if (btnCarregar) {
-            btnCarregar.addEventListener('click', () => {
-                const modalEl = document.getElementById('modal-conformidade-templates');
-                const modal = new bootstrap.Modal(modalEl);
-                modal.show();
-                loadTemplates();
+            .catch(err => {
+                console.error(err);
+                btn.innerHTML = oldContent;
             });
-        }
+    };
 
-        const btnNovoGrupo = document.getElementById('btn-add-conformidade-grupo');
-        if (btnNovoGrupo) {
-            btnNovoGrupo.addEventListener('click', () => {
-                const nome = prompt("Nome do novo grupo de conformidade:");
-                if (nome && nome.trim()) {
-                    criarGrupo(nome.trim());
+    window.promptAddConstatacao = function (itemId) {
+        const texto = prompt("Descreva a constatacao para este item:");
+        if (texto && texto.trim()) {
+            addConstatacao(itemId, texto.trim());
+        }
+    };
+
+    function addConstatacao(itemId, texto) {
+        const formData = new FormData();
+        formData.append('item_id', itemId);
+        formData.append('texto', texto);
+
+        fetch('/acoes/conformidades/item/constatacao/add/', {
+            method: 'POST',
+            headers: { 'X-CSRFToken': '{{ csrf_token }}' },
+            body: formData
+        })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    const container = document.getElementById(`constatacoes-container-\${itemId}`);
+                    const btnPlus = container.querySelector('button');
+
+                    const badge = document.createElement('span');
+                    badge.className = 'badge bg-light text-dark border constatacao-badge py-1 px-2';
+                    badge.title = data.texto;
+                    badge.onclick = () => alert(data.texto);
+                    badge.innerHTML = `<i class="bi bi-chat-left-text me-1 text-primary"></i> \${data.texto.substring(0, 20)}\${data.texto.length > 20 ? '...' : ''}`;
+
+                    container.insertBefore(badge, btnPlus);
                 }
             });
-        }
+    }
 
-        window.promptAddItem = function (confId) {
-            const nome = prompt("Nome do novo item de verificação:");
-            if (nome && nome.trim()) {
-                adicionarItem(confId, nome.trim());
-            }
-        };
+    window.promptRenameItem = function (itemId, oldNome) {
+        const novoNome = prompt("Novo nome do item:", oldNome);
+        if (novoNome && novoNome.trim() && novoNome !== oldNome) {
+            const formData = new FormData();
+            formData.append('item_id', itemId);
+            formData.append('nome', novoNome.trim());
 
-        function loadTemplates() {
-            const container = document.getElementById('templates-list-container');
-            const loader = document.getElementById('templates-loading');
-
-            loader.style.display = 'block';
-            container.innerHTML = '';
-
-            fetch('/acoes/conformidades/templates/list/')
+            fetch('/acoes/conformidades/item/rename/', {
+                method: 'POST',
+                headers: { 'X-CSRFToken': '{{ csrf_token }}' },
+                body: formData
+            })
                 .then(res => res.json())
                 .then(data => {
-                    loader.style.display = 'none';
                     if (data.status === 'success') {
-                        if (data.templates.length === 0) {
-                            container.innerHTML = '<div class="text-center py-4 text-muted fst-italic">Nenhum template cadastrado.</div>';
-                        } else {
-                            data.templates.forEach(t => {
-                                const btn = document.createElement('button');
-                                btn.type = 'button';
-                                btn.className = 'list-group-item list-group-item-action py-3';
-                                btn.innerHTML = `
+                        document.getElementById(`item-nome-\${itemId}`).innerText = data.nome;
+                    }
+                });
+        }
+    };
+
+    const btnCarregar = document.getElementById('btn-carregar-template');
+    if (btnCarregar) {
+        btnCarregar.addEventListener('click', () => {
+            const modalEl = document.getElementById('modal-conformidade-templates');
+            const modal = new bootstrap.Modal(modalEl);
+            modal.show();
+            loadTemplates();
+        });
+    }
+
+    const btnNovoGrupo = document.getElementById('btn-add-conformidade-grupo');
+    if (btnNovoGrupo) {
+        btnNovoGrupo.addEventListener('click', () => {
+            const nome = prompt("Nome do novo grupo de conformidade:");
+            if (nome && nome.trim()) {
+                criarGrupo(nome.trim());
+            }
+        });
+    }
+
+    window.promptAddItem = function (confId) {
+        const nome = prompt("Nome do novo item de verificação:");
+        if (nome && nome.trim()) {
+            adicionarItem(confId, nome.trim());
+        }
+    };
+
+    function loadTemplates() {
+        const container = document.getElementById('templates-list-container');
+        const loader = document.getElementById('templates-loading');
+
+        loader.style.display = 'block';
+        container.innerHTML = '';
+
+        fetch('/acoes/conformidades/templates/list/')
+            .then(res => res.json())
+            .then(data => {
+                loader.style.display = 'none';
+                if (data.status === 'success') {
+                    if (data.templates.length === 0) {
+                        container.innerHTML = '<div class="text-center py-4 text-muted fst-italic">Nenhum template cadastrado.</div>';
+                    } else {
+                        data.templates.forEach(t => {
+                            const btn = document.createElement('button');
+                            btn.type = 'button';
+                            btn.className = 'list-group-item list-group-item-action py-3';
+                            btn.innerHTML = `
                                     <div class="d-flex justify-content-between align-items-center">
                                         <div>
                                             <h6 class="mb-1 fw-bold">${t.nome}</h6>
                                             <p class="small text-muted mb-0">${t.descricao || 'Sem descrição'}</p>
+
                                         </div>
                                         <i class="bi bi-chevron-right text-muted"></i>
                                     </div>
                                 `;
-                                btn.onclick = () => aplicarTemplate(t.id);
-                                container.appendChild(btn);
-                            });
-                        }
+                            btn.onclick = () => aplicarTemplate(t.id);
+                            container.appendChild(btn);
+                        });
                     }
-                });
-        }
+                }
+            });
+    }
 
-        function aplicarTemplate(templateId) {
-            if (!confirm("Isso adicionará novos itens ao formulário. Deseja prosseguir?")) return;
+    function aplicarTemplate(templateId) {
+        if (!confirm("Isso adicionará novos itens ao formulário. Deseja prosseguir?")) return;
 
-            const formData = new FormData();
-            formData.append('template_id', templateId);
+        const formData = new FormData();
+        formData.append('template_id', templateId);
 
-            fetch(`/acoes/acao/${acaoId}/conformidades/aplicar-template/`, {
-                method: 'POST',
-                headers: { 'X-CSRFToken': '{{ csrf_token }}' },
-                body: formData
-            })
-                .then(res => res.json())
-                .then(data => {
-                    if (data.status === 'success') {
-                        const modalEl = document.getElementById('modal-conformidade-templates');
-                        const modal = bootstrap.Modal.getInstance(modalEl);
-                        if (modal) modal.hide();
-                        initConformidades();
-                    }
-                });
-        }
+        fetch(`/acoes/acao/${acaoId}/conformidades/aplicar-template/`, {
 
-        function criarGrupo(nome) {
-            const formData = new FormData();
-            formData.append('nome', nome);
+            method: 'POST',
+            headers: { 'X-CSRFToken': '{{ csrf_token }}' },
+            body: formData
+        })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    const modalEl = document.getElementById('modal-conformidade-templates');
+                    const modal = bootstrap.Modal.getInstance(modalEl);
+                    if (modal) modal.hide();
+                    initConformidades();
+                }
+            });
+    }
 
-            fetch(`/acoes/acao/${acaoId}/conformidades/grupo/criar/`, {
-                method: 'POST',
-                headers: { 'X-CSRFToken': '{{ csrf_token }}' },
-                body: formData
-            })
-                .then(res => res.json())
-                .then(data => {
-                    if (data.status === 'success') initConformidades();
-                });
-        }
+    function criarGrupo(nome) {
+        const formData = new FormData();
+        formData.append('nome', nome);
 
-        function adicionarItem(confId, nome) {
-            const formData = new FormData();
-            formData.append('conformidade_id', confId);
-            formData.append('nome', nome);
+        fetch(`/acoes/acao/${acaoId}/conformidades/grupo/criar/`, {
 
-            fetch('/acoes/conformidades/item/adicionar/', {
-                method: 'POST',
-                headers: { 'X-CSRFToken': '{{ csrf_token }}' },
-                body: formData
-            })
-                .then(res => res.json())
-                .then(data => {
-                    if (data.status === 'success') initConformidades();
-                });
-        }
+            method: 'POST',
+            headers: { 'X-CSRFToken': '{{ csrf_token }}' },
+            body: formData
+        })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success') initConformidades();
+            });
+    }
+
+    function adicionarItem(confId, nome) {
+        const formData = new FormData();
+        formData.append('conformidade_id', confId);
+        formData.append('nome', nome);
+
+        fetch('/acoes/conformidades/item/adicionar/', {
+            method: 'POST',
+            headers: { 'X-CSRFToken': '{{ csrf_token }}' },
+            body: formData
+        })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success') initConformidades();
+            });
+    }
 
     });
 </script>
