@@ -19,6 +19,17 @@ def acao_foto_upload(request, pk):
         return JsonResponse({'success': False, 'error': 'Nenhuma imagem enviada.'}, status=400)
     
     imagem = request.FILES['imagem']
+    
+    # 1. Validação de Extensão
+    import os
+    ext = os.path.splitext(imagem.name)[1].lower()
+    if ext not in ['.jpg', '.jpeg', '.png', '.webp']:
+        return JsonResponse({'success': False, 'error': 'Formato não permitido. Use apenas JPG, PNG ou WEBP.'}, status=400)
+
+    # 2. Validação de Conteúdo (Simples)
+    if not imagem.content_type.startswith('image/'):
+        return JsonResponse({'success': False, 'error': 'O arquivo não é uma imagem.'}, status=400)
+    
     nome = request.POST.get('nome', '')
     descricao = request.POST.get('descricao', '')
     coordenadas = request.POST.get('coordenadas', '')
@@ -27,8 +38,7 @@ def acao_foto_upload(request, pk):
         foto = AcaoFoto(
             acao=acao,
             imagem=imagem,
-            nome=nome,
-            descricao=descricao,
+            legenda=nome or descricao, # Usar legenda em vez de nome/descricao (estavam ausentes no model?)
             coordenadas=coordenadas,
             usuario=request.user
         )

@@ -587,13 +587,30 @@ def add_constatacao_ajax(request):
 @require_POST
 @permission_required('acoes.change_acao', raise_exception=True)
 def upload_foto_item_ajax(request):
-    """Realiza upload de foto vinculado a um item de conformidade."""
+    """Realiza upload de foto vinculado a um item de conformidade com validação rigorosa."""
     item_id = request.POST.get('item_id')
     if not item_id or 'imagem' not in request.FILES:
         return JsonResponse({'status': 'error', 'message': 'Dados incompletos.'}, status=400)
     
-    item = get_object_or_404(ItemConformidade, id=item_id)
     imagem = request.FILES['imagem']
+    
+    # Validação de Extensão
+    import os
+    ext = os.path.splitext(imagem.name)[1].lower()
+    if ext not in ['.jpg', '.jpeg', '.png', '.webp']:
+        return JsonResponse({
+            'status': 'error', 
+            'message': 'Formato de arquivo não permitido. Use apenas JPG, PNG ou WEBP.'
+        }, status=400)
+
+    # Validação de Conteúdo (Simples)
+    if not imagem.content_type.startswith('image/'):
+        return JsonResponse({
+            'status': 'error',
+            'message': 'O arquivo enviado não é uma imagem válida.'
+        }, status=400)
+    
+    item = get_object_or_404(ItemConformidade, id=item_id)
     
     try:
         foto = AcaoFoto.objects.create(
