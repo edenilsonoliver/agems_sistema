@@ -237,13 +237,13 @@ def diretoria_create(request):
 
 import zipfile
 import os
-import magic
 from django.utils.text import slugify
 
 @require_POST
 @permission_required('instrumentos.change_instrumento', raise_exception=True)
 def arquivo_upload(request, instrumento_id):
     """Upload de arquivo para instrumento via AJAX com validação de segurança"""
+    import magic
     instrumento = get_object_or_404(Instrumento, pk=instrumento_id)
     arquivo = request.FILES.get('arquivo')
     nome = request.POST.get('nome_arquivo', '')

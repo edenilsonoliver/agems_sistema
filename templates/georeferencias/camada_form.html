@@ -27,7 +27,8 @@
                     {% if not object and form.arquivo_kml %}
                     <div class="alert alert-info">
                         <i class="bi bi-info-circle-fill me-2"></i>
-                        O sistema irá processar o arquivo KML e extrair apenas os pontos geométricos (Placemarks).
+                        O sistema irá processar o arquivo KML e extrair elementos de <strong>Ponto, Linha e
+                            Polígono</strong>.
                         O processamento pode levar alguns instantes.
                     </div>
                     {% endif %}
@@ -95,8 +96,8 @@
                         (<code>.kmz</code>) devem ser extraídos antes.</p>
 
                     <h6>Estrutura do KML</h6>
-                    <p class="small text-muted">O sistema lê os <code>Placemarks</code> que contêm geometria de Ponto.
-                        Polígonos e Linhas são ignorados nesta versão.</p>
+                    <p class="small text-muted">O sistema lê os <code>Placemarks</code> que contêm geometria de Ponto,
+                        Linha ou Polígono.</p>
 
                     <h6>Atributos Importados</h6>
                     <ul class="small text-muted ps-3">

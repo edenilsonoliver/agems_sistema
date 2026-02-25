@@ -3,7 +3,6 @@ from django import forms
 from .models import Acao, ChecklistItem
 from usuarios.models import Usuario
 from django.forms import inlineformset_factory
-import magic
 import os
 import logging
 
@@ -175,6 +174,7 @@ class AcaoDocumentoForm(forms.ModelForm):
             # Detecção de MIME universal (tenta API v0.4.x e APIs alternativas)
             mime_type = None
             try:
+                import magic
                 # Tentativa 1: API orientada a objeto (mais estável)
                 m = magic.Magic(mime=True)
                 mime_type = m.from_buffer(chunk)
@@ -268,6 +268,7 @@ class AcaoFotoForm(forms.ModelForm):
             # Detecção de MIME universal
             mime_type = None
             try:
+                import magic
                 m = magic.Magic(mime=True)
                 mime_type = m.from_buffer(chunk)
             except AttributeError:

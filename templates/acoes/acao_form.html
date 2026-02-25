@@ -619,34 +619,76 @@
         }
     }
 
-    function carregarPontosCamada(camadaId, cor, icone) {
+    function carregarPontosCamada(camadaId, corPadrao, iconePadrao) {
         fetch(`/georeferencias/api/camada/${camadaId}/pontos/`)
             .then(res => res.json())
             .then(data => {
                 if (data.pontos) {
                     const layerGroup = L.layerGroup();
                     data.pontos.forEach(p => {
-                        const marker = L.circleMarker([p.latitude, p.longitude], {
-                            radius: 6,
-                            fillColor: cor || '#3388ff',
-                            color: '#fff',
-                            weight: 1,
-                            opacity: 1,
-                            fillOpacity: 0.8
-                        });
-                        marker.bindPopup(`
-                            <div class="p-1" style="min-width: 150px;">
-                                <h6 class="mb-1 fw-bold text-primary">${p.nome}</h6>
-                                <p class="small text-muted mb-0">${p.descricao || ''}</p>
-                            </div>
-                        `);
-                        layerGroup.addLayer(marker);
+                        let layer;
+                        const estilo = p.estilo_json || {};
+                        const color = estilo.icon_color || estilo.stroke_color || corPadrao || '#3388ff';
+                        const weight = estilo.stroke_width || 3;
+                        const opacity = estilo.stroke_opacity || 0.8;
+                        const fillColor = estilo.fill_color || color;
+                        const fillOpacity = estilo.fill_opacity || 0.2;
+
+                        if (p.tipo_geometria === 'Point') {
+                            layer = L.circleMarker([p.latitude, p.longitude], {
+                                radius: 6,
+                                fillColor: color,
+                                color: '#fff',
+                                weight: 1,
+                                opacity: 1,
+                                fillOpacity: 0.8
+                            });
+                        } else if (p.tipo_geometria === 'LineString' && p.coordenadas_json) {
+                            // Converter [lon, lat] para [lat, lon] para o Leaflet
+                            const latlngs = p.coordenadas_json.map(c => [c[1], c[0]]);
+                            layer = L.polyline(latlngs, {
+                                color: color,
+                                weight: weight,
+                                opacity: opacity
+                            });
+                        } else if (p.tipo_geometria === 'Polygon' && p.coordenadas_json) {
+                            // Polygon no GeoJSON style é [[[lon, lat], ...]]
+                            // Leaflet Polygon quer [lat, lon] ou [[lat, lon], ...]
+                            const latlngs = p.coordenadas_json[0].map(c => [c[1], c[0]]);
+                            layer = L.polygon(latlngs, {
+                                color: color,
+                                weight: weight,
+                                opacity: opacity,
+                                fillColor: fillColor,
+                                fillOpacity: fillOpacity
+                            });
+                        }
+
+                        if (layer) {
+                            // Tooltip no mouseover (Requisito 2)
+                            layer.bindTooltip(p.nome, {
+                                sticky: true,
+                                direction: 'top',
+                                offset: [0, -5]
+                            });
+
+                            // Popup no clique (Interatividade)
+                            layer.bindPopup(`
+                                <div class="p-1" style="min-width: 150px;">
+                                    <h6 class="mb-1 fw-bold text-primary">${p.nome}</h6>
+                                    <p class="small text-muted mb-0">${p.descricao || ''}</p>
+                                    <hr class="my-1">
+                                    <small class="text-muted">Tipo: ${p.tipo_geometria}</small>
+                                </div>
+                            `);
+                            layerGroup.addLayer(layer);
+                        }
                     });
                     camadasReferencia[camadaId] = layerGroup;
                     leafletMap.addLayer(layerGroup);
                 }
             })
-            .catch(err => console.error(`Erro:`, err));
+            .catch(err => console.error(`Erro ao carregar pontos:`, err));
     }
 
     function carregarMarcadores() {

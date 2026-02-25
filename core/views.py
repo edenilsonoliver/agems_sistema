@@ -2,6 +2,8 @@ from django.views.generic import ListView, CreateView, UpdateView, DeleteView, D
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib import messages
 from django.urls import reverse_lazy
+from django.http import Http404
+from django.shortcuts import redirect
 
 
 class ModernListView(LoginRequiredMixin, ListView):
@@ -59,7 +61,7 @@ class ModernCreateView(LoginRequiredMixin, CreateView):
 class ModernUpdateView(LoginRequiredMixin, UpdateView):
     """View genérica para edição moderna"""
     template_name = 'components/form_view.html'
-    
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['form_title'] = f'Editar {self.model._meta.verbose_name.title()}'
@@ -81,6 +83,18 @@ class ModernUpdateView(LoginRequiredMixin, UpdateView):
             context['delete_url'] = reverse_lazy(f'{self.model._meta.model_name}_delete', args=[self.object.pk])
 
         return context
+
+    def dispatch(self, request, *args, **kwargs):
+        try:
+            return super().dispatch(request, *args, **kwargs)
+        except Http404:
+            try:
+                list_url = reverse_lazy(f'{self.model._meta.model_name}_list')
+            except:
+                list_url = '/'
+            
+            messages.error(request, f'{self.model._meta.verbose_name.title()} não encontrado.')
+            return redirect(list_url)
     
     def form_valid(self, form):
         messages.success(self.request, f'{self.model._meta.verbose_name.title()} atualizado com sucesso!')
@@ -105,6 +119,18 @@ class ModernDeleteView(LoginRequiredMixin, DeleteView):
             context['list_url'] = reverse_lazy(f'{self.model._meta.model_name}_list')
             
         return context
+
+    def dispatch(self, request, *args, **kwargs):
+        try:
+            return super().dispatch(request, *args, **kwargs)
+        except Http404:
+            try:
+                list_url = reverse_lazy(f'{self.model._meta.model_name}_list')
+            except:
+                list_url = '/'
+            
+            messages.error(request, f'{self.model._meta.verbose_name.title()} não encontrado.')
+            return redirect(list_url)
     
     def post(self, request, *args, **kwargs):
         """
