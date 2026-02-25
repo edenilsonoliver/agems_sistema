@@ -27,6 +27,7 @@ urlpatterns = [
     path('conformidades/item/status/update/', views.update_item_status_ajax, name='update_item_status_ajax'),
     path('conformidades/item/constatacao/add/', views.add_constatacao_ajax, name='add_constatacao_ajax'),
     path('conformidades/constatacao/remove/', views.remove_constatacao_ajax, name='remove_constatacao_ajax'),
+    path('conformidades/item/foto/upload/', views.upload_foto_item_ajax, name='upload_foto_item_ajax'),
     path('conformidades/item/rename/', views.rename_item_ajax, name='rename_item_ajax'),
     
     # Gerenciamento de Templates e Grupos

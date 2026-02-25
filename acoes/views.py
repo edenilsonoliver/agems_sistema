@@ -203,9 +203,14 @@ class AcaoCreateView(PermissionRequiredMixin, ModernCreateView):
             
             self.save_assets(self.object, docs_formset, fotos_formset)
             
+            if self.request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                return JsonResponse({'status': 'success', 'id': self.object.id})
+            
             messages.success(self.request, f'Ação "{self.object.nome}" criada com sucesso!')
             return redirect(self.success_url)
         else:
+            if self.request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                return JsonResponse({'status': 'error', 'message': 'Erro nos formulários relacionados.'}, status=400)
             # Coleta erros de tudo para exibição clara
             all_forms = [
                 ('Dados Gerais', form),
@@ -217,6 +222,9 @@ class AcaoCreateView(PermissionRequiredMixin, ModernCreateView):
                 if hasattr(fs, 'errors') and fs.errors:
                     messages.error(self.request, f"Erro em {label}. Verifique os campos.")
             
+            if self.request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                return JsonResponse({'status': 'error', 'message': 'Dados inválidos.'}, status=400)
+
             return self.render_to_response(self.get_context_data(form=form))
 
 
@@ -318,9 +326,14 @@ class AcaoUpdateView(PermissionRequiredMixin, ModernUpdateView):
             # Conformidades são geridas via AJAX na Fase 5
             # Removido conformidades.save() para evitar crash
 
+            if self.request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                return JsonResponse({'status': 'success', 'id': self.object.id})
+
             messages.success(self.request, f'Ação "{self.object.nome}" atualizada com sucesso!')
             return redirect(self.success_url)
         else:
+            if self.request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                return JsonResponse({'status': 'error', 'message': 'Erro nos formulários relacionados.'}, status=400)
             # Coleta erros de tudo para exibição clara
             all_forms = [
                 ('Dados Gerais', form),
@@ -331,6 +344,9 @@ class AcaoUpdateView(PermissionRequiredMixin, ModernUpdateView):
             for label, fs in all_forms:
                 if hasattr(fs, 'errors') and fs.errors:
                     messages.error(self.request, f"Erro em {label}. Verifique os campos.")
+
+            if self.request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                return JsonResponse({'status': 'error', 'message': 'Dados inválidos.'}, status=400)
 
             return self.render_to_response(self.get_context_data(form=form))
 
@@ -565,6 +581,36 @@ def add_constatacao_ajax(request):
         'texto': constatacao.texto,
         'data': constatacao.data_criacao.strftime('%d/%m/%Y %H:%M')
     })
+
+
+@csrf_exempt
+@require_POST
+@permission_required('acoes.change_acao', raise_exception=True)
+def upload_foto_item_ajax(request):
+    """Realiza upload de foto vinculado a um item de conformidade."""
+    item_id = request.POST.get('item_id')
+    if not item_id or 'imagem' not in request.FILES:
+        return JsonResponse({'status': 'error', 'message': 'Dados incompletos.'}, status=400)
+    
+    item = get_object_or_404(ItemConformidade, id=item_id)
+    imagem = request.FILES['imagem']
+    
+    try:
+        foto = AcaoFoto.objects.create(
+            acao=item.conformidade.acao,
+            item_conformidade=item,
+            imagem=imagem,
+            usuario=request.user,
+            legenda=f"Evidência: {item.nome}"
+        )
+        return JsonResponse({
+            'status': 'success',
+            'id': foto.id,
+            'url': foto.imagem.url,
+            'legenda': foto.legenda
+        })
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
 
 
 @csrf_exempt

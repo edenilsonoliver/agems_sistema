@@ -312,23 +312,25 @@
                 <div class="tab-pane fade" id="conformidades">
                     <div class="d-flex justify-content-between mb-3">
                         <h5 class="text-primary mb-0"><i class="bi bi-list-check me-2"></i>Verificação Técnica</h5>
-                        {% if object %}
                         <div class="btn-group btn-group-sm">
                             <button type="button" class="btn btn-primary" id="btn-carregar-template"><i
-                                    class="bi bi-list-task me-1"></i> Template</button>
+                                     class="bi bi-list-task me-1"></i> Template</button>
                             <button type="button" class="btn btn-outline-primary" id="btn-add-conformidade-grupo"><i
-                                    class="bi bi-plus"></i> Novo Grupo</button>
+                                     class="bi bi-plus"></i> Novo Grupo</button>
                         </div>
-                        {% endif %}
                     </div>
-                    {% if not object %}
-                    <div class="alert alert-info">Salve a ação para gerenciar itens de conformidade.</div>
-                    {% endif %}
+                    <div id="no-object-alert" class="alert alert-info" style="display: none;">Preencha os dados básicos da ação e clique no botão abaixo para habilitar a verificação técnica.</div>
+                    <div id="btn-init-inspection-container" class="text-center py-3" style="display: none;">
+                        <button type="button" class="btn btn-primary btn-lg px-5 shadow" id="btn-init-inspection">
+                            <i class="bi bi-play-circle me-2"></i>Iniciar Inspeção / Habilitar Itens
+                        </button>
+                    </div>
                     <div id="conformidades-loader" class="text-center py-5" style="display:none;">
                         <div class="spinner-border text-primary"></div>
                         <p class="text-muted mt-2">Carregando conformidades...</p>
                     </div>
                     <div id="conformidades-list"></div>
+                    <input type="file" id="conformidade-item-foto-input" style="display:none;" accept="image/*">
                 </div>
             </div>
         </div>
@@ -363,12 +365,12 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function () {
-        const acaoId = "{{ object.id|default:'' }}";
         const tipoAcaoSelect = document.getElementById('id_tipo_acao');
         const instrumentoSelect = document.getElementById('id_instrumento');
         const obrigacaoSelect = document.getElementById('id_obrigacao');
         const fiscalizacaoIds = JSON.parse(document.getElementById('fiscalizacao-ids-data').textContent);
         const csrfToken = '{{ csrf_token }}';
+        let currentAcaoId = "{{ object.id|default:'' }}";
 
         // Cascading dropdown: Instrumento -> Obrigação
         instrumentoSelect?.addEventListener('change', function () {
@@ -418,19 +420,31 @@
 
         // --- LÓGICA DE CONFORMIDADES ---
         const conformidadesTabBtn = document.getElementById('conformidades-tab');
-        if (conformidadesTabBtn && acaoId) {
-            conformidadesTabBtn.addEventListener('shown.bs.tab', () => initConformidades(), { once: true });
+        if (conformidadesTabBtn) {
+            conformidadesTabBtn.addEventListener('shown.bs.tab', () => initConformidades());
         }
 
         window.initConformidades = function () {
             const container = document.getElementById('conformidades-list');
             const loader = document.getElementById('conformidades-loader');
+            const noObjectAlert = document.getElementById('no-object-alert');
+            const initBtn = document.getElementById('btn-init-inspection-container');
+            
             if (!container || !loader) return;
 
+            if (!currentAcaoId) {
+                noObjectAlert.style.display = 'block';
+                initBtn.style.display = 'block';
+                container.innerHTML = '';
+                return;
+            }
+
+            noObjectAlert.style.display = 'none';
+            initBtn.style.display = 'none';
             loader.style.display = 'block';
             container.innerHTML = '';
 
-            fetch(`/acoes/acao/${acaoId}/conformidades/data/`)
+            fetch(`/acoes/acao/${currentAcaoId}/conformidades/data/`)
                 .then(r => r.json())
                 .then(data => {
                     loader.style.display = 'none';
@@ -485,20 +499,36 @@
                 (item.status === -1 ? '<i class="bi bi-x-circle-fill fs-5"></i>' : '<i class="bi bi-circle fs-5"></i>');
 
             return `
-            <div class="list-group-item item-conformidade p-2 d-flex align-items-center gap-3" id="item-row-${item.id}" data-id="${item.id}">
-                <i class="bi bi-grip-vertical item-drag-handle drag-handle"></i>
-                <div class="status-btn status-${item.status}" onclick="cycleItemStatus(${item.id}, ${item.status})" id="status-btn-${item.id}">${icon}</div>
+            <div class="list-group-item item-conformidade p-2 d-flex align-items-start gap-2" id="item-row-${item.id}" data-id="${item.id}">
+                <i class="bi bi-grip-vertical item-drag-handle drag-handle mt-2"></i>
+                <div class="status-btn status-${item.status} mt-1" onclick="cycleItemStatus(${item.id}, ${item.status})" id="status-btn-${item.id}">${icon}</div>
                 <div class="flex-grow-1">
                     <div class="fw-semibold small d-flex align-items-center gap-2">
                         <span class="editable-name" onclick="startEditItem(${item.id}, this)">${item.nome}</span>
                         <button type="button" class="btn btn-sm btn-link btn-delete-item p-0" onclick="deleteItem(${item.id})"><i class="bi bi-trash"></i></button>
                     </div>
-                    <div class="d-flex gap-1 flex-wrap mt-1" id="constatacoes-${item.id}">
-                        ${item.constatacoes.map(c => `<span class="badge bg-light text-dark border constatacao-badge" onclick="alert('${c.texto.replace(/'/g, "\\'")}')" title="${c.texto}"><i class="bi bi-chat-left-text me-1 text-primary"></i> ${c.texto.substring(0, 20)}...</span>`).join('')}
-                        <button type="button" class="btn btn-sm btn-link p-0 small text-decoration-none" onclick="promptAddConstatacao(${item.id})" style="font-size:0.75rem">+ Constatação</button>
+                    
+                    <div class="constatacoes-wrapper mt-2" id="wrapper-constatacoes-${item.id}">
+                        <div class="constatacoes-list d-flex flex-column gap-1 mb-2" id="list-constatacoes-${item.id}">
+                            ${item.constatacoes.map(c => `
+                                <div class="constatacao-inline-item d-flex justify-content-between align-items-start bg-light p-1 rounded border-start border-3 border-primary" style="font-size: 0.75rem;">
+                                    <span class="text-dark">${c.texto}</span>
+                                    <button type="button" class="btn btn-sm p-0 text-danger ms-2" onclick="removeConstatacao(${c.id}, ${item.id})"><i class="bi bi-x"></i></button>
+                                </div>
+                            `).join('')}
+                        </div>
+                        <div class="d-flex gap-1 align-items-center">
+                            <input type="text" class="form-control form-control-sm constatacao-input" id="input-constatacao-${item.id}" placeholder="Nova constatação..." onkeydown="handleConstatacaoKey(event, ${item.id})" style="font-size: 0.75rem;">
+                            <button type="button" class="btn btn-sm btn-primary" onclick="addConstatacaoInline(${item.id})"><i class="bi bi-plus"></i></button>
+                        </div>
                     </div>
                 </div>
-                <div class="text-end small text-muted"><i class="bi bi-camera me-1"></i>${item.fotos_count}</div>
+                <div class="text-end">
+                    <button type="button" class="btn btn-sm btn-link text-muted p-0 d-flex flex-column align-items-center text-decoration-none" onclick="triggerItemPhotoUpload(${item.id})">
+                        <i class="bi bi-camera fs-5"></i>
+                        <span class="small" id="photo-count-${item.id}">${item.fotos_count}</span>
+                    </button>
+                </div>
             </div>
         `;
         }
@@ -635,16 +665,181 @@
                 });
         };
 
-        window.promptAddConstatacao = function (id) {
-            const text = prompt("Digite a constatação:");
-            if (text && text.trim()) {
-                const fd = new FormData(); fd.append('item_id', id); fd.append('texto', text.trim());
+        window.addConstatacaoInline = function (id) {
+            const input = document.getElementById(`input-constatacao-${id}`);
+            const text = input.value.trim();
+            if (text) {
+                input.disabled = true;
+                const fd = new FormData(); fd.append('item_id', id); fd.append('texto', text);
                 fetch('/acoes/conformidades/item/constatacao/add/', { method: 'POST', headers: { 'X-CSRFToken': csrfToken }, body: fd })
-                    .then(r => r.json()).then(d => { if (d.status === 'success') initConformidades(); });
+                    .then(r => r.json()).then(d => {
+                        input.disabled = false;
+                        if (d.status === 'success') {
+                            input.value = '';
+                            const list = document.getElementById(`list-constatacoes-${id}`);
+                            const div = document.createElement('div');
+                            div.className = 'constatacao-inline-item d-flex justify-content-between align-items-start bg-light p-1 rounded border-start border-3 border-primary';
+                            div.style.fontSize = '0.75rem';
+                            div.innerHTML = `
+                                <span class="text-dark">${d.texto}</span>
+                                <button type="button" class="btn btn-sm p-0 text-danger ms-2" onclick="removeConstatacao(${d.id}, ${id})"><i class="bi bi-x"></i></button>
+                            `;
+                            list.appendChild(div);
+                        }
+                    }).catch(() => input.disabled = false);
             }
         };
 
+        window.handleConstatacaoKey = function(event, itemId) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                addConstatacaoInline(itemId);
+            }
+        };
+
+        window.removeConstatacao = function(constId, itemId) {
+            if (!confirm("Remover esta constatação?")) return;
+            const fd = new FormData(); fd.append('const_id', constId);
+            fetch('/acoes/conformidades/constatacao/remove/', { method: 'POST', headers: { 'X-CSRFToken': csrfToken }, body: fd })
+                .then(r => r.json()).then(d => {
+                    if (d.status === 'success') {
+                        // Poderia simplificar com initConformidades() mas vamos remover do DOM
+                        initConformidades(); // Mais seguro pois atualiza tudo
+                    }
+                });
+        };
+
+        let activeItemIdForPhoto = null;
+        window.triggerItemPhotoUpload = function(itemId) {
+            activeItemIdForPhoto = itemId;
+            document.getElementById('conformidade-item-foto-input').click();
+        };
+
+        document.getElementById('conformidade-item-foto-input')?.addEventListener('change', function(e) {
+            if (!this.files || !this.files[0] || !activeItemIdForPhoto) return;
+            
+            const file = this.files[0];
+            const fd = new FormData();
+            fd.append('item_id', activeItemIdForPhoto);
+            fd.append('imagem', file);
+            
+            const countLabel = document.getElementById(`photo-count-${activeItemIdForPhoto}`);
+            const originalText = countLabel.innerText;
+            countLabel.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+
+            fetch('/acoes/conformidades/item/foto/upload/', {
+                method: 'POST',
+                headers: { 'X-CSRFToken': csrfToken },
+                body: fd
+            })
+            .then(r => r.json())
+            .then(d => {
+                if (d.status === 'success') {
+                    const currentCount = parseInt(originalText) || 0;
+                    countLabel.innerText = currentCount + 1;
+                    
+                    // Opcional: Adicionar foto na listagem geral de Fotos (fotos-container)
+                    const fotosContainer = document.getElementById('fotos-container');
+                    if (fotosContainer) {
+                        const totalFotos = document.getElementById('id_fotos-TOTAL_FORMS');
+                        const count = parseInt(totalFotos.value);
+                        const div = document.createElement('div');
+                        div.className = 'col';
+                        div.innerHTML = `
+                            <div class="card h-100 shadow-sm border border-success">
+                                <img src="${d.url}" class="card-img-top" style="height:120px; object-fit:cover;">
+                                <div class="card-body p-2 small">
+                                    <div class="text-truncate" title="${d.legenda}">${d.legenda}</div>
+                                    <div class="text-muted" style="font-size: 0.6rem;">Vinculado via Conformidade</div>
+                                </div>
+                            </div>
+                        `;
+                        fotosContainer.prepend(div);
+                        // Não incrementamos TOTAL_FORMS aqui para não tentar salvar de novo no submit principal, 
+                        // pois já foi salvo via AJAX. Apenas exibimos visualmente.
+                    }
+                } else {
+                    countLabel.innerText = originalText;
+                    alert("Erro ao enviar foto: " + d.message);
+                }
+            })
+            .catch(err => {
+                countLabel.innerText = originalText;
+                alert("Erro na requisição.");
+            });
+            
+            this.value = ''; // Reset input
+        });
+
+        document.getElementById('btn-init-inspection')?.addEventListener('click', function() {
+            const form = document.getElementById('acao-form');
+            if (!form.reportValidity()) return;
+            
+            const btn = this;
+            const originalContent = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Salvando ação...';
+            
+            const fd = new FormData(form);
+            fetch(window.location.href, {
+                method: 'POST',
+                body: fd,
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            })
+            .then(r => {
+                if (r.redirected) {
+                    // Se foi redirecionado, significa que salvou e foi para a lista.
+                    // Mas queremos continuar aqui. Então vamos pegar o ID do destino ou da resposta.
+                    window.location.href = r.url; // Redireciona para o UpdateView se o create foi sucesso? 
+                    // Melhor: o Django ModernCreateView redireciona para o success_url.
+                    return;
+                }
+                return r.json();
+            })
+            .then(d => {
+                if (d && d.status === 'success') {
+                    currentAcaoId = d.id;
+                    initConformidades();
+                } else if (d && d.status === 'error') {
+                    alert("Erro ao salvar: " + d.message);
+                    btn.disabled = false;
+                    btn.innerHTML = originalContent;
+                } else {
+                    // Se for HTML, provavelmente falhou validação e retornou o form com erros
+                    // Podemos tentar enviar o form tradicionalmente para mostrar os erros
+                    form.submit();
+                }
+            })
+            .catch(err => {
+                // Em caso de dúvida, submete o form normal
+                form.submit();
+            });
+        });
+
+        // Modificar o link de criar grupo e template para usar currentAcaoId
+        document.getElementById('btn-add-conformidade-grupo')?.addEventListener('click', () => {
+            if (!currentAcaoId) { 
+                document.getElementById('btn-init-inspection')?.click();
+                return;
+            }
+            const fd = new FormData(); fd.append('nome', 'Novo Grupo');
+            fetch(`/acoes/acao/${currentAcaoId}/conformidades/grupo/criar/`, { method: 'POST', headers: { 'X-CSRFToken': csrfToken }, body: fd })
+                .then(r => r.json()).then(d => {
+                    if (d.status === 'success') {
+                        initConformidades();
+                        setTimeout(() => {
+                            const newGroup = document.querySelector(`.conformidade-group[data-id="${d.id}"] .editable-name`);
+                            if (newGroup) newGroup.click();
+                        }, 600);
+                    }
+                });
+        });
+
         document.getElementById('btn-carregar-template')?.addEventListener('click', () => {
+             if (!currentAcaoId) { 
+                document.getElementById('btn-init-inspection')?.click();
+                return;
+            }
             const modal = new bootstrap.Modal(document.getElementById('modal-templates'));
             modal.show();
             const list = document.getElementById('templates-list');
@@ -659,7 +854,7 @@
                     b.onclick = () => {
                         if (confirm("Aplicar este template?")) {
                             const fd = new FormData(); fd.append('template_id', t.id);
-                            fetch(`/acoes/acao/${acaoId}/conformidades/aplicar-template/`, { method: 'POST', headers: { 'X-CSRFToken': csrfToken }, body: fd })
+                            fetch(`/acoes/acao/${currentAcaoId}/conformidades/aplicar-template/`, { method: 'POST', headers: { 'X-CSRFToken': csrfToken }, body: fd })
                                 .then(r => r.json()).then(res => { if (res.status === 'success') { modal.hide(); initConformidades(); } });
                         }
                     };
@@ -667,6 +862,10 @@
                 });
             });
         });
+
+        window.promptAddConstatacao = function (id) {
+            // Deprecated, em favor do inline
+        };
 
         // --- CHECKLIST & UPLOADS ---
         const addChecklistBtn = document.getElementById('add-checklist-item');
