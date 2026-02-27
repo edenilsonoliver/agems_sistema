@@ -10,7 +10,8 @@
                 <li class="breadcrumb-item active">{% if template %}Editar{% else %}Criar{% endif %} Template</li>
             </ol>
         </nav>
-        <h1 class="page-title mb-0"><i class="bi bi-file-earmark-text me-2"></i>{% if template %}Editar{% else %}Criar{% endif %} Template de Conformidade</h1>
+        <h1 class="page-title mb-0"><i class="bi bi-file-earmark-text me-2"></i>{% if template %}Editar{% else %}Criar{%
+            endif %} Template de Conformidade</h1>
     </div>
     {% if template %}
     <button type="button" class="btn btn-danger" onclick="excluirTemplate({{ template.id }})">

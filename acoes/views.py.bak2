@@ -139,12 +139,6 @@ class AcaoCreateView(PermissionRequiredMixin, ModernCreateView):
             nome__icontains='Fiscalização'
         ).values_list('id', flat=True))
         
-        # Preservar o JSON preenchido caso o form retorne inválido (recarregue na tela)
-        if self.request.method == 'POST':
-            context['saved_conformidades_json'] = self.request.POST.get('conformidades_json', '[]')
-        else:
-            context['saved_conformidades_json'] = '[]'
-        
         return context
 
     def save_assets(self, acao, docs_formset, fotos_formset):
@@ -198,7 +192,7 @@ class AcaoCreateView(PermissionRequiredMixin, ModernCreateView):
         print("=" * 60)
         print("=== FORM_VALID CHAMADO (CREATE) ===")
 
-        context = self.get_context_data(form=form)
+        context = self.get_context_data()
         checklist_formset = context['checklist_formset']
         docs_formset = context['docs_formset']
         fotos_formset = context['fotos_formset']
@@ -256,10 +250,42 @@ class AcaoCreateView(PermissionRequiredMixin, ModernCreateView):
         checklist_formset.save()
         print(f"=== Checklist salvo: {checklist_formset.save.__name__ if hasattr(checklist_formset, 'save') else 'OK'}")
         
-        # Processar conformidades pendentes primeiro (para obter IDs reais para as fotos)
-        fake_item_mapping = {} # Map 'fake frontend id' -> real ItemConformidade instance
+        # Salvar assets (docs/fotos) — apenas se válidos, aviso se não
+        if docs_valid and fotos_valid:
+            self.save_assets(self.object, docs_formset, fotos_formset)
+        else:
+            # Salvar o que for válido individualmente
+            if docs_valid:
+                try:
+                    docs = docs_formset.save(commit=False)
+                    for doc in docs:
+                        doc.acao = self.object
+                        doc.usuario = self.request.user
+                        doc.save()
+                    for obj in docs_formset.deleted_objects:
+                        obj.delete()
+                except Exception as e:
+                    logger.error(f"Erro ao salvar documentos: {e}")
+            else:
+                messages.warning(self.request, "Documentos não foram salvos devido a erros de validação.")
+                
+            if fotos_valid:
+                try:
+                    fotos = fotos_formset.save(commit=False)
+                    for foto in fotos:
+                        foto.acao = self.object
+                        foto.usuario = self.request.user
+                        foto.save()
+                    for obj in fotos_formset.deleted_objects:
+                        obj.delete()
+                except Exception as e:
+                    logger.error(f"Erro ao salvar fotos: {e}")
+            else:
+                messages.warning(self.request, "Fotos não foram salvas devido a erros de validação.")
         
+        # Processar conformidades pendentes (se vierem via JSON em modo criação)
         json_data = self.request.POST.get('conformidades_json')
+        print(f"=== conformidades_json presente: {bool(json_data)}, tamanho: {len(json_data) if json_data else 0}")
         if json_data:
             try:
                 conf_list = json.loads(json_data)
@@ -271,62 +297,16 @@ class AcaoCreateView(PermissionRequiredMixin, ModernCreateView):
                         ordem=g_idx
                     )
                     for i_idx, i_data in enumerate(g_data.get('itens', [])):
-                        item = ItemConformidade.objects.create(
+                        ItemConformidade.objects.create(
                             conformidade=grupo,
                             nome=i_data.get('nome', 'Sem Nome'),
                             status=i_data.get('status', 0),
                             ordem=i_idx
                         )
-                        # Salvar mapeamento caso front-end tenha enviado o fake ID original
-                        fake_id = str(i_data.get('id', ''))
-                        if fake_id:
-                            fake_item_mapping[fake_id] = item
                 logger.info(f"Conformidades criadas com sucesso para ação {self.object.id}")
             except Exception as e:
                 logger.error(f"ERRO AO PROCESSAR CONFORMIDADES JSON: {e}")
                 messages.warning(self.request, "Ação salva, mas ocorreu um erro ao importar as conformidades.")
-
-        # Salvar Ativos
-        if docs_valid:
-            try:
-                docs = docs_formset.save(commit=False)
-                for doc in docs:
-                    doc.acao = self.object
-                    doc.usuario = self.request.user
-                    doc.save()
-                for obj in docs_formset.deleted_objects:
-                    obj.delete()
-            except Exception as e:
-                logger.error(f"Erro ao salvar documentos: {e}")
-                messages.warning(self.request, f"Erro ao salvar documento: {e}")
-        else:
-            messages.warning(self.request, "Documentos não foram salvos devido a erros de validação.")
-            
-        if fotos_valid:
-            try:
-                for f_form in fotos_formset:
-                    if f_form.cleaned_data and not f_form.cleaned_data.get('DELETE'):
-                        foto = f_form.save(commit=False)
-                        foto.acao = self.object
-                        foto.usuario = self.request.user
-                        
-                        # Extrair o fake_id que o form via JS injetou como input hidden
-                        fake_item_id_str = str(self.request.POST.get(f"{f_form.prefix}-item_conformidade", ""))
-                        if fake_item_id_str in fake_item_mapping:
-                            foto.item_conformidade = fake_item_mapping[fake_item_id_str]
-                            
-                        foto.save()
-                        
-                for obj in fotos_formset.deleted_objects:
-                    obj.delete()
-            except Exception as e:
-                logger.error(f"Erro ao salvar fotos: {e}")
-                import traceback
-                traceback.print_exc()
-                messages.warning(self.request, f"Erro ao detalhado ao salvar fotos: {e}")
-        else:
-            errs = fotos_formset.errors
-            messages.warning(self.request, f"Fotos ignoradas devido a erro de formato da imagem: verifique se não está enviando formato corrompido.")
 
         
         if self.request.headers.get('x-requested-with') == 'XMLHttpRequest':
@@ -399,7 +379,7 @@ class AcaoUpdateView(PermissionRequiredMixin, ModernUpdateView):
         import logging
         logger = logging.getLogger(__name__)
 
-        context = self.get_context_data(form=form)
+        context = self.get_context_data()
         checklist_formset = context['checklist_formset']
         docs_formset = context['docs_formset']
         fotos_formset = context['fotos_formset']
@@ -455,45 +435,38 @@ class AcaoUpdateView(PermissionRequiredMixin, ModernUpdateView):
         checklist_formset.save()
         
         # Ativos (Docs e Fotos) — não bloqueantes
-        if docs_valid:
-            try:
-                docs = docs_formset.save(commit=False)
-                for doc in docs:
-                    doc.acao = self.object
-                    if not doc.pk:
-                        doc.usuario = self.request.user
-                    doc.save()
-                for obj in docs_formset.deleted_objects:
-                    obj.delete()
-            except Exception as e:
-                logger.error(f"Erro ao salvar documentos (UPDATE): {e}")
+        if docs_valid and fotos_valid:
+            self.save_assets(self.object, docs_formset, fotos_formset)
         else:
-            messages.warning(self.request, "Documentos não foram salvos devido a erros de validação.")
-            
-        if fotos_valid:
-            try:
-                for f_form in fotos_formset:
-                    if f_form.cleaned_data and not f_form.cleaned_data.get('DELETE'):
-                        foto = f_form.save(commit=False)
+            if docs_valid:
+                try:
+                    docs = docs_formset.save(commit=False)
+                    for doc in docs:
+                        doc.acao = self.object
+                        if not doc.pk:
+                            doc.usuario = self.request.user
+                        doc.save()
+                    for obj in docs_formset.deleted_objects:
+                        obj.delete()
+                except Exception as e:
+                    logger.error(f"Erro ao salvar documentos (UPDATE): {e}")
+            else:
+                messages.warning(self.request, "Documentos não foram salvos devido a erros de validação.")
+                
+            if fotos_valid:
+                try:
+                    fotos = fotos_formset.save(commit=False)
+                    for foto in fotos:
                         foto.acao = self.object
                         if not foto.pk:
                             foto.usuario = self.request.user
-                            
-                        # Mapear item de conformidade caso passado do javascript
-                        item_id_str = str(self.request.POST.get(f"{f_form.prefix}-item_conformidade", ""))
-                        if item_id_str and not foto.item_conformidade_id:
-                            try:
-                                foto.item_conformidade_id = int(item_id_str)
-                            except ValueError:
-                                pass
-                                
                         foto.save()
-                for obj in fotos_formset.deleted_objects:
-                    obj.delete()
-            except Exception as e:
-                logger.error(f"Erro ao salvar fotos (UPDATE): {e}")
-        else:
-            messages.warning(self.request, "Fotos ignoradas devido a erro de formato da imagem.")
+                    for obj in fotos_formset.deleted_objects:
+                        obj.delete()
+                except Exception as e:
+                    logger.error(f"Erro ao salvar fotos (UPDATE): {e}")
+            else:
+                messages.warning(self.request, "Fotos não foram salvas devido a erros de validação.")
         
         # Conformidades são geridas via AJAX na Fase 5
 

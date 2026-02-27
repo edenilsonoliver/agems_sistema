@@ -53,5 +53,6 @@ urlpatterns = [
     path('conformidades/template/item/add/', views.template_add_item_ajax, name='template_add_item_ajax'),
     path('conformidades/template/item/remove/', views.template_remove_item_ajax, name='template_remove_item_ajax'),
     path('conformidades/template/item/rename/', views.template_rename_item_ajax, name='template_rename_item_ajax'),
+    path('conformidades/template/<int:pk>/delete/', views.template_delete_ajax, name='template_delete_ajax'),
 
 ]

@@ -382,19 +382,13 @@
                                 {{ f_form.coordenadas }}
                                 {{ f_form.data_registro }}
                                 {{ f_form.DELETE }}
-                                <input type="hidden" name="{{ f_form.prefix }}-item_conformidade"
-                                    value="{{ f_form.instance.item_conformidade_id|default:'' }}">
                                 {% if f_form.instance.imagem %}
                                 <a href="{{ f_form.instance.imagem.url }}"></a>
                                 {% endif %}
                             </div>
                             {% endfor %}
                         </div>
-                        <div id="empty-foto-form-template">
-                            {{ fotos_formset.empty_form.as_p }}
-                            <input type="hidden" name="{{ fotos_formset.empty_form.prefix }}-item_conformidade"
-                                value="">
-                        </div>
+                        <div id="empty-foto-form-template">{{ fotos_formset.empty_form.as_p }}</div>
                     </div>
                 </div>
 
@@ -502,7 +496,6 @@
 </div>
 
 {{ fiscalizacao_ids|json_script:"fiscalizacao-ids-data" }}
-<script id="saved-conformidades-data" type="application/json">{{ saved_conformidades_json|safe|default:"[]" }}</script>
 
 <!-- TOAST CONTAINER (sem pop-up nativo) -->
 <div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 9999;" id="toastContainer"></div>
@@ -546,12 +539,7 @@
         const tipoAcaoSelect = document.getElementById('id_tipo_acao');
         const csrfToken = '{{ csrf_token }}';
         let currentAcaoId = "{{ object.id|default:'' }}";
-        let localConformidades = [];
-        try {
-            localConformidades = JSON.parse(document.getElementById('saved-conformidades-data').textContent);
-        } catch (e) {
-            localConformidades = [];
-        }
+        let localConformidades = []; // Armazenamento local para modo criação
 
         // --- VISIBILIDADE DE ABAS ---
         function updateTabsVisibility() {
@@ -700,12 +688,6 @@
                 const fileInput = wrapper.querySelector('input[type="file"]');
                 const dt = new DataTransfer(); dt.items.add(file);
                 fileInput.files = dt.files;
-
-                if (e.target.dataset.itemId) {
-                    const itemInput = wrapper.querySelector(`input[name="fotos-${idx}-item_conformidade"]`);
-                    if (itemInput) itemInput.value = e.target.dataset.itemId;
-                }
-
                 processImageEXIF(file, idx);
                 total.value = idx + 1;
             });
@@ -964,12 +946,12 @@
                         <input type="text" class="form-control form-control-sm border-0 bg-transparent flex-grow-1 p-0 small" 
                                value="${item.nome}" onblur="saveInlineName(${item.id}, this.value, false)" 
                                onkeypress="if(event.key==='Enter') this.blur()" style="box-shadow: none;">
-                        <div class="d-flex align-items-center gap-3">
-                            <button type="button" class="btn btn-link p-0 text-muted position-relative" onclick="openPhotoCapture(${item.id})" style="font-size: 1.25rem; line-height: 1;">
+                        <div class="btn-group btn-group-sm align-items-center">
+                            <button type="button" class="btn btn-link p-0 text-muted position-relative" onclick="openPhotoCapture(${item.id})">
                                 <i class="bi bi-camera"></i>
-                                ${item.fotos_count > 0 ? `<span class="position-absolute badge rounded-pill bg-primary" style="font-size: 0.65rem; top: -6px; right: -12px; min-width: 18px; padding: 2px 5px;">${item.fotos_count}</span>` : ''}
+                                ${item.fotos_count > 0 ? `<span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-primary" style="font-size: 0.6rem;">${item.fotos_count}</span>` : ''}
                             </button>
-                            <button type="button" class="btn btn-link p-0 text-danger" onclick="deleteItem(${item.id})" style="font-size: 1.25rem; line-height: 1;"><i class="bi bi-x-lg"></i></button>
+                            <button type="button" class="btn btn-link p-0 text-danger ms-3" onclick="deleteItem(${item.id})"><i class="bi bi-x-lg"></i></button>
                         </div>
                     </div>
                 </div>
@@ -1341,30 +1323,11 @@
         }
 
         // SERIALIZAÇÃO ANTES DO SUBMIT
-        const formEl = document.getElementById('acao-form');
-        if (formEl) {
-            formEl.addEventListener('submit', function (e) {
-                // Verificar checklist mínimo
-                const checklistContainer = document.getElementById('checklist-container');
-                const items = checklistContainer ? checklistContainer.querySelectorAll('.checklist-item:not([style*="display: none"])') : [];
-                let vl = 0;
-                items.forEach(el => {
-                    const delInput = el.querySelector('input[type="checkbox"][name$="-DELETE"]');
-                    if (!delInput || !delInput.checked) vl++;
-                });
-
-                if (vl === 0) {
-                    e.preventDefault();
-                    showToast('É obrigatório adicionar pelo menos 1 item no checklist.', 'danger');
-                    document.getElementById('dados-tab').click(); // Volta para a aba de dados
-                    return false;
-                }
-
-                if (!currentAcaoId && localConformidades.length > 0) {
-                    document.getElementById('conformidades_json_input').value = JSON.stringify(localConformidades);
-                }
-            });
-        }
+        document.getElementById('acao-form').addEventListener('submit', function (e) {
+            if (!currentAcaoId && localConformidades.length > 0) {
+                document.getElementById('conformidades_json_input').value = JSON.stringify(localConformidades);
+            }
+        });
 
         document.getElementById('btn-confirm-save-template')?.addEventListener('click', function () {
             const nome = document.getElementById('template-new-nome').value;
@@ -1393,15 +1356,14 @@
             }).catch(err => showToast('Erro na requisição: ' + err, 'danger'));
         });
 
-        // Estado Local (Modo Criação)
-        let pendingDeletions = [];
-
         window.deleteAllConformities = function () {
+
             if (!currentAcaoId) {
                 localConformidades = [];
                 renderConformidades(localConformidades);
                 return;
             }
+
             fetch(`/acoes/acao/${currentAcaoId}/conformidades/remover-todas/`, {
                 method: 'POST', headers: { 'X-CSRFToken': csrfToken }
             }).then(r => r.json()).then(d => {

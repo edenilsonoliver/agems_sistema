@@ -120,7 +120,11 @@ class Acao(models.Model):
         ordering = ['data_inicio', 'prioridade', 'nome']
 
     def __str__(self):
-        return f"{self.nome} - {self.obrigacao.titulo}"
+        try:
+            # Handle RelatedObjectDoesNotExist during object creation / form validation errors
+            return f"{self.nome} - {self.obrigacao.titulo}"
+        except Exception:
+            return self.nome
 
     def atualizar_progresso(self):
         """Calcula e atualiza o percentual cumprido com base no checklist"""
