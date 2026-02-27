@@ -1,0 +1,184 @@
+{% extends 'base_modern.html' %}
+
+{% block content %}
+<div class="page-header">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'configuracoes' %}">Configurações</a></li>
+            <li class="breadcrumb-item active">{% if template %}Editar{% else %}Criar{% endif %} Template</li>
+        </ol>
+    </nav>
+    <h1 class="page-title"><i class="bi bi-file-earmark-text me-2"></i>{% if template %}Editar{% else %}Criar{% endif %}
+        Template de Conformidade</h1>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white py-3">
+                <h5 class="card-title mb-0">Dados do Template</h5>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Nome do Template *</label>
+                        <input type="text" name="nome" class="form-control" value="{{ template.nome|default:'' }}"
+                            required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Descrição</label>
+                        <textarea name="descricao" class="form-control"
+                            rows="4">{{ template.descricao|default:'' }}</textarea>
+                    </div>
+                    <div class="d-grid mt-4">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-save me-2"></i>Salvar Dados Básicos
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">Itens de Verificação</h5>
+            </div>
+            <div class="card-body">
+                {% if template %}
+                <div class="input-group mb-4 shadow-sm">
+                    <span class="input-group-text bg-white border-end-0"><i
+                            class="bi bi-plus-lg text-primary"></i></span>
+                    <input type="text" id="novo-item-nome" class="form-control border-start-0 py-2"
+                        placeholder="Digite o item e aperte Enter para adicionar...">
+                    <button class="btn btn-primary px-4" type="button" onclick="addItem()">Adicionar</button>
+                </div>
+
+                <div id="items-list" class="list-group list-group-flush border rounded overflow-hidden">
+                    {% for item in template.itens.all %}
+                    <div class="list-group-item d-flex align-items-center p-3 gap-3 item-row" data-id="{{ item.id }}">
+                        <i class="bi bi-grip-vertical text-muted fs-5"></i>
+                        <input type="text"
+                            class="form-control form-control-sm border-0 bg-transparent flex-grow-1 p-0 fs-6"
+                            value="{{ item.nome }}" onblur="renameItem({{ item.id }}, this.value)"
+                            onkeypress="if(event.key==='Enter') this.blur()" style="box-shadow: none;">
+                        <button type="button" class="btn btn-link link-danger p-0 ms-auto"
+                            onclick="removeItem({{ item.id }})">
+                            <i class="bi bi-trash fs-5"></i>
+                        </button>
+                    </div>
+                    {% empty %}
+                    <div class="p-5 text-center text-muted border-dashed rounded" id="empty-msg">
+                        <i class="bi bi-list-check fs-1 d-block mb-3 opacity-25"></i>
+                        Nenhum item adicionado a este template ainda.
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="alert alert-info border-0 shadow-sm">
+                    <i class="bi bi-info-circle me-2"></i><strong>Atenção:</strong> Salve o template primeiro para poder
+                    adicionar itens de verificação.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .item-row {
+        transition: all 0.2s;
+        border-left: 3px solid transparent;
+    }
+
+    .item-row:hover {
+        background-color: #f8faff;
+        border-left-color: var(--primary-color);
+    }
+
+    .border-dashed {
+        border: 2px dashed #dee2e6;
+    }
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+<script>
+    const templateId = "{{ template.id|default:'' }}";
+    const csrfToken = "{{ csrf_token }}";
+
+    if (templateId) {
+        // Inicializar Ordenação
+        new Sortable(document.getElementById('items-list'), {
+            animation: 150,
+            handle: '.bi-grip-vertical',
+            onEnd: function () {
+                // Futura implementação de reordenar se necessário
+            }
+        });
+
+        // Adicionar por Enter
+        document.getElementById('novo-item-nome').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') addItem();
+        });
+    }
+
+    function addItem() {
+        const input = document.getElementById('novo-item-nome');
+        const nome = input.value.trim();
+        if (!nome) return;
+
+        const formData = new FormData();
+        formData.append('template_id', templateId);
+        formData.append('nome', nome);
+
+        fetch('{% url "template_add_item_ajax" %}', {
+            method: 'POST', body: formData, headers: { 'X-CSRFToken': csrfToken }
+        }).then(r => r.json()).then(d => {
+            if (d.status === 'success') {
+                const empty = document.getElementById('empty-msg');
+                if (empty) empty.remove();
+
+                const list = document.getElementById('items-list');
+                const div = document.createElement('div');
+                div.className = 'list-group-item d-flex align-items-center p-3 gap-3 item-row';
+                div.dataset.id = d.id;
+                div.innerHTML = `
+                    <i class="bi bi-grip-vertical text-muted fs-5"></i>
+                    <input type="text" class="form-control form-control-sm border-0 bg-transparent flex-grow-1 p-0 fs-6" 
+                           value="${d.nome}" onblur="renameItem(${d.id}, this.value)"
+                           onkeypress="if(event.key==='Enter') this.blur()" style="box-shadow: none;">
+                    <button type="button" class="btn btn-link link-danger p-0 ms-auto" onclick="removeItem(${d.id})">
+                        <i class="bi bi-trash fs-5"></i>
+                    </button>
+                `;
+                list.appendChild(div);
+                input.value = '';
+                input.focus();
+            }
+        });
+    }
+
+    function removeItem(id) {
+        const formData = new FormData();
+        formData.append('item_id', id);
+        fetch('{% url "template_remove_item_ajax" %}', {
+            method: 'POST', body: formData, headers: { 'X-CSRFToken': csrfToken }
+        }).then(() => {
+            document.querySelector(`.item-row[data-id="${id}"]`)?.remove();
+        });
+    }
+
+    function renameItem(id, novo) {
+        if (!novo) return;
+        const formData = new FormData();
+        formData.append('item_id', id);
+        formData.append('nome', novo);
+        fetch('{% url "template_rename_item_ajax" %}', {
+            method: 'POST', body: formData, headers: { 'X-CSRFToken': csrfToken }
+        });
+    }
+</script>
+{% endblock %}

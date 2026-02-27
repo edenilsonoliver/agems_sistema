@@ -106,40 +106,6 @@
         border-color: var(--primary-color);
         background-color: #fff;
     }
-
-    /* FORÇAR ABAS EM UMA LINHA */
-    #acaoTabs {
-        flex-wrap: nowrap !important;
-        overflow-x: auto;
-        overflow-y: hidden;
-        -webkit-overflow-scrolling: touch;
-        scrollbar-width: none;
-        /* Firefox */
-    }
-
-    #acaoTabs::-webkit-scrollbar {
-        display: none;
-        /* Chrome/Safari */
-    }
-
-    #acaoTabs .nav-item {
-        flex: 1 1 auto;
-        white-space: nowrap;
-    }
-
-    #acaoTabs .nav-link {
-        border-radius: 0;
-        border-top: none;
-        border-left: none;
-        border-right: none;
-        border-bottom: 2px solid transparent;
-    }
-
-    #acaoTabs .nav-link.active {
-        border-bottom-color: var(--primary-color);
-        background: transparent;
-        color: var(--primary-color);
-    }
 </style>
 {% endblock %}
 
@@ -161,15 +127,12 @@
     <div class="alert alert-danger alert-dismissible fade show shadow-sm border-start border-5 border-danger">
         <div class="d-flex align-items-center mb-2">
             <i class="bi bi-exclamation-triangle-fill fs-4 me-3"></i>
-            <div><strong>Erro ao Salvar!</strong> Verifique as pendências:</div>
+            <div><strong>Erro ao Salvar!</strong> Verique as pendências:</div>
         </div>
         <ul class="mb-0 small ps-4">
-            {% for field in form %}
-            {% if field.errors %}
-            <li><strong>{{ field.label }}:</strong> {{ field.errors.0|striptags }}</li>
-            {% endif %}
-            {% endfor %}
-            {% if form.non_field_errors %}<li>{{ form.non_field_errors.0|striptags }}</li>{% endif %}
+            {% for field in form %}{% if field.errors %}<li><strong>{{ field.label }}:</strong> {{
+                field.errors|striptags }}</li>{% endif %}{% endfor %}
+            {% if form.non_field_errors %}<li>{{ form.non_field_errors|striptags }}</li>{% endif %}
             {% if checklist_formset.errors %}<li>Erro no Checklist</li>{% endif %}
         </ul>
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
@@ -178,7 +141,7 @@
 
     <div class="card border-0 shadow-sm mb-4">
         <div class="card-body p-0">
-            <ul class="nav nav-tabs" id="acaoTabs" role="tablist">
+            <ul class="nav nav-tabs nav-fill" id="acaoTabs" role="tablist">
                 <li class="nav-item">
                     <button class="nav-link active py-3" id="dados-tab" data-bs-toggle="tab" data-bs-target="#dados"
                         type="button">
@@ -225,9 +188,6 @@
                         <div class="col-md-3">{{ form.prioridade|as_crispy_field }}</div>
                         <div class="col-md-6">{{ form.responsavel|as_crispy_field }}</div>
                         <div class="col-md-6">{{ form.executores|as_crispy_field }}</div>
-                        <div class="col-md-3">{{ form.periodicidade|as_crispy_field }}</div>
-                        <div class="col-md-3">{{ form.dias_antecedencia_alerta|as_crispy_field }}</div>
-                        <div class="col-md-6">{{ form.acoes_predecessoras|as_crispy_field }}</div>
                         <div class="col-12">{{ form.descricao|as_crispy_field }}</div>
                     </div>
                     <hr>
@@ -289,8 +249,7 @@
                     <div id="conformidades-list"></div>
                     <div id="save-template-container" class="mt-4 d-flex justify-content-center gap-3 d-none">
                         <button type="button" class="btn btn-success btn-lg px-4 shadow-sm text-white"
-                            data-bs-toggle="modal" data-bs-target="#modal-salvar-template"
-                            id="btn-save-template-trigger">
+                            data-bs-toggle="modal" data-bs-target="#modal-salvar-template">
                             <i class="bi bi-save2 me-2"></i>Salvar como Template
                         </button>
                         <button type="button" class="btn btn-danger btn-lg px-4 shadow-sm text-white"
@@ -299,7 +258,6 @@
                         </button>
                     </div>
                     <input type="file" id="conformidade-item-foto-input" style="display:none;" accept="image/*">
-                    <input type="hidden" name="conformidades_json" id="conformidades_json_input">
                 </div>
 
                 <!-- DOCUMENTOS -->
@@ -374,17 +332,11 @@
                                 data-coordenadas="{{ f_form.instance.coordenadas|default:'' }}"
                                 data-registro="{{ f_form.instance.data_registro|date:'d/m/Y H:i' }}"
                                 data-envio="{{ f_form.instance.data_envio|date:'d/m/Y H:i' }}"
-                                data-item-id="{{ f_form.instance.item_conformidade_id|default:'' }}"
                                 data-usuario="{% if f_form.instance.usuario %}{% firstof f_form.instance.usuario.get_full_name f_form.instance.usuario.username %}{% endif %}">
-                                {{ f_form.id }}
-                                {{ f_form.imagem }}
-                                {{ f_form.legenda }}
-                                {{ f_form.coordenadas }}
-                                {{ f_form.data_registro }}
-                                {{ f_form.DELETE }}
-                                {% if f_form.instance.imagem %}
-                                <a href="{{ f_form.instance.imagem.url }}"></a>
-                                {% endif %}
+                                {{ f_form.id }}{{ f_form.imagem }}{{ f_form.legenda }}{{ f_form.coordenadas }}{{
+                                f_form.data_registro }}{{ f_form.DELETE }}
+                                {% if f_form.instance.imagem %}<a href="{{ f_form.instance.imagem.url }}"></a>{% endif
+                                %}
                             </div>
                             {% endfor %}
                         </div>
@@ -432,12 +384,12 @@
 
 <div class="modal fade" id="modal-salvar-template" tabindex="-1">
     <div class="modal-dialog">
-        <div class="modal-content border-0 shadow-lg">
-            <div class="modal-header bg-success text-white border-bottom-0">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
                 <h5>Salvar Template</h5><button type="button" class="btn-close btn-close-white"
                     data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body p-4">
+            <div class="modal-body">
                 <div class="mb-3"><label class="form-label fw-bold">Título *</label><input type="text"
                         id="template-new-nome" class="form-control" required></div>
                 <div class="mb-3"><label class="form-label">Descrição</label><textarea id="template-new-descricao"
@@ -445,28 +397,6 @@
             </div>
             <div class="modal-footer"><button type="button" class="btn btn-success text-white"
                     id="btn-confirm-save-template">Confirmar</button></div>
-        </div>
-    </div>
-</div>
-
-<div class="modal fade" id="modal-aplicar-template-opcoes" tabindex="-1">
-    <div class="modal-dialog modal-sm modal-dialog-centered">
-        <div class="modal-content border-0 shadow-lg">
-            <div class="modal-header bg-primary text-white border-bottom-0 pb-2">
-                <h5 class="modal-title fs-6"><i class="bi bi-download me-2"></i>Importar Template</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body text-center p-4">
-                <p class="mb-4 text-muted">Como deseja aplicar este template?</p>
-                <div class="d-grid gap-3">
-                    <button type="button" class="btn btn-outline-primary fw-bold" id="btn-aplicar-template-adicionar">
-                        <i class="bi bi-plus-circle me-2"></i>Adicionar aos existentes
-                    </button>
-                    <button type="button" class="btn btn-outline-danger fw-bold" id="btn-aplicar-template-sobrescrever">
-                        <i class="bi bi-exclamation-triangle me-2"></i>Excluir atuais e Substituir
-                    </button>
-                </div>
-            </div>
         </div>
     </div>
 </div>
@@ -510,7 +440,6 @@
         const tipoAcaoSelect = document.getElementById('id_tipo_acao');
         const csrfToken = '{{ csrf_token }}';
         let currentAcaoId = "{{ object.id|default:'' }}";
-        let localConformidades = []; // Armazenamento local para modo criação
 
         // --- VISIBILIDADE DE ABAS ---
         function updateTabsVisibility() {
@@ -649,13 +578,8 @@
                 const idx = parseInt(total.value);
                 const wrapper = document.createElement('div');
                 wrapper.className = 'hidden-foto-form';
-                wrapper.dataset.index = idx;
-                wrapper.dataset.usuario = "{{ request.user.get_full_name|default:request.user.username }}";
-                wrapper.dataset.registro = new Date().toLocaleString('pt-BR').slice(0, 16);
-                if (e.target.dataset.itemId) wrapper.dataset.itemId = e.target.dataset.itemId;
                 wrapper.innerHTML = template.replace(/__prefix__/g, idx);
                 container.appendChild(wrapper);
-
                 const fileInput = wrapper.querySelector('input[type="file"]');
                 const dt = new DataTransfer(); dt.items.add(file);
                 fileInput.files = dt.files;
@@ -680,21 +604,7 @@
                         coords = `${(latRef === "S" ? -l1 : l1).toFixed(6)}, ${(lonRef === "W" ? -l2 : l2).toFixed(6)}`;
                         const cInput = document.querySelector(`input[name="fotos-${index}-coordenadas"]`);
                         if (cInput) cInput.value = coords;
-                        // Atualizar dataset para renderExistingAssets
-                        const wrapper = document.querySelector(`.hidden-foto-form[data-index="${index}"]`);
-                        if (wrapper) wrapper.dataset.coordenadas = coords;
                     }
-
-                    // Adicionar link temporário para thumbnail no renderExistingAssets
-                    const wrapper = document.querySelector(`.hidden-foto-form[data-index="${index}"]`);
-                    if (wrapper) {
-                        const existingLink = wrapper.querySelector('a');
-                        if (existingLink) existingLink.remove();
-                        const link = document.createElement('a');
-                        link.href = e.target.result;
-                        wrapper.appendChild(link);
-                    }
-
                     renderFotoRow(file, index, coords, null, e.target.result);
                 });
             };
@@ -718,28 +628,9 @@
         }
 
         window.removeAsset = function (type, index) {
+            if (!confirm('Deseja remover este item?')) return;
             const row = document.getElementById(`${type.slice(0, -1)}-row-${index}`);
             const hidden = document.querySelector(`.hidden-${type.slice(0, -1)}-form[data-index="${index}"]`);
-
-            // Tratamento de Sincronização da Aba de Fotos -> Conformidades
-            if (type === 'fotos' && hidden && hidden.dataset.itemId) {
-                const itemId = hidden.dataset.itemId;
-                if (!currentAcaoId) {
-                    localConformidades.forEach(g => {
-                        const it = g.itens.find(i => i.id == itemId);
-                        if (it && it.fotos_count > 0) it.fotos_count--;
-                    });
-                    renderConformidades(localConformidades);
-                } else {
-                    const badgeContainer = document.querySelector(`.list-group-item[data-id="${itemId}"] .badge`);
-                    if (badgeContainer) {
-                        let curr = parseInt(badgeContainer.innerText);
-                        if (curr > 1) badgeContainer.innerText = curr - 1;
-                        else badgeContainer.remove();
-                    }
-                }
-            }
-
             const delField = hidden?.querySelector('input[name$="-DELETE"]');
             if (delField) { delField.checked = true; if (row) row.style.display = 'none'; }
             else { hidden?.remove(); row?.remove(); }
@@ -752,7 +643,8 @@
             tbody.innerHTML = '';
             container.querySelectorAll(`.hidden-${type.slice(0, -1)}-form`).forEach(form => {
                 const idx = form.dataset.index;
-                // Mostrar todos os itens, mesmo os locais sem ID ainda
+                const id = form.querySelector('input[name$="-id"]')?.value;
+                if (!id) return;
                 const tr = document.createElement('tr');
                 tr.id = `${type.slice(0, -1)}-row-${idx}`;
                 if (type === 'docs') {
@@ -769,18 +661,21 @@
         window.initConformidades = function () {
             const controls = document.getElementById('conformidades-controls');
             const list = document.getElementById('conformidades-list');
-            const saveTemplateBtn = document.getElementById('btn-save-template-trigger');
-
-            if (controls) controls.style.display = 'block';
 
             if (!currentAcaoId) {
-                // Modo Criação: Carregar do estado local
-                if (saveTemplateBtn) saveTemplateBtn.style.display = 'block';
-                renderConformidades(localConformidades);
+                if (controls) controls.style.display = 'none';
+                list.innerHTML = `<div class="p-5 text-center text-muted border rounded bg-light">
+                    <i class="bi bi-info-circle text-warning fs-1 d-block mb-3"></i>
+                    <h5 class="text-dark fw-bold">Ação não salva</h5>
+                    <p>Os itens de verificação técnica só podem ser gerenciados após o primeiro salvamento desta ação.</p>
+                    <button type="submit" form="acao-form" class="btn btn-primary shadow-sm mt-2">
+                        <i class="bi bi-check-lg me-2"></i>Salvar Ação Agora
+                    </button>
+                </div>`;
                 return;
             }
 
-            if (saveTemplateBtn) saveTemplateBtn.style.display = 'block';
+            if (controls) controls.style.display = 'block';
             const loader = document.getElementById('conformidades-loader');
             loader.style.display = 'block';
 
@@ -808,14 +703,7 @@
         function criarGrupoAjax() {
             const nome = inputGrupoInline.value.trim();
             if (!nome) return;
-
-            if (!currentAcaoId) {
-                const newId = Date.now();
-                localConformidades.push({ id: newId, nome: nome, itens: [], is_local: true });
-                inputGrupoInline.value = '';
-                renderConformidades(localConformidades);
-                return;
-            }
+            if (!currentAcaoId) return alert('Salve a ação primeiro.');
 
             const formData = new FormData();
             formData.append('nome', nome);
@@ -827,7 +715,7 @@
                 method: 'POST', body: formData, headers: { 'X-CSRFToken': csrfToken }
             })
                 .then(r => {
-                    if (!r.ok) throw new Error('Erro na requisição.');
+                    if (!r.ok) throw new Error('Erro na requisição. Verifique o ID da ação.');
                     return r.json();
                 })
                 .then(data => {
@@ -836,12 +724,14 @@
                     if (data.status === 'success') {
                         inputGrupoInline.value = '';
                         initConformidades();
-                    } else alert('Erro: ' + data.message);
+                    } else {
+                        alert('Erro: ' + data.message);
+                    }
                 })
                 .catch(err => {
                     btnGrupoInline.disabled = false;
                     btnGrupoInline.innerHTML = 'Criar Grupo';
-                    alert('Falha: ' + err.message);
+                    alert('Falha ao criar grupo: ' + err.message);
                 });
         }
 
@@ -851,8 +741,8 @@
         function renderConformidades(list) {
             const container = document.getElementById('conformidades-list');
             container.innerHTML = '';
-            const saveContainer = document.getElementById('save-template-container');
-            if (list.length > 0) saveContainer.classList.remove('d-none'); else saveContainer.classList.add('d-none');
+            const saveBtn = document.getElementById('save-template-container');
+            if (list.length > 0) saveBtn.classList.remove('d-none'); else saveBtn.classList.add('d-none');
 
             list.forEach(group => {
                 const card = document.createElement('div');
@@ -860,40 +750,29 @@
                 card.dataset.id = group.id;
                 card.innerHTML = `
                     <div class="card-header bg-light d-flex justify-content-between align-items-center py-2">
-                        <div class="d-flex align-items-center flex-grow-1 gap-2">
-                            <i class="bi bi-grip-vertical drag-handle text-muted" style="cursor: move;"></i>
-                            <input type="text" class="form-control form-control-sm border-0 bg-transparent fw-bold text-primary p-0" 
-                                   value="${group.nome}" onblur="saveInlineName(${group.id}, this.value, true)"
-                                   onkeypress="if(event.key==='Enter') this.blur()" style="box-shadow: none;">
-                        </div>
+                        <h6 class="mb-0 text-primary small fw-bold d-flex align-items-center gap-2">
+                            <i class="bi bi-grip-vertical drag-handle"></i>
+                            <span style="cursor: pointer;" onclick="startEditName(${group.id}, '${group.nome}', true)">${group.nome}</span>
+                        </h6>
                         <div class="d-flex gap-2">
-                            <button type="button" class="btn btn-sm btn-link text-danger p-0" onclick="deleteGroup(${group.id})"><i class="bi bi-trash"></i></button>
+                            <button type="button" class="btn btn-sm btn-link text-danger" onclick="deleteGroup(${group.id})"><i class="bi bi-trash"></i></button>
                         </div>
                     </div>
                     <div class="list-group list-group-flush" id="items-container-${group.id}">
                         ${group.itens.map(item => renderItemRow(item)).join('')}
                     </div>
                     <div class="card-footer p-2 bg-white">
-                        <div class="input-group input-group-sm mb-2">
+                        <div class="input-group input-group-sm">
                             <input type="text" class="form-control border-light" placeholder="Adicionar novo item..." id="input-item-novo-${group.id}">
                             <button class="btn btn-outline-primary" type="button" onclick="criarItemInline(${group.id})"><i class="bi bi-plus"></i></button>
-                        </div>
-                        <div class="group-constatacao">
-                            <textarea class="form-control form-control-sm border-0 bg-light-subtle text-muted" 
-                                      placeholder="Constatações gerais deste grupo..." rows="2"
-                                      onblur="saveConstatacao(${group.id}, this.value)" 
-                                      style="resize: none; font-size: 0.75rem;">${group.constatacao || ''}</textarea>
                         </div>
                     </div>
                 `;
                 container.appendChild(card);
 
-                const groupInput = document.getElementById(`input-item-novo-${group.id}`);
-                groupInput?.addEventListener('keypress', (e) => {
-                    if (e.key === 'Enter') {
-                        e.preventDefault();
-                        criarItemInline(group.id);
-                    }
+                // Listener para Enter no input de item
+                document.getElementById(`input-item-novo-${group.id}`).addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') criarItemInline(group.id);
                 });
 
                 new Sortable(document.getElementById(`items-container-${group.id}`), {
@@ -909,21 +788,13 @@
 
         function renderItemRow(item) {
             const statusIcon = item.status === 1 ? 'bi-check-circle-fill text-success' : (item.status === -1 ? 'bi-x-circle-fill text-danger' : 'bi-circle');
-            const constatacaoTexto = item.constatacoes && item.constatacoes.length > 0 ? item.constatacoes[0].texto : '';
             return `
-                <div class="list-group-item p-2" data-id="${item.id}">
-                    <div class="d-flex align-items-center gap-2">
-                        <i class="bi ${statusIcon} fs-5" style="cursor: pointer;" onclick="toggleItemStatus(${item.id}, ${item.status})"></i>
-                        <input type="text" class="form-control form-control-sm border-0 bg-transparent flex-grow-1 p-0 small" 
-                               value="${item.nome}" onblur="saveInlineName(${item.id}, this.value, false)" 
-                               onkeypress="if(event.key==='Enter') this.blur()" style="box-shadow: none;">
-                        <div class="btn-group btn-group-sm align-items-center">
-                            <button type="button" class="btn btn-link p-0 text-muted position-relative" onclick="openPhotoCapture(${item.id})">
-                                <i class="bi bi-camera"></i>
-                                ${item.fotos_count > 0 ? `<span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-primary" style="font-size: 0.6rem;">${item.fotos_count}</span>` : ''}
-                            </button>
-                            <button type="button" class="btn btn-link p-0 text-danger ms-3" onclick="deleteItem(${item.id})"><i class="bi bi-x-lg"></i></button>
-                        </div>
+                <div class="list-group-item d-flex align-items-center gap-2 p-2" data-id="${item.id}">
+                    <i class="bi ${statusIcon} fs-5" style="cursor: pointer;" onclick="toggleItemStatus(${item.id}, ${item.status})"></i>
+                    <span class="flex-grow-1 small" onclick="startEditName(${item.id}, '${item.nome}', false)">${item.nome}</span>
+                    <div class="btn-group btn-group-sm">
+                        <button type="button" class="btn btn-link p-0 text-muted" onclick="openPhotoCapture(${item.id})"><i class="bi bi-camera"></i></button>
+                        <button type="button" class="btn btn-link p-0 text-danger ms-2" onclick="deleteItem(${item.id})"><i class="bi bi-x-lg"></i></button>
                     </div>
                 </div>
             `;
@@ -935,16 +806,6 @@
         };
 
         window.updateItemStatus = function (id, status) {
-            if (!currentAcaoId) {
-                // MODO LOCAL
-                localConformidades.forEach(g => {
-                    const it = g.itens.find(i => i.id === id);
-                    if (it) it.status = status;
-                });
-                renderConformidades(localConformidades);
-                return;
-            }
-
             const formData = new FormData();
             formData.append('item_id', id);
             formData.append('status', status);
@@ -957,23 +818,6 @@
             const input = document.getElementById(`input-item-novo-${groupId}`);
             const nome = input.value.trim();
             if (!nome) return;
-
-            if (!currentAcaoId) {
-                const group = localConformidades.find(g => g.id === groupId);
-                if (group) {
-                    group.itens.push({
-                        id: Date.now(),
-                        nome: nome,
-                        status: 0,
-                        ordem: group.itens.length,
-                        constatacoes: []
-                    });
-                    input.value = '';
-                    renderConformidades(localConformidades);
-                }
-                return;
-            }
-
             const formData = new FormData();
             formData.append('conformidade_id', groupId);
             formData.append('nome', nome);
@@ -991,13 +835,6 @@
 
         window.deleteGroup = function (id) {
             if (!confirm('Excluir grupo e todos os seus itens?')) return;
-
-            if (!currentAcaoId) {
-                localConformidades = localConformidades.filter(g => g.id !== id);
-                renderConformidades(localConformidades);
-                return;
-            }
-
             const formData = new FormData();
             formData.append('conformidade_id', id);
             fetch('/acoes/conformidades/grupo/remover/', {
@@ -1006,15 +843,7 @@
         };
 
         window.deleteItem = function (id) {
-
-            if (!currentAcaoId) {
-                localConformidades.forEach(g => {
-                    g.itens = g.itens.filter(i => i.id !== id);
-                });
-                renderConformidades(localConformidades);
-                return;
-            }
-
+            if (!confirm('Excluir este item?')) return;
             const formData = new FormData();
             formData.append('item_id', id);
             fetch('/acoes/conformidades/item/remover/', {
@@ -1022,76 +851,43 @@
             }).then(() => initConformidades());
         };
 
-        window.saveInlineName = function (id, novo, isGroup) {
-            if (!novo) return;
+        window.deleteAllConformities = function () {
+            if (!confirm('ATENÇÃO: Isso excluirá todos os grupos e itens desta ação. Prosseguir?')) return;
+            fetch(`/acoes/acao/${currentAcaoId}/conformidades/remover-todas/`, {
+                method: 'POST', headers: { 'X-CSRFToken': csrfToken }
+            }).then(() => initConformidades());
+        };
 
-            if (!currentAcaoId) {
-                if (isGroup) {
-                    const g = localConformidades.find(g => g.id === id);
-                    if (g) g.nome = novo;
-                } else {
-                    localConformidades.forEach(g => {
-                        const it = g.itens.find(i => i.id === id);
-                        if (it) it.nome = novo;
-                    });
-                }
-                return;
-            }
+        window.startEditName = function (id, currentName, isGroup) {
+            const modal = new bootstrap.Modal(document.getElementById('modal-editar-nome'));
+            document.getElementById('editar-nome-id').value = id;
+            document.getElementById('editar-nome-is-group').value = isGroup ? '1' : '0';
+            document.getElementById('editar-nome-input').value = currentName;
+            modal.show();
+        };
+
+        document.getElementById('btn-confirm-editar-nome')?.addEventListener('click', function () {
+            const id = document.getElementById('editar-nome-id').value;
+            const isGroup = document.getElementById('editar-nome-is-group').value === '1';
+            const novo = document.getElementById('editar-nome-input').value;
+            if (!novo) return alert('O nome não pode ser vazio');
 
             const formData = new FormData();
             formData.append(isGroup ? 'conformidade_id' : 'item_id', id);
             formData.append('nome', novo);
             const url = isGroup ? '/acoes/conformidades/grupo/renomear/' : '/acoes/conformidades/item/rename/';
-            fetch(url, { method: 'POST', body: formData, headers: { 'X-CSRFToken': csrfToken } });
-        };
-
-        window.saveConstatacao = function (groupId, texto) {
-            if (!currentAcaoId) {
-                const g = localConformidades.find(g => g.id === groupId);
-                if (g) g.constatacao = texto;
-                return;
-            }
-
-            const formData = new FormData();
-            formData.append('conformidade_id', groupId);
-            formData.append('texto', texto);
-            fetch('/acoes/conformidades/item/constatacao/add/', {
-                method: 'POST', body: formData, headers: { 'X-CSRFToken': csrfToken }
-            });
-        };
+            fetch(url, { method: 'POST', body: formData, headers: { 'X-CSRFToken': csrfToken } })
+                .then(() => {
+                    bootstrap.Modal.getInstance(document.getElementById('modal-editar-nome')).hide();
+                    initConformidades();
+                });
+        });
 
         window.openPhotoCapture = function (itemId) {
             const input = document.getElementById('conformidade-item-foto-input');
             input.onchange = function (e) {
                 if (!e.target.files.length) return;
                 const file = e.target.files[0];
-
-                if (!currentAcaoId) {
-                    // MODO LOCAL: A ação (e conformidades) ainda não estão salvas.
-                    // Adiciona nativamente na galeria da aba 'Fotos/Evidências'
-                    const dt = new DataTransfer();
-                    dt.items.add(file);
-
-                    const mockInput = document.createElement('input');
-                    mockInput.type = 'file';
-                    mockInput.files = dt.files;
-                    mockInput.dataset.itemId = itemId;
-                    handleFotosSelection({ target: mockInput });
-
-                    // Incrementa no contador local da Conformidade
-                    localConformidades.forEach(g => {
-                        const it = g.itens.find(i => i.id === itemId);
-                        if (it) {
-                            it.fotos_count = (it.fotos_count || 0) + 1;
-                        }
-                    });
-
-                    renderConformidades(localConformidades);
-                    alert("⚠️ Como a Ação ainda não foi salva, as fotos foram enviadas para a aba genérica 'Fotos/Evidências' e serão vinculadas à Ação.\n\nA vinculação individual aos itens será efetivada quando a ação for criada!");
-                    this.value = '';
-                    return;
-                }
-
                 const formData = new FormData();
                 formData.append('item_id', itemId);
                 formData.append('imagem', file);
@@ -1112,7 +908,6 @@
                         wrapper.dataset.registro = new Date().toLocaleString('pt-BR').slice(0, 16);
                         wrapper.dataset.envio = wrapper.dataset.registro;
                         wrapper.dataset.usuario = "{{ request.user.get_full_name|default:request.user.username }}";
-                        wrapper.dataset.itemId = itemId;
 
                         // Injetar o form oculto mantendo a estrutura exata do Django Formset
                         wrapper.innerHTML = template.replace(/__prefix__/g, idx);
@@ -1135,20 +930,6 @@
 
                         // Recarregar a tabela de visualização apenas da aba fotos
                         renderExistingAssets('fotos');
-
-                        // Atualizar o contador de fotos no item de conformidade localmente
-                        if (currentAcaoId) {
-                            initConformidades(); // Recarrega tudo para pegar o count real do banco
-                        } else {
-                            // No modo local, incrementamos o contador visual
-                            localConformidades.forEach(g => {
-                                const it = g.itens.find(i => i.id === itemId);
-                                if (it) {
-                                    it.fotos_count = (it.fotos_count || 0) + 1;
-                                    renderConformidades(localConformidades);
-                                }
-                            });
-                        }
 
                         alert('Foto enviada e integrada à galeria de evidências!');
                     }
@@ -1190,85 +971,17 @@
                             const b = document.createElement('button');
                             b.className = 'list-group-item list-group-item-action py-3';
                             b.innerHTML = `<div><strong>${t.nome}</strong></div><small class="text-muted">${t.descricao || ''}</small>`;
-                            b.onclick = () => showAplicarTemplateOptions(t.id, modal);
+                            b.onclick = () => aplicarTemplate(t.id, modal);
                             list.appendChild(b);
                         });
                     });
             });
         }
 
-        let pendingTemplateId = null;
-        let pendingTemplateModal = null;
-        let optionsModal = null;
+        function aplicarTemplate(templateId, modal) {
+            if (!currentAcaoId) return alert('Ação não identificada. Salve antes.');
 
-        window.showAplicarTemplateOptions = function (templateId, listModal) {
-            pendingTemplateId = templateId;
-            pendingTemplateModal = listModal;
-            if (!optionsModal) {
-                optionsModal = new bootstrap.Modal(document.getElementById('modal-aplicar-template-opcoes'));
-            }
-            optionsModal.show();
-        };
-
-        document.getElementById('btn-aplicar-template-adicionar')?.addEventListener('click', () => {
-            if (optionsModal) optionsModal.hide();
-            aplicarTemplate(pendingTemplateId, pendingTemplateModal, false);
-        });
-
-        document.getElementById('btn-aplicar-template-sobrescrever')?.addEventListener('click', () => {
-            if (optionsModal) optionsModal.hide();
-            aplicarTemplate(pendingTemplateId, pendingTemplateModal, true);
-        });
-
-        function aplicarTemplate(templateId, modal, sobrescrever) {
             const list = document.getElementById('templates-list');
-
-            if (sobrescrever) {
-                if (!currentAcaoId) {
-                    localConformidades = []; // Reseta localmente
-                } else {
-                    const originalContent = list.innerHTML;
-                    list.innerHTML = '<div class="p-5 text-center"><div class="spinner-border text-danger"></div><p class="mt-2 text-danger">Limpando itens atuais...</p></div>';
-                    fetch(`/acoes/acao/${currentAcaoId}/conformidades/remover-todas/`, {
-                        method: 'POST', headers: { 'X-CSRFToken': csrfToken }
-                    }).then(r => r.json()).then(d => {
-                        if (d.status === 'success') {
-                            aplicarTemplate(templateId, modal, false); // Continua a importação (Sem Limpar repetidamente)
-                        } else {
-                            alert('Erro ao limpar conformidades.');
-                            list.innerHTML = originalContent;
-                        }
-                    }).catch(err => { alert('Falha ao limpar dependências.'); list.innerHTML = originalContent; });
-                    return;
-                }
-            }
-
-            if (!currentAcaoId) {
-                // Modo Local: Buscar itens do template e injetar localmente
-                fetch('/acoes/conformidades/templates/list/')
-                    .then(r => r.json())
-                    .then(d => {
-                        const t = d.templates.find(x => x.id == templateId);
-                        if (t) {
-                            localConformidades.push({
-                                id: Date.now(),
-                                nome: t.nome,
-                                itens: t.itens.map((it, idx) => ({
-                                    id: Date.now() + idx + 1,
-                                    nome: it.nome,
-                                    status: 0,
-                                    ordem: it.ordem,
-                                    constatacoes: []
-                                })),
-                                is_local: true
-                            });
-                            modal.hide();
-                            renderConformidades(localConformidades);
-                        }
-                    });
-                return;
-            }
-
             const originalContent = list.innerHTML;
             list.innerHTML = '<div class="p-5 text-center"><div class="spinner-border text-primary"></div><p class="mt-2">Aplicando...</p></div>';
 
@@ -1279,7 +992,7 @@
                 method: 'POST', body: formData, headers: { 'X-CSRFToken': csrfToken }
             })
                 .then(r => {
-                    if (!r.ok) throw new Error('Erro ao aplicar (HTTP ' + r.status + ')');
+                    if (!r.ok) throw new Error('Erro ao aplicar template (HTTP ' + r.status + ')');
                     return r.json();
                 })
                 .then(data => {
@@ -1294,56 +1007,22 @@
                 });
         }
 
-        // SERIALIZAÇÃO ANTES DO SUBMIT
-        document.getElementById('acao-form').addEventListener('submit', function (e) {
-            if (!currentAcaoId && localConformidades.length > 0) {
-                document.getElementById('conformidades_json_input').value = JSON.stringify(localConformidades);
-            }
-        });
-
         document.getElementById('btn-confirm-save-template')?.addEventListener('click', function () {
             const nome = document.getElementById('template-new-nome').value;
             const descricao = document.getElementById('template-new-descricao').value;
             if (!nome) return alert('Informe o nome');
-
             const data = new FormData();
             data.append('nome', nome);
             data.append('descricao', descricao);
-
-            let url = `/acoes/acao/${currentAcaoId}/conformidades/salvar-template/`;
-            if (!currentAcaoId) {
-                url = '/acoes/conformidades/template/salvar-direto/';
-                data.append('conformidades_json', JSON.stringify(localConformidades));
-            }
-
-            fetch(url, {
+            fetch(`/acoes/acao/${currentAcaoId}/conformidades/salvar-template/`, {
                 method: 'POST', body: data, headers: { 'X-CSRFToken': csrfToken }
             }).then(r => r.json()).then(d => {
                 if (d.status === 'success') {
                     bootstrap.Modal.getInstance(document.getElementById('modal-salvar-template')).hide();
                     alert('Template salvo!');
-                } else {
-                    alert('Erro ao salvar template: ' + (d.message || 'Erro desconhecido'));
                 }
-            }).catch(err => alert('Erro na requisição: ' + err));
-        });
-
-        window.deleteAllConformities = function () {
-            if (!confirm('Tem certeza que deseja excluir TODAS as conformidades desta ação? Esta operação não pode ser desfeita.')) return;
-
-            if (!currentAcaoId) {
-                localConformidades = [];
-                renderConformidades(localConformidades);
-                return;
-            }
-
-            fetch(`/acoes/acao/${currentAcaoId}/conformidades/remover-todas/`, {
-                method: 'POST', headers: { 'X-CSRFToken': csrfToken }
-            }).then(r => r.json()).then(d => {
-                if (d.status === 'success') initConformidades();
-                else alert('Erro ao excluir: ' + d.message);
             });
-        };
+        });
 
         // --- MAPA ---
         let leafletMap = null;

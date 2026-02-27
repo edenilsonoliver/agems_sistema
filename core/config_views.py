@@ -6,6 +6,8 @@ from .models import Diretoria, TipoEntidade, TipoServico, TipoInstrumento, TipoO
 User = get_user_model()
 
 
+from acoes.models import ConformidadeTemplate
+
 @login_required
 def configuracoes(request):
     context = {
@@ -16,6 +18,7 @@ def configuracoes(request):
         'tipos_instrumento': TipoInstrumento.objects.all(),
         'tipos_obrigacao': TipoObrigacao.objects.all(),
         'tipos_acao': TipoAcao.objects.all(),
+        'conformidade_templates': ConformidadeTemplate.objects.filter(ativo=True),
         # Estatísticas de usuários
         'total_usuarios': User.objects.count(),
         'usuarios_ativos': User.objects.filter(is_active=True).count(),

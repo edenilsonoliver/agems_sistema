@@ -203,6 +203,31 @@ class AcaoCreateView(PermissionRequiredMixin, ModernCreateView):
             
             self.save_assets(self.object, docs_formset, fotos_formset)
             
+            # Processar conformidades pendentes (se vierem via JSON em modo criação)
+            json_data = self.request.POST.get('conformidades_json')
+            if json_data:
+                import json
+                try:
+                    conf_list = json.loads(json_data)
+                    for g_idx, g_data in enumerate(conf_list):
+                        grupo = Conformidade.objects.create(
+                            acao=self.object,
+                            nome=g_data.get('nome', 'Sem Nome'),
+                            constatacao=g_data.get('constatacao', ''),
+                            ordem=g_idx
+                        )
+                        for i_idx, i_data in enumerate(g_data.get('itens', [])):
+                            ItemConformidade.objects.create(
+                                conformidade=grupo,
+                                nome=i_data.get('nome', 'Sem Nome'),
+                                status=i_data.get('status', 0),
+                                ordem=i_idx
+                            )
+                except Exception as e:
+                    print(f"ERRO AO PROCESSAR CONFORMIDADES JSON: {e}")
+                    messages.warning(self.request, "Ação salva, mas ocorreu um erro ao importar as conformidades.")
+
+            
             if self.request.headers.get('x-requested-with') == 'XMLHttpRequest':
                 return JsonResponse({'status': 'success', 'id': self.object.id})
             
@@ -535,6 +560,7 @@ def conformidades_data_ajax(request, acao_id):
         data.append({
             'id': conf.id,
             'nome': conf.nome,
+            'constatacao': conf.constatacao,
             'itens': itens_data
         })
         
@@ -565,22 +591,40 @@ def update_item_status_ajax(request):
 @require_POST
 @permission_required('acoes.change_acao', raise_exception=True)
 def add_constatacao_ajax(request):
-    """Adiciona uma constatação textual a um item."""
-    item_id = request.POST.get('item_id')
-    texto = request.POST.get('texto')
+    """Adiciona ou atualiza a constatação textual de um GRUPO (Conformidade)."""
+    conformidade_id = request.POST.get('conformidade_id')
+    texto = request.POST.get('texto', '')
     
-    if not item_id or not texto:
-        return JsonResponse({'status': 'error', 'message': 'Item e texto são obrigatórios.'}, status=400)
+    if not conformidade_id:
+        return JsonResponse({'status': 'error', 'message': 'Grupo é obrigatório.'}, status=400)
         
-    item = get_object_or_404(ItemConformidade, id=item_id)
-    constatacao = Constatacao.objects.create(item=item, texto=texto)
+    conf = get_object_or_404(Conformidade, id=conformidade_id)
+    conf.constatacao = texto
+    conf.save()
     
     return JsonResponse({
         'status': 'success', 
-        'id': constatacao.id, 
-        'texto': constatacao.texto,
-        'data': constatacao.data_criacao.strftime('%d/%m/%Y %H:%M')
+        'id': conf.id, 
+        'texto': conf.constatacao
     })
+
+
+@csrf_exempt
+@require_POST
+@permission_required('acoes.change_acao', raise_exception=True)
+def update_foto_legenda_ajax(request):
+    """Atualiza a legenda de uma foto via AJAX."""
+    foto_id = request.POST.get('foto_id')
+    legenda = request.POST.get('legenda')
+    
+    if not foto_id:
+        return JsonResponse({'status': 'error', 'message': 'ID da foto não fornecido.'}, status=400)
+    
+    foto = get_object_or_404(AcaoFoto, id=foto_id)
+    foto.legenda = legenda
+    foto.save()
+    
+    return JsonResponse({'status': 'success', 'legenda': foto.legenda})
 
 
 @csrf_exempt
@@ -662,9 +706,16 @@ from .models import ConformidadeTemplate, ItemConformidadeTemplate
 
 @permission_required('acoes.view_acao', raise_exception=True)
 def listar_templates_ajax(request):
-    """Lista templates disponíveis."""
-    templates = ConformidadeTemplate.objects.filter(ativo=True)
-    data = [{'id': t.id, 'nome': t.nome, 'descricao': t.descricao} for t in templates]
+    """Lista templates disponíveis com seus respectivos itens."""
+    templates = ConformidadeTemplate.objects.filter(ativo=True).prefetch_related('itens')
+    data = [
+        {
+            'id': t.id, 
+            'nome': t.nome, 
+            'descricao': t.descricao,
+            'itens': [{'nome': i.nome, 'ordem': i.ordem} for i in t.itens.all()]
+        } for t in templates
+    ]
     return JsonResponse({'status': 'success', 'templates': data})
 
 
@@ -691,6 +742,85 @@ def aplicar_template_ajax(request, acao_id):
         )
         
     return JsonResponse({'status': 'success'})
+
+
+@csrf_exempt
+@require_POST
+@permission_required('acoes.change_acao', raise_exception=True)
+def salvar_como_template_ajax(request, acao_id):
+    """Cria um novo template persistente com base nos itens desta ação."""
+    acao = get_object_or_404(Acao, id=acao_id)
+    nome = request.POST.get('nome')
+    descricao = request.POST.get('descricao', '')
+    
+    if not nome:
+        return JsonResponse({'status': 'error', 'message': 'O título do template é obrigatório.'}, status=400)
+        
+    try:
+        # Criar o template principal
+        template = ConformidadeTemplate.objects.create(
+            nome=nome,
+            descricao=descricao,
+            ativo=True
+        )
+        
+        # Buscar itens da ação ordenados por grupo e depois por ordem do item
+        # Estamos 'achatando' os grupos em um único template conforme o padrão atual do sistema
+        itens = ItemConformidade.objects.filter(
+            conformidade__acao=acao
+        ).order_by('conformidade__ordem', 'ordem')
+        
+        for i, item in enumerate(itens):
+            ItemConformidadeTemplate.objects.create(
+                template=template,
+                nome=item.nome,
+                ordem=i
+            )
+            
+        return JsonResponse({
+            'status': 'success', 
+            'message': 'Template criado com sucesso!',
+            'template_id': template.id
+        })
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+
+@csrf_exempt
+@require_POST
+@permission_required('acoes.change_acao', raise_exception=True)
+def salvar_template_direto_ajax(request):
+    """Cria um template a partir de dados JSON enviados diretamente."""
+    nome = request.POST.get('nome')
+    descricao = request.POST.get('descricao', '')
+    json_data = request.POST.get('conformidades_json')
+    
+    if not nome or not json_data:
+        return JsonResponse({'status': 'error', 'message': 'Dados incompletos.'}, status=400)
+        
+    import json
+    try:
+        data = json.loads(json_data)
+        template = ConformidadeTemplate.objects.create(
+            nome=nome,
+            descricao=descricao,
+            ativo=True
+        )
+        
+        ordem_cont = 0
+        for grupo in data:
+            # Por enquanto 'achatamos' os grupos no template
+            for item in grupo.get('itens', []):
+                ItemConformidadeTemplate.objects.create(
+                    template=template,
+                    nome=item.get('nome', 'Sem Nome'),
+                    ordem=ordem_cont
+                )
+                ordem_cont += 1
+                
+        return JsonResponse({'status': 'success', 'template_id': template.id})
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
 
 
 @csrf_exempt
@@ -740,6 +870,26 @@ def renomear_grupo_ajax(request):
     conf.nome = novo_nome
     conf.save()
     return JsonResponse({'status': 'success', 'nome': conf.nome})
+
+
+@csrf_exempt
+@require_POST
+@permission_required('acoes.change_acao', raise_exception=True)
+def remover_todas_conformidades_ajax(request, acao_id):
+    """Remove todos os grupos e itens de conformidade de uma ação."""
+    acao = get_object_or_404(Acao, id=acao_id)
+    try:
+        # Pega todas as conformidades da acao
+        conformidades = acao.conformidades.all()
+        count = conformidades.count()
+        conformidades.delete() # Cascade deleta itens e constatacoes
+        
+        return JsonResponse({
+            'status': 'success', 
+            'message': f'{count} grupos removidos com sucesso.'
+        })
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
 
 
 @csrf_exempt
@@ -806,3 +956,67 @@ def listar_obrigacoes_instrumento_ajax(request, instrumento_id):
     from instrumentos.models import Obrigacao
     obrigacoes = Obrigacao.objects.filter(instrumento_id=instrumento_id).values('id', 'titulo')
     return JsonResponse({'status': 'success', 'data': list(obrigacoes)})
+
+
+# --- GERENCIAMENTO DE TEMPLATES ---
+
+@login_required
+@permission_required('acoes.view_conformidadetemplate', raise_exception=True)
+def template_list(request):
+    templates = ConformidadeTemplate.objects.filter(ativo=True).order_by('nome')
+    return render(request, 'acoes/template_list.html', {'templates': templates})
+
+@login_required
+@permission_required('acoes.add_conformidadetemplate', raise_exception=True)
+def template_create(request):
+    if request.method == 'POST':
+        nome = request.POST.get('nome')
+        descricao = request.POST.get('descricao', '')
+        if nome:
+            template = ConformidadeTemplate.objects.create(nome=nome, descricao=descricao)
+            return redirect('template_edit', pk=template.pk)
+    return render(request, 'acoes/template_form.html')
+
+@login_required
+@permission_required('acoes.change_conformidadetemplate', raise_exception=True)
+def template_edit(request, pk):
+    template = get_object_or_404(ConformidadeTemplate, pk=pk)
+    return render(request, 'acoes/template_form.html', {'template': template})
+
+@csrf_exempt
+@require_POST
+@login_required
+@permission_required('acoes.change_conformidadetemplate', raise_exception=True)
+def template_add_item_ajax(request):
+    template_id = request.POST.get('template_id')
+    nome = request.POST.get('nome')
+    if not template_id or not nome:
+        return JsonResponse({'status': 'error', 'message': 'Dados incompletos.'}, status=400)
+    
+    template = get_object_or_404(ConformidadeTemplate, id=template_id)
+    # Pegar a última ordem
+    ultima_ordem = template.itens.count()
+    item = ItemConformidadeTemplate.objects.create(template=template, nome=nome, ordem=ultima_ordem)
+    return JsonResponse({'status': 'success', 'id': item.id, 'nome': item.nome})
+
+@csrf_exempt
+@require_POST
+@login_required
+@permission_required('acoes.change_conformidadetemplate', raise_exception=True)
+def template_remove_item_ajax(request):
+    item_id = request.POST.get('item_id')
+    item = get_object_or_404(ItemConformidadeTemplate, id=item_id)
+    item.delete()
+    return JsonResponse({'status': 'success'})
+
+@csrf_exempt
+@require_POST
+@login_required
+@permission_required('acoes.change_conformidadetemplate', raise_exception=True)
+def template_rename_item_ajax(request):
+    item_id = request.POST.get('item_id')
+    nome = request.POST.get('nome')
+    item = get_object_or_404(ItemConformidadeTemplate, id=item_id)
+    item.nome = nome
+    item.save()
+    return JsonResponse({'status': 'success'})
