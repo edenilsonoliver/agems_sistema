@@ -1,4 +1,4 @@
-﻿{% extends 'components/list_view.html' %}
+{% extends 'components/list_view.html' %}
 {% block header_actions %}
 <a href="{% url 'acao_calendario' %}" class="btn btn-outline-primary me-2"><i class="bi bi-calendar3"></i> Ver
     Calendário</a>
@@ -60,7 +60,7 @@
 <th>Tipo</th>
 <th>Responsável</th>
 <th>Período</th>
-<th>Progresso</th>
+<th width="120">Progresso</th>
 <th>Status</th>
 {% endblock %}
 {% block table_rows %}
@@ -88,29 +88,38 @@
             </div>
         </div>
     </td>
-    <td><small>{{acao.obrigacao.titulo}}</small></td>
-    <td><small>{{acao.tipo_acao.nome|default:"-"}}</small></td>
-    <td><small>{{acao.responsavel.get_full_name|default:acao.responsavel.username}}</small></td>
-    <td><small><i class="bi bi-calendar me-1"></i>{{acao.data_inicio|date:"d/m/Y"}} -
-            {{acao.data_fim|date:"d/m/Y"}}</small></td>
-    <td>
-        <div class="progress mb-1" style="height: 8px; border-radius: 4px; background-color: #e9ecef;">
+    <td><small class="text-truncate d-inline-block" style="max-width: 120px;"
+            title="{{acao.obrigacao.titulo}}">{{acao.obrigacao.titulo}}</small></td>
+    <td><small class="text-truncate d-inline-block" style="max-width: 80px;">{{acao.tipo_acao.nome|default:"-"}}</small>
+    </td>
+    <td><small class="text-truncate d-inline-block" style="max-width: 100px;"
+            title="{{acao.responsavel.get_full_name|default:acao.responsavel.username}}">{{acao.responsavel.get_full_name|default:acao.responsavel.username}}</small>
+    </td>
+    <td class="text-nowrap" style="font-size: 0.75rem;"><i
+            class="bi bi-calendar me-1"></i>{{acao.data_inicio|date:"d/m/y"}} -
+        {{acao.data_fim|date:"d/m/y"}}</td>
+    <td width="100">
+        <div class="progress" style="height: 6px; border-radius: 3px; background-color: #e9ecef;">
             <div class="progress-bar" role="progressbar"
                 style="width: {{acao.percentual_cumprido}}%; background: linear-gradient(90deg, #0066B3 0%, #004A8F 100%);"
                 aria-valuenow="{{acao.percentual_cumprido}}" aria-valuemin="0" aria-valuemax="100">
             </div>
         </div>
-        <small class="text-muted fw-medium">{{acao.percentual_cumprido}}%</small>
+        <div style="font-size: 0.65rem;" class="text-muted mt-1 text-center">{{acao.percentual_cumprido}}%</div>
     </td>
-    <td>
+    <td class="text-center">
         {% if acao.status == 'finalizado' %}
-        <span class="badge bg-success">Finalizado</span>
+        <span class="badge rounded-pill bg-success fw-normal"
+            style="font-size: 0.65rem; padding: 0.25em 0.6em;">Finalizado</span>
         {% elif acao.status == 'em_andamento' %}
-        <span class="badge bg-gold">Em Andamento</span>
+        <span class="badge rounded-pill bg-gold fw-normal text-dark"
+            style="font-size: 0.65rem; padding: 0.25em 0.6em;">Em Andamento</span>
         {% elif acao.status == 'atrasado' %}
-        <span class="badge bg-danger">Atrasado</span>
+        <span class="badge rounded-pill bg-danger fw-normal"
+            style="font-size: 0.65rem; padding: 0.25em 0.6em;">Atrasado</span>
         {% else %}
-        <span class="badge bg-secondary">{{acao.get_status_display}}</span>
+        <span class="badge rounded-pill bg-secondary fw-normal"
+            style="font-size: 0.65rem; padding: 0.25em 0.6em;">{{acao.get_status_display}}</span>
         {% endif %}
     </td>
     <td>

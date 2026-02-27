@@ -392,8 +392,7 @@
                         </div>
                         <div id="empty-foto-form-template">
                             {{ fotos_formset.empty_form.as_p }}
-                            <input type="hidden" name="{{ fotos_formset.empty_form.prefix }}-item_conformidade"
-                                value="">
+                            <input type="hidden" name="fotos-__prefix__-item_conformidade" value="">
                         </div>
                     </div>
                 </div>
@@ -692,7 +691,7 @@
                 wrapper.className = 'hidden-foto-form';
                 wrapper.dataset.index = idx;
                 wrapper.dataset.usuario = "{{ request.user.get_full_name|default:request.user.username }}";
-                wrapper.dataset.registro = new Date().toLocaleString('pt-BR').slice(0, 16);
+                wrapper.dataset.registro = new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16);
                 if (e.target.dataset.itemId) wrapper.dataset.itemId = e.target.dataset.itemId;
                 wrapper.innerHTML = template.replace(/__prefix__/g, idx);
                 container.appendChild(wrapper);
@@ -705,6 +704,8 @@
                     const itemInput = wrapper.querySelector(`input[name="fotos-${idx}-item_conformidade"]`);
                     if (itemInput) itemInput.value = e.target.dataset.itemId;
                 }
+                const regInput = wrapper.querySelector(`input[name="fotos-${idx}-data_registro"]`);
+                if (regInput) regInput.value = wrapper.dataset.registro;
 
                 processImageEXIF(file, idx);
                 total.value = idx + 1;
@@ -1155,7 +1156,7 @@
                         wrapper.className = 'hidden-foto-form';
                         wrapper.dataset.index = idx;
                         wrapper.dataset.coordenadas = ""; // Caso o backend retorne GPS futuramente, preencher aqui
-                        wrapper.dataset.registro = new Date().toLocaleString('pt-BR').slice(0, 16);
+                        wrapper.dataset.registro = new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16);
                         wrapper.dataset.envio = wrapper.dataset.registro;
                         wrapper.dataset.usuario = "{{ request.user.get_full_name|default:request.user.username }}";
                         wrapper.dataset.itemId = itemId;
@@ -1170,6 +1171,9 @@
 
                         const legendaInput = wrapper.querySelector(`input[name="fotos-${idx}-legenda"]`);
                         if (legendaInput) legendaInput.value = d.legenda;
+
+                        const regInput = wrapper.querySelector(`input[name="fotos-${idx}-data_registro"]`);
+                        if (regInput) regInput.value = wrapper.dataset.registro;
 
                         // Adiciona o link de miniatura para o renderExistingAssets
                         const link = document.createElement('a');
