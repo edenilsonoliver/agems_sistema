@@ -12,7 +12,7 @@
     <select name="instrumento" id="instrumento" class="form-select" style="height: 40px;">
         <option value=""> Filtrar por Instrumento...</option>
         {% for inst in instrumentos %}
-        <option value="{{inst.id}}" {% if instrumento_selecionado==inst.id %}selected{% endif %}>{{inst}}</option>
+        <option value="{{inst.id}}" {% if instrumento_selecionado == inst.id %}selected{% endif %}>{{inst}}</option>
         {% endfor %}
     </select>
 </div>
@@ -20,7 +20,7 @@
     <select name="obrigacao" id="obrigacao" class="form-select" style="height: 40px;">
         <option value=""> Filtrar por Obrigação...</option>
         {% for obrigacao in obrigacoes %}
-        <option value="{{obrigacao.id}}" {% if obrigacao_selecionada==obrigacao.id %}selected{% endif %}>
+        <option value="{{obrigacao.id}}" {% if obrigacao_selecionada == obrigacao.id %}selected{% endif %}>
             {{obrigacao.titulo}}</option>
         {% endfor %}
     </select>
@@ -29,7 +29,7 @@
     <select name="tipo_acao" id="tipo_acao" class="form-select" style="height: 40px;">
         <option value=""> Filtrar por Tipo...</option>
         {% for tipo in tipos_acao %}
-        <option value="{{tipo.id}}" {% if tipo_acao_selecionado==tipo.id %}selected{% endif %}>{{tipo.nome}}</option>
+        <option value="{{tipo.id}}" {% if tipo_acao_selecionado == tipo.id %}selected{% endif %}>{{tipo.nome}}</option>
         {% endfor %}
     </select>
 </div>
@@ -144,15 +144,12 @@
         {% endif %}
     </td>
     <td class="text-end">
-        <div class="btn-group">
-            <a href="{% url 'acao_detail' acao.pk %}" class="btn btn-sm btn-outline-secondary" title="Visualizar">
-                <i class="bi bi-eye"></i>
-            </a>
-            <a href="{% url 'acao_update' acao.pk %}" class="btn btn-sm btn-outline-primary" title="Editar">
+        <div class="btn-group btn-group-sm">
+            <a href="{% url 'acao_edit' acao.pk %}" class="btn btn-outline-primary" title="Editar">
                 <i class="bi bi-pencil"></i>
             </a>
-            <a href="{% url 'acao_mapa' acao.pk %}" class="btn btn-sm btn-outline-info" title="Mapa">
-                <i class="bi bi-geo-alt"></i>
+            <a href="{% url 'acao_delete' acao.pk %}" class="btn btn-outline-danger" title="Excluir">
+                <i class="bi bi-trash"></i>
             </a>
         </div>
     </td>
@@ -182,7 +179,7 @@
         });
 
         // Modifica o comportamento do botão "Adicionar Nova Ação"
-        const addBtn = document.querySelector('a[href$="/create/"]');
+        const addBtn = document.querySelector('a[href*="{% url "acao_create" %}"]');
         if (addBtn) {
             addBtn.addEventListener('click', function (e) {
                 e.preventDefault();
