@@ -110,16 +110,16 @@
     <td class="text-center">
         {% if acao.status == 'finalizado' %}
         <span class="badge rounded-pill bg-success fw-normal"
-            style="font-size: 0.65rem; padding: 0.25em 0.6em;">Finalizado</span>
+            style="font-size: 0.85rem; padding: 0.4em 0.8em;">Finalizado</span>
         {% elif acao.status == 'em_andamento' %}
         <span class="badge rounded-pill bg-gold fw-normal text-dark"
-            style="font-size: 0.65rem; padding: 0.25em 0.6em;">Em Andamento</span>
+            style="font-size: 0.85rem; padding: 0.4em 0.8em;">Em Andamento</span>
         {% elif acao.status == 'atrasado' %}
         <span class="badge rounded-pill bg-danger fw-normal"
-            style="font-size: 0.65rem; padding: 0.25em 0.6em;">Atrasado</span>
+            style="font-size: 0.85rem; padding: 0.4em 0.8em;">Atrasado</span>
         {% else %}
         <span class="badge rounded-pill bg-secondary fw-normal"
-            style="font-size: 0.65rem; padding: 0.25em 0.6em;">{{acao.get_status_display}}</span>
+            style="font-size: 0.85rem; padding: 0.4em 0.8em;">{{acao.get_status_display}}</span>
         {% endif %}
     </td>
     <td>

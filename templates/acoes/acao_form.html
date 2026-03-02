@@ -360,7 +360,7 @@
                                     <th>GPS</th>
                                     <th>Data Captura</th>
                                     <th>Usuário</th>
-                                    <th class="text-center">Ações</th>
+                                    <th class="text-center" style="width: 100px;">Ações</th>
                                 </tr>
                             </thead>
                             <tbody id="fotos-table-body"></tbody>
@@ -502,6 +502,31 @@
 
 {{ fiscalizacao_ids|json_script:"fiscalizacao-ids-data" }}
 <script id="saved-conformidades-data" type="application/json">{{ saved_conformidades_json|safe|default:"[]" }}</script>
+
+<!-- MODAL EDITAR LEGENDA FOTO -->
+<div class="modal fade" id="modal-editar-legenda" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-primary text-white border-bottom-0">
+                <h5 class="modal-title"><i class="bi bi-pencil-square me-2"></i>Editar Legenda</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <input type="hidden" id="editar-legenda-index">
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Legenda</label>
+                    <textarea id="editar-legenda-input" class="form-control" rows="3"
+                        placeholder="Digite a legenda da foto..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer border-top-0 px-4 pb-4">
+                <button type="button" class="btn btn-light px-4" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary px-4" id="btn-confirm-editar-legenda">Salvar
+                    Alteração</button>
+            </div>
+        </div>
+    </div>
+</div>
 
 <!-- TOAST CONTAINER (sem pop-up nativo) -->
 <div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 9999;" id="toastContainer"></div>
@@ -753,7 +778,7 @@
             const tbody = document.getElementById('docs-table-body');
             const tr = document.createElement('tr');
             tr.id = `doc-row-${index}`;
-            tr.innerHTML = `<td><i class="bi bi-file-earmark"></i></td><td>${file.name}</td><td><input type="text" class="form-control form-control-sm" oninput="const h=document.querySelector('input[name=\'docs-${index}-descricao\']'); if(h) h.value=this.value"></td><td>Você</td><td>Agora</td><td><button type="button" class="btn btn-sm btn-link text-danger" onclick="removeAsset('docs', ${index})"><i class="bi bi-trash"></i></button></td>`;
+            tr.innerHTML = `<td><i class="bi bi-file-earmark"></i></td><td>${file.name}</td><td><input type="text" class="form-control form-control-sm" value="" oninput="const h=document.querySelector('input[name=\'docs-${index}-descricao\']'); if(h) h.value=this.value"></td><td>Você</td><td>Agora</td><td class="text-center"><button type="button" class="btn btn-sm btn-link text-danger" onclick="removeAsset('docs', ${index})"><i class="bi bi-trash"></i></button></td>`;
             tbody.appendChild(tr);
         }
 
@@ -761,7 +786,18 @@
             const tbody = document.getElementById('fotos-table-body');
             const tr = document.createElement('tr');
             tr.id = `foto-row-${index}`;
-            tr.innerHTML = `<td><img src="${thumbUrl}" class="thumb-preview"></td><td><input type="text" class="form-control form-control-sm" oninput="const h=document.querySelector('input[name=\'fotos-${index}-legenda\']'); if(h) h.value=this.value"></td><td>${coords || 'Sem GPS'}</td><td>${date || 'Agora'}</td><td>Você</td><td><button type="button" class="btn btn-sm btn-link text-danger" onclick="removeAsset('fotos', ${index})"><i class="bi bi-trash"></i></button></td>`;
+            tr.innerHTML = `
+                <td><img src="${thumbUrl}" class="thumb-preview"></td>
+                <td id="foto-legenda-display-${index}">${file.name || 'Sem legenda'}</td>
+                <td>${coords || 'Sem GPS'}</td>
+                <td>${date || 'Agora'}</td>
+                <td>Você</td>
+                <td class="text-center">
+                    <div class="btn-group btn-group-sm">
+                        <button type="button" class="btn btn-link text-primary p-0 me-2" onclick="openEditLegenda(${index})"><i class="bi bi-pencil"></i></button>
+                        <button type="button" class="btn btn-link text-danger p-0" onclick="removeAsset('fotos', ${index})"><i class="bi bi-trash"></i></button>
+                    </div>
+                </td>`;
             tbody.appendChild(tr);
         }
 
@@ -804,10 +840,23 @@
                 const tr = document.createElement('tr');
                 tr.id = `${type.slice(0, -1)}-row-${idx}`;
                 if (type === 'docs') {
-                    tr.innerHTML = `<td><i class="bi bi-file-earmark"></i></td><td>${form.dataset.filename?.split('/').pop()}</td><td>${form.querySelector('input[name$="-descricao"]')?.value}</td><td>${form.dataset.usuario}</td><td>${form.dataset.data}</td><td><button type="button" class="btn btn-sm btn-link text-danger" onclick="removeAsset('docs', ${idx})"><i class="bi bi-trash"></i></button></td>`;
+                    const desc = form.querySelector('input[name$="-descricao"]')?.value || '';
+                    tr.innerHTML = `<td><i class="bi bi-file-earmark"></i></td><td>${form.dataset.filename?.split('/').pop()}</td><td><input type="text" class="form-control form-control-sm" value="${desc}" oninput="const h=document.querySelector('input[name=\'docs-${idx}-descricao\']'); if(h) h.value=this.value"></td><td>${form.dataset.usuario}</td><td>${form.dataset.data}</td><td class="text-center"><button type="button" class="btn btn-sm btn-link text-danger" onclick="removeAsset('docs', ${idx})"><i class="bi bi-trash"></i></button></td>`;
                 } else {
                     const url = form.querySelector('a')?.href;
-                    tr.innerHTML = `<td><img src="${url}" class="thumb-preview"></td><td>${form.querySelector('input[name$="-legenda"]')?.value}</td><td>${form.dataset.coordenadas}</td><td>${form.dataset.registro || form.dataset.envio}</td><td>${form.dataset.usuario}</td><td><button type="button" class="btn btn-sm btn-link text-danger" onclick="removeAsset('fotos', ${idx})"><i class="bi bi-trash"></i></button></td>`;
+                    const legenda = form.querySelector('input[name$="-legenda"]')?.value || '';
+                    tr.innerHTML = `
+                        <td><img src="${url}" class="thumb-preview"></td>
+                        <td id="foto-legenda-display-${idx}">${legenda}</td>
+                        <td>${form.dataset.coordenadas}</td>
+                        <td>${form.dataset.registro || form.dataset.envio}</td>
+                        <td>${form.dataset.usuario}</td>
+                        <td class="text-center">
+                            <div class="btn-group btn-group-sm">
+                                <button type="button" class="btn btn-link text-primary p-0 me-2" onclick="openEditLegenda(${idx})"><i class="bi bi-pencil"></i></button>
+                                <button type="button" class="btn btn-link text-danger p-0" onclick="removeAsset('fotos', ${idx})"><i class="bi bi-trash"></i></button>
+                            </div>
+                        </td>`;
                 }
                 tbody.appendChild(tr);
             });
@@ -1413,6 +1462,53 @@
                 else showToast('Erro ao excluir: ' + d.message, 'danger');
             });
         };
+
+        // --- EDIÇÃO DE LEGENDA FOTO ---
+        const modalLegenda = new bootstrap.Modal(document.getElementById('modal-editar-legenda'));
+        const inputLegenda = document.getElementById('editar-legenda-input');
+        const inputLegendaIndex = document.getElementById('editar-legenda-index');
+
+        window.openEditLegenda = function (index) {
+            const hiddenLegendaInput = document.querySelector(`input[name="fotos-${index}-legenda"]`);
+            inputLegenda.value = hiddenLegendaInput ? hiddenLegendaInput.value : '';
+            inputLegendaIndex.value = index;
+            modalLegenda.show();
+        };
+
+        document.getElementById('btn-confirm-editar-legenda')?.addEventListener('click', function () {
+            const index = inputLegendaIndex.value;
+            const novoValor = inputLegenda.value.trim();
+
+            // 1. Atualizar o display visual na tabela
+            const displayEl = document.getElementById(`foto-legenda-display-${index}`);
+            if (displayEl) displayEl.innerText = novoValor;
+
+            // 2. Atualizar o campo oculto do Formset (para salvar no submit do formulário)
+            const hiddenInput = document.querySelector(`input[name="fotos-${index}-legenda"]`);
+            if (hiddenInput) {
+                hiddenInput.value = novoValor;
+            }
+
+            // 3. Se o objeto já existe no banco (tem ID), salvar via AJAX imediatamente para garantir persistência unitária
+            const hiddenIdInput = document.querySelector(`input[name="fotos-${index}-id"]`);
+            if (hiddenIdInput && hiddenIdInput.value) {
+                const formData = new FormData();
+                formData.append('foto_id', hiddenIdInput.value);
+                formData.append('legenda', novoValor);
+
+                fetch('/acoes/conformidades/foto/update-legenda/', {
+                    method: 'POST',
+                    body: formData,
+                    headers: { 'X-CSRFToken': csrfToken }
+                }).then(r => r.json()).then(d => {
+                    if (d.status === 'success') showToast('Legenda atualizada com sucesso!');
+                });
+            } else {
+                showToast('Legenda alterada localmente.');
+            }
+
+            modalLegenda.hide();
+        });
 
         // --- MAPA ---
         let leafletMap = null;

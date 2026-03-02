@@ -304,16 +304,12 @@ class AcaoCreateView(PermissionRequiredMixin, ModernCreateView):
             
         if fotos_valid:
             try:
-                # Chamar save(commit=False) para popular deleted_objects e preparar instâncias
-                fotos_formset.save(commit=False)
-                
                 for f_form in fotos_formset:
                     if f_form.cleaned_data and not f_form.cleaned_data.get('DELETE'):
                         foto = f_form.save(commit=False)
                         foto.acao = self.object
-                        if not foto.pk:
-                            foto.usuario = self.request.user
-                            
+                        foto.usuario = self.request.user
+                        
                         # Extrair o fake_id que o form via JS injetou como input hidden
                         fake_item_id_str = str(self.request.POST.get(f"{f_form.prefix}-item_conformidade", ""))
                         if fake_item_id_str in fake_item_mapping:
@@ -476,9 +472,6 @@ class AcaoUpdateView(PermissionRequiredMixin, ModernUpdateView):
             
         if fotos_valid:
             try:
-                # Chamar save(commit=False) para popular deleted_objects
-                fotos_formset.save(commit=False)
-                
                 for f_form in fotos_formset:
                     if f_form.cleaned_data and not f_form.cleaned_data.get('DELETE'):
                         foto = f_form.save(commit=False)
