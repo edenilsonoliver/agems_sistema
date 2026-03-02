@@ -83,13 +83,6 @@ def get_obrigacoes_por_instrumento(request):
 
 
 class AcaoListView(PermissionRequiredMixin, ModernListView):
-
-    def handle_no_permission(self):
-        if self.request.user.is_authenticated:
-            messages.error(self.request, "Você não possui permissão para acessar esta funcionalidade ou excluir este registro.")
-            return redirect(getattr(self, 'success_url', 'dashboard'))
-        return super().handle_no_permission()
-
     """
     Lista as Ações (nível de execução vinculado à Obrigação).
     """
@@ -176,39 +169,11 @@ def acao_tipo_selector(request):
 
 
 class AcaoCreateView(PermissionRequiredMixin, ModernCreateView):
-    def get_readonly(self):
-        # Perfil 4 e 5 são somente leitura para Ações em certos contextos, 
-        # mas aqui vamos seguir a regra do cliente: Perfil 4 pode editar se for responsável.
-        # Caso queira bloquear edição de Ação para visualizador (5):
-        return self.request.user.perfil == 5
-
-    def get_form_kwargs(self):
-        kwargs = super().get_form_kwargs()
-        kwargs['readonly'] = self.get_readonly()
-        return kwargs
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['readonly'] = self.get_readonly()
-        return context
-
-
-    def handle_no_permission(self):
-        if self.request.user.is_authenticated:
-            messages.error(self.request, "Você não possui permissão para acessar esta funcionalidade ou excluir este registro.")
-            return redirect(getattr(self, 'success_url', 'dashboard'))
-        return super().handle_no_permission()
-
     permission_required = 'acoes.add_acao'
     model = Acao
     form_class = AcaoForm
     success_url = reverse_lazy('acao_list')
     template_name = 'acoes/acao_form.html'
-
-    def get_form_kwargs(self):
-        kwargs = super().get_form_kwargs()
-        kwargs['user'] = self.request.user
-        return kwargs
 
     def get_initial(self):
         initial = super().get_initial()
@@ -305,39 +270,11 @@ class AcaoCreateView(PermissionRequiredMixin, ModernCreateView):
 
 
 class AcaoUpdateView(PermissionRequiredMixin, ModernUpdateView):
-    def get_readonly(self):
-        # Perfil 4 e 5 são somente leitura para Ações em certos contextos, 
-        # mas aqui vamos seguir a regra do cliente: Perfil 4 pode editar se for responsável.
-        # Caso queira bloquear edição de Ação para visualizador (5):
-        return self.request.user.perfil == 5
-
-    def get_form_kwargs(self):
-        kwargs = super().get_form_kwargs()
-        kwargs['readonly'] = self.get_readonly()
-        return kwargs
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['readonly'] = self.get_readonly()
-        return context
-
-
-    def handle_no_permission(self):
-        if self.request.user.is_authenticated:
-            messages.error(self.request, "Você não possui permissão para acessar esta funcionalidade ou excluir este registro.")
-            return redirect(getattr(self, 'success_url', 'dashboard'))
-        return super().handle_no_permission()
-
     permission_required = 'acoes.change_acao'
     model = Acao
     form_class = AcaoForm
     success_url = reverse_lazy('acao_list')
     template_name = 'acoes/acao_form.html'
-
-    def get_form_kwargs(self):
-        kwargs = super().get_form_kwargs()
-        kwargs['user'] = self.request.user
-        return kwargs
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -433,13 +370,6 @@ class AcaoUpdateView(PermissionRequiredMixin, ModernUpdateView):
 
 
 class AcaoDeleteView(PermissionRequiredMixin, ModernDeleteView):
-
-    def handle_no_permission(self):
-        if self.request.user.is_authenticated:
-            messages.error(self.request, "Você não possui permissão para acessar esta funcionalidade ou excluir este registro.")
-            return redirect(getattr(self, 'success_url', 'dashboard'))
-        return super().handle_no_permission()
-
     permission_required = 'acoes.delete_acao'
     model = Acao
     success_url = reverse_lazy('acao_list')
@@ -447,13 +377,6 @@ class AcaoDeleteView(PermissionRequiredMixin, ModernDeleteView):
 
 # Calendário de Ações
 class AcaoCalendarioView(PermissionRequiredMixin, TemplateView):
-
-    def handle_no_permission(self):
-        if self.request.user.is_authenticated:
-            messages.error(self.request, "Você não possui permissão para acessar esta funcionalidade ou excluir este registro.")
-            return redirect(getattr(self, 'success_url', 'dashboard'))
-        return super().handle_no_permission()
-
     permission_required = 'acoes.view_acao'
     template_name = 'acoes/acoes_calendario.html'
 

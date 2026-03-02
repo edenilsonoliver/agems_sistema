@@ -1,4 +1,34 @@
-from django.contrib.auth.mixins import PermissionRequiredMixin
+import os
+import sys
+
+def repair_entidade_form():
+    path = r'c:\Users\SAMSUNG\OneDrive\Documentos\agems_sistema\entidades\forms.py'
+    content = """from django import forms
+from .models import Entidade
+
+class EntidadeForm(forms.ModelForm):
+    class Meta:
+        model = Entidade
+        fields = '__all__'
+        widgets = {
+            'cnpj': forms.TextInput(attrs={'placeholder': '00.000.000/0000-00'}),
+            'cep': forms.TextInput(attrs={'placeholder': '00000-000'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        self.readonly = kwargs.pop('readonly', False)
+        super().__init__(*args, **kwargs)
+        if self.readonly:
+            for field in self.fields.values():
+                field.disabled = True
+"""
+    with open(path, 'w', encoding='utf-8') as f:
+        f.write(content)
+    print("Reparação: entidades/forms.py corrigido.")
+
+def repair_entidade_views():
+    path = r'c:\Users\SAMSUNG\OneDrive\Documentos\agems_sistema\entidades\views.py'
+    content = """from django.contrib.auth.mixins import PermissionRequiredMixin
 from core.views import ModernListView, ModernCreateView, ModernUpdateView, ModernDeleteView
 from .models import Entidade
 from .forms import EntidadeForm
@@ -7,13 +37,6 @@ from django.contrib import messages
 from django.shortcuts import redirect
 
 class EntidadeListView(PermissionRequiredMixin, ModernListView):
-
-    def handle_no_permission(self):
-        if self.request.user.is_authenticated:
-            messages.error(self.request, "Você não possui permissão para acessar esta funcionalidade ou excluir este registro.")
-            return redirect(getattr(self, 'success_url', 'dashboard'))
-        return super().handle_no_permission()
-
     permission_required = 'entidades.view_entidade'
     model = Entidade
     template_name = 'entidades/entidade_list_v2.html'
@@ -23,13 +46,6 @@ class EntidadeListView(PermissionRequiredMixin, ModernListView):
     search_fields = ['razao_social', 'nome_fantasia', 'cnpj']
 
 class EntidadeCreateView(PermissionRequiredMixin, ModernCreateView):
-
-    def handle_no_permission(self):
-        if self.request.user.is_authenticated:
-            messages.error(self.request, "Você não possui permissão para acessar esta funcionalidade ou excluir este registro.")
-            return redirect(getattr(self, 'success_url', 'dashboard'))
-        return super().handle_no_permission()
-
     permission_required = 'entidades.view_entidade'
     model = Entidade
     form_class = EntidadeForm
@@ -56,13 +72,6 @@ class EntidadeCreateView(PermissionRequiredMixin, ModernCreateView):
         return super().form_valid(form)
 
 class EntidadeUpdateView(PermissionRequiredMixin, ModernUpdateView):
-
-    def handle_no_permission(self):
-        if self.request.user.is_authenticated:
-            messages.error(self.request, "Você não possui permissão para acessar esta funcionalidade ou excluir este registro.")
-            return redirect(getattr(self, 'success_url', 'dashboard'))
-        return super().handle_no_permission()
-
     permission_required = 'entidades.view_entidade'
     model = Entidade
     form_class = EntidadeForm
@@ -89,13 +98,6 @@ class EntidadeUpdateView(PermissionRequiredMixin, ModernUpdateView):
         return super().form_valid(form)
 
 class EntidadeDeleteView(PermissionRequiredMixin, ModernDeleteView):
-
-    def handle_no_permission(self):
-        if self.request.user.is_authenticated:
-            messages.error(self.request, "Você não possui permissão para acessar esta funcionalidade ou excluir este registro.")
-            return redirect(getattr(self, 'success_url', 'dashboard'))
-        return super().handle_no_permission()
-
     permission_required = 'entidades.delete_entidade'
     model = Entidade
     success_url = reverse_lazy('entidade_list')
@@ -105,3 +107,12 @@ class EntidadeDeleteView(PermissionRequiredMixin, ModernDeleteView):
             messages.error(request, "Você não tem permissão para excluir registros.")
             return redirect('entidade_list')
         return super().dispatch(request, *args, **kwargs)
+"""
+    with open(path, 'w', encoding='utf-8') as f:
+        f.write(content)
+    print("Reparação: entidades/views.py corrigido.")
+
+if __name__ == "__main__":
+    repair_entidade_form()
+    repair_entidade_views()
+    print("Reparação concluída com sucesso.")

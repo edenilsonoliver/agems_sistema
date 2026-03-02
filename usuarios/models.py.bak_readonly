@@ -159,11 +159,11 @@ class Usuario(AbstractUser):
         
         # Usuário Comum só acessa ações e tarefas
         if self.perfil == 4:
-            return modulo in ['entidades', 'instrumentos', 'acoes', 'tarefas', 'dashboard']
+            return modulo in ['acoes', 'tarefas', 'dashboard']
         
         # Coordenação não acessa entidades e instrumentos
         if self.perfil == 3:
-            return modulo in ['entidades', 'instrumentos', 'acoes', 'tarefas', 'dashboard']
+            return modulo not in ['entidades', 'instrumentos']
         
         # Diretoria e Assessoria têm acesso total
         return True

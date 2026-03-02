@@ -1,95 +1,31 @@
 from django.contrib import messages
 from django.contrib.auth.mixins import PermissionRequiredMixin
-from django.contrib.auth.decorators import permission_required, login_required
+from django.contrib.auth.decorators import permission_required
 from core.views import ModernListView, ModernCreateView, ModernUpdateView, ModernDeleteView
 from django.shortcuts import render, get_object_or_404, redirect
 from django.views.generic import TemplateView
-from django.db.models import Q, Case, When, IntegerField
+from django.db.models import Q
 from .models import Acao, ChecklistItem, AcaoMarcador, AcaoFoto
 from django.urls import reverse_lazy
 from .forms import AcaoForm, ChecklistItemFormSet, AcaoDocumentoFormSet, AcaoFotoFormSet
 from instrumentos.models import Instrumento, Obrigacao
-from entidades.models import Entidade
 from django.http import JsonResponse
 from core.models import TipoAcao
 from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_exempt
 
 
-# Ordem canônica dos tipos de ação conforme definido pelo cliente
-TIPO_ACAO_ORDEM = [
-    'Monitoramento',
-    'Análise',
-    'Acompanhamento',
-    'Fiscalização',
-    'Elaboração Normativa',
-    'Econômico-Financeira',
-    'Projeto',
-    'Outros',
-]
-
-# Descrições dos tipos de ação para o modal de seleção
-TIPO_ACAO_DESCRICOES = {
-    'Monitoramento': 'Engloba ações de monitorar se obrigações estão sendo cumpridas, com pouco impacto no dia a dia do monitorado. Aqui enquadra-se a solicitação de documentos, dados e indicadores para realizar uma análise mais analítica e validar desempenho.',
-    'Análise': 'Engloba efetivamente investigar indícios apontados na etapa de monitoramento, conduzir análises de causa raiz de problemas específicos e produzir conclusões.',
-    'Acompanhamento': 'Se medidas corretivas foram apontadas, este item serve para acompanhar essas medidas, verificar se resoluções propostas a problemas foram resolvidos.',
-    'Fiscalização': 'Neste item, é usado efetivamente para ações fiscalizatórias (em campo ou não), instaurar processos administrativos e lavrar termos de notificação.',
-    'Elaboração Normativa': 'Ação relacionada a produzir normas, como portarias ou notas técnicas, que formalizem a regulação de certos aspectos ou dê explicações e orientações técnicas sobre pontos específicos sobre a regulação de serviços públicos.',
-    'Econômico-Financeira': 'Entram neste item de ação todas as relacionadas com análises contábeis (balanços, balancetes, etc), análises financeiras, definição ou análise de indicadores, análises econômicas que embasem revisões tarifárias, normativos, relatórios, entre outros.',
-    'Projeto': 'Tipo de ação que exige o acompanhamento de um projeto proposto pela AGEMS para os regulados.',
-    'Outros': 'Todos os demais tipo de ação que não se enquadrem nas anteriores.',
-}
-
-# Cores dos botões no modal de seleção
-TIPO_ACAO_CORES = {
-    'Monitoramento': '#1565C0',
-    'Análise': '#6A1B9A',
-    'Acompanhamento': '#00838F',
-    'Fiscalização': '#C62828',
-    'Elaboração Normativa': '#E65100',
-    'Econômico-Financeira': '#2E7D32',
-    'Projeto': '#F57F17',
-    'Outros': '#546E7A',
-}
-
-
-def get_tipos_ordenados():
-    """Retorna os TipoAcao na ordem canônica definida pelo cliente, via Case/When."""
-    whens = [
-        When(nome__icontains=nome, then=i)
-        for i, nome in enumerate(TIPO_ACAO_ORDEM)
-    ]
-    return TipoAcao.objects.annotate(
-        custom_order=Case(*whens, default=99, output_field=IntegerField())
-    ).order_by('custom_order', 'nome')
-
-
 # Endpoint AJAX para obrigações (usado na criação de Ações)
 def get_obrigacoes_por_instrumento(request):
     instrumento_id = request.GET.get('instrumento_id')
     if not instrumento_id:
-        return JsonResponse({'obrigacoes': [], 'entidades': []})
+        return JsonResponse({'obrigacoes': []})
 
     obrigacoes = Obrigacao.objects.filter(instrumento_id=instrumento_id).values('id', 'titulo')
-
-    # Também retorna as entidades do instrumento para popular o select de Entidade
-    try:
-        instrumento = Instrumento.objects.get(pk=instrumento_id)
-        entidades = list(instrumento.entidades.values('id', 'razao_social'))
-    except Instrumento.DoesNotExist:
-        entidades = []
-
-    return JsonResponse({'obrigacoes': list(obrigacoes), 'entidades': entidades})
+    return JsonResponse({'obrigacoes': list(obrigacoes)})
 
 
 class AcaoListView(PermissionRequiredMixin, ModernListView):
-
-    def handle_no_permission(self):
-        if self.request.user.is_authenticated:
-            messages.error(self.request, "Você não possui permissão para acessar esta funcionalidade ou excluir este registro.")
-            return redirect(getattr(self, 'success_url', 'dashboard'))
-        return super().handle_no_permission()
-
     """
     Lista as Ações (nível de execução vinculado à Obrigação).
     """
@@ -97,7 +33,6 @@ class AcaoListView(PermissionRequiredMixin, ModernListView):
     model = Acao
     template_name = 'acoes/acao_list.html'
     icon = "bi bi-lightning-charge"
-    subtitle = "Monitore, Fiscalize, Acompanhe, etc"
     create_url = 'acao_create'
     search_fields = ['nome', 'descricao', 'obrigacao__titulo']
 
@@ -106,16 +41,20 @@ class AcaoListView(PermissionRequiredMixin, ModernListView):
         obrigacao_id = self.request.GET.get('obrigacao')
         user = self.request.user
 
+        # OTIMIZAÇÃO: Carregamento antecipado de chaves estrangeiras
         queryset = Acao.objects.select_related('responsavel', 'obrigacao', 'obrigacao__instrumento', 'tipo_acao')
 
+        # FILTRO DE ESCOPO: Técnicos veem apenas suas ações (Responsável ou Executor)
         if user.perfil in [3, 4]:
             queryset = queryset.filter(Q(responsavel=user) | Q(executores=user)).distinct()
+        
+        # Admin e Gestor veem tudo (base queryset já é all())
 
         if instrumento_id:
             queryset = queryset.filter(obrigacao__instrumento_id=instrumento_id)
         if obrigacao_id:
             queryset = queryset.filter(obrigacao_id=obrigacao_id)
-
+        
         tipo_acao_id = self.request.GET.get('tipo_acao')
         if tipo_acao_id:
             queryset = queryset.filter(tipo_acao_id=tipo_acao_id)
@@ -127,6 +66,7 @@ class AcaoListView(PermissionRequiredMixin, ModernListView):
         instrumento_id = self.request.GET.get('instrumento')
 
         context['instrumentos'] = Instrumento.objects.all()
+        # OTIMIZAÇÃO: Se filtrar obrigações para o dropdown, carregue apenas o necessário
         context['obrigacoes'] = Obrigacao.objects.filter(instrumento_id=instrumento_id).only('id', 'titulo') if instrumento_id else Obrigacao.objects.all().only('id', 'titulo')
         try:
             context['instrumento_selecionado'] = int(instrumento_id) if instrumento_id else None
@@ -138,7 +78,8 @@ class AcaoListView(PermissionRequiredMixin, ModernListView):
         except (ValueError, TypeError):
             context['obrigacao_selecionada'] = None
 
-        context['tipos_acao'] = get_tipos_ordenados()
+        from acoes.models import TipoAcao
+        context['tipos_acao'] = TipoAcao.objects.all().order_by('nome')
         try:
             context['tipo_acao_selecionado'] = int(self.request.GET.get('tipo_acao')) if self.request.GET.get('tipo_acao') else None
         except (ValueError, TypeError):
@@ -147,75 +88,12 @@ class AcaoListView(PermissionRequiredMixin, ModernListView):
         return context
 
 
-@login_required
-def acao_tipo_selector(request):
-    """
-    Retorna o HTML do modal de seleção de tipo de ação.
-    Carregado via fetch() pelo botão 'Adicionar Ação'.
-    """
-    tipos = get_tipos_ordenados()
-
-    # Enriquecer cada tipo com cor e descrição
-    tipos_enriquecidos = []
-    for tipo in tipos:
-        nome_key = None
-        for nome in TIPO_ACAO_ORDEM:
-            if nome.lower() in tipo.nome.lower() or tipo.nome.lower() in nome.lower():
-                nome_key = nome
-                break
-        tipos_enriquecidos.append({
-            'id': tipo.id,
-            'nome': tipo.nome,
-            'cor': TIPO_ACAO_CORES.get(nome_key, '#546E7A'),
-            'descricao': TIPO_ACAO_DESCRICOES.get(nome_key, tipo.descricao or ''),
-        })
-
-    return render(request, 'acoes/acao_tipo_selector.html', {
-        'tipos': tipos_enriquecidos,
-    })
-
-
 class AcaoCreateView(PermissionRequiredMixin, ModernCreateView):
-    def get_readonly(self):
-        # Perfil 4 e 5 são somente leitura para Ações em certos contextos, 
-        # mas aqui vamos seguir a regra do cliente: Perfil 4 pode editar se for responsável.
-        # Caso queira bloquear edição de Ação para visualizador (5):
-        return self.request.user.perfil == 5
-
-    def get_form_kwargs(self):
-        kwargs = super().get_form_kwargs()
-        kwargs['readonly'] = self.get_readonly()
-        return kwargs
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['readonly'] = self.get_readonly()
-        return context
-
-
-    def handle_no_permission(self):
-        if self.request.user.is_authenticated:
-            messages.error(self.request, "Você não possui permissão para acessar esta funcionalidade ou excluir este registro.")
-            return redirect(getattr(self, 'success_url', 'dashboard'))
-        return super().handle_no_permission()
-
     permission_required = 'acoes.add_acao'
     model = Acao
     form_class = AcaoForm
     success_url = reverse_lazy('acao_list')
     template_name = 'acoes/acao_form.html'
-
-    def get_form_kwargs(self):
-        kwargs = super().get_form_kwargs()
-        kwargs['user'] = self.request.user
-        return kwargs
-
-    def get_initial(self):
-        initial = super().get_initial()
-        tipo_id = self.request.GET.get('tipo_acao')
-        if tipo_id:
-            initial['tipo_acao'] = tipo_id
-        return initial
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -227,19 +105,19 @@ class AcaoCreateView(PermissionRequiredMixin, ModernCreateView):
             context['checklist_formset'] = ChecklistItemFormSet(prefix='checklist_itens')
             context['docs_formset'] = AcaoDocumentoFormSet(prefix='docs')
             context['fotos_formset'] = AcaoFotoFormSet(prefix='fotos')
-
+        
+        # Contexto para Fiscalização (Fase 5)
+        # Passar IDs dos tipos que são "Fiscalização" para lógica no frontend
         context['fiscalizacao_ids'] = list(TipoAcao.objects.filter(
             nome__icontains='Fiscalização'
         ).values_list('id', flat=True))
-
-        context['instrumentos'] = Instrumento.objects.all()
-        context['tipos_acao_ordenados'] = get_tipos_ordenados()
-
+        
         return context
 
     def save_assets(self, acao, docs_formset, fotos_formset):
         """Helper para salvar ativos na criação"""
         try:
+            # Documentos
             docs = docs_formset.save(commit=False)
             for doc in docs:
                 doc.acao = acao
@@ -248,6 +126,7 @@ class AcaoCreateView(PermissionRequiredMixin, ModernCreateView):
             for obj in docs_formset.deleted_objects:
                 obj.delete()
 
+            # Fotos
             fotos = fotos_formset.save(commit=False)
             for foto in fotos:
                 foto.acao = acao
@@ -265,7 +144,7 @@ class AcaoCreateView(PermissionRequiredMixin, ModernCreateView):
         checklist_formset = context['checklist_formset']
         docs_formset = context['docs_formset']
         fotos_formset = context['fotos_formset']
-
+        
         is_valid = all([
             form.is_valid(),
             checklist_formset.is_valid(),
@@ -274,24 +153,44 @@ class AcaoCreateView(PermissionRequiredMixin, ModernCreateView):
         ])
 
         if is_valid:
-            # Checklist não é mais obrigatório — removida a validação anterior
+            # Validar checklist obrigatório (mínimo 1 item válido)
+            itens_validos = 0
+            for c_form in checklist_formset:
+                if c_form.cleaned_data and not c_form.cleaned_data.get('DELETE', False):
+                    if c_form.cleaned_data.get('nome', '').strip():
+                        itens_validos += 1
+            
+            if itens_validos == 0:
+                messages.error(
+                    self.request,
+                    'É obrigatório adicionar pelo menos 1 item no checklist de tarefas operativas.'
+                )
+                return self.render_to_response(self.get_context_data(form=form))
             self.object = form.save()
-
+            
+            # Checklist
             checklist_formset.instance = self.object
             checklist_formset.save()
-
+            
+            # Ativos
             self.save_assets(self.object, docs_formset, fotos_formset)
 
             messages.success(self.request, f'Ação "{self.object.nome}" criada com sucesso!')
             return super().form_valid(form)
         else:
+            # Tratamento de Erros Amigável (UX)
+            # Extrair mensagens de erro dos formsets para exibir no topo como toast/alert
+            
+            # Erros de Documentos
             for form_erro in docs_formset.errors:
                 if form_erro:
                     for campo, msgs in form_erro.items():
                          for msg in msgs:
+                             # Se o erro for no campo arquivo, mostra mensagem específica
                              prefixo = "Erro no arquivo: " if campo == 'arquivo' else ""
                              messages.error(self.request, f"{prefixo}{msg}")
 
+            # Erros de Fotos
             for form_erro in fotos_formset.errors:
                 if form_erro:
                     for campo, msgs in form_erro.items():
@@ -300,44 +199,16 @@ class AcaoCreateView(PermissionRequiredMixin, ModernCreateView):
 
             if not docs_formset.errors and not fotos_formset.errors:
                  messages.error(self.request, "Verifique os dados do formulário.")
-
+                 
             return self.render_to_response(self.get_context_data(form=form))
 
 
 class AcaoUpdateView(PermissionRequiredMixin, ModernUpdateView):
-    def get_readonly(self):
-        # Perfil 4 e 5 são somente leitura para Ações em certos contextos, 
-        # mas aqui vamos seguir a regra do cliente: Perfil 4 pode editar se for responsável.
-        # Caso queira bloquear edição de Ação para visualizador (5):
-        return self.request.user.perfil == 5
-
-    def get_form_kwargs(self):
-        kwargs = super().get_form_kwargs()
-        kwargs['readonly'] = self.get_readonly()
-        return kwargs
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['readonly'] = self.get_readonly()
-        return context
-
-
-    def handle_no_permission(self):
-        if self.request.user.is_authenticated:
-            messages.error(self.request, "Você não possui permissão para acessar esta funcionalidade ou excluir este registro.")
-            return redirect(getattr(self, 'success_url', 'dashboard'))
-        return super().handle_no_permission()
-
     permission_required = 'acoes.change_acao'
     model = Acao
     form_class = AcaoForm
     success_url = reverse_lazy('acao_list')
     template_name = 'acoes/acao_form.html'
-
-    def get_form_kwargs(self):
-        kwargs = super().get_form_kwargs()
-        kwargs['user'] = self.request.user
-        return kwargs
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -349,25 +220,18 @@ class AcaoUpdateView(PermissionRequiredMixin, ModernUpdateView):
             context['checklist_formset'] = ChecklistItemFormSet(instance=self.object, prefix='checklist_itens')
             context['docs_formset'] = AcaoDocumentoFormSet(instance=self.object, prefix='docs')
             context['fotos_formset'] = AcaoFotoFormSet(instance=self.object, prefix='fotos')
-
+            
+        # Contexto para Fiscalização (Fase 5)
         context['fiscalizacao_ids'] = list(TipoAcao.objects.filter(
             nome__icontains='Fiscalização'
         ).values_list('id', flat=True))
-
-        context['instrumentos'] = Instrumento.objects.all()
-        context['tipos_acao_ordenados'] = get_tipos_ordenados()
-
-        # Entidades disponíveis filtradas pelo instrumento da obrigação desta ação
-        try:
-            context['entidades_disponiveis'] = self.object.obrigacao.instrumento.entidades.all()
-        except Exception:
-            context['entidades_disponiveis'] = Entidade.objects.none()
-
+        
         return context
 
     def save_assets(self, acao, docs_formset, fotos_formset):
         """Helper para salvar documentos e fotos com injeção de usuário"""
         try:
+            # Documentos
             docs = docs_formset.save(commit=False)
             for doc in docs:
                 doc.acao = acao
@@ -377,6 +241,7 @@ class AcaoUpdateView(PermissionRequiredMixin, ModernUpdateView):
             for obj in docs_formset.deleted_objects:
                 obj.delete()
 
+            # Fotos
             fotos = fotos_formset.save(commit=False)
             for foto in fotos:
                 foto.acao = acao
@@ -394,6 +259,8 @@ class AcaoUpdateView(PermissionRequiredMixin, ModernUpdateView):
         docs_formset = context['docs_formset']
         fotos_formset = context['fotos_formset']
 
+
+
         is_valid = all([
             form.is_valid(),
             checklist_formset.is_valid(),
@@ -402,17 +269,34 @@ class AcaoUpdateView(PermissionRequiredMixin, ModernUpdateView):
         ])
 
         if is_valid:
-            # Checklist não é mais obrigatório — removida a validação anterior
+            # Validar checklist obrigatório (mínimo 1 item válido)
+            itens_validos = 0
+            for c_form in checklist_formset:
+                if c_form.cleaned_data and not c_form.cleaned_data.get('DELETE', False):
+                    if c_form.cleaned_data.get('nome', '').strip():
+                        itens_validos += 1
+            
+            if itens_validos == 0:
+                messages.error(
+                    self.request,
+                    'É obrigatório adicionar pelo menos 1 item no checklist de tarefas operativas.'
+                )
+                return self.render_to_response(self.get_context_data(form=form))
             self.object = form.save()
-
+            
+            # Checklist
             checklist_formset.instance = self.object
             checklist_formset.save()
-
+            
+            # Ativos (Docs e Fotos)
             self.save_assets(self.object, docs_formset, fotos_formset)
 
             messages.success(self.request, f'Ação "{self.object.nome}" atualizada com sucesso!')
             return super().form_valid(form)
         else:
+            # Tratamento de Erros Amigável (UX) - UpdateView
+            
+            # Erros de Documentos
             for form_erro in docs_formset.errors:
                 if form_erro:
                     for campo, msgs in form_erro.items():
@@ -420,6 +304,7 @@ class AcaoUpdateView(PermissionRequiredMixin, ModernUpdateView):
                              prefixo = "Erro no arquivo: " if campo == 'arquivo' else ""
                              messages.error(self.request, f"{prefixo}{msg}")
 
+            # Erros de Fotos
             for form_erro in fotos_formset.errors:
                 if form_erro:
                     for campo, msgs in form_erro.items():
@@ -433,13 +318,6 @@ class AcaoUpdateView(PermissionRequiredMixin, ModernUpdateView):
 
 
 class AcaoDeleteView(PermissionRequiredMixin, ModernDeleteView):
-
-    def handle_no_permission(self):
-        if self.request.user.is_authenticated:
-            messages.error(self.request, "Você não possui permissão para acessar esta funcionalidade ou excluir este registro.")
-            return redirect(getattr(self, 'success_url', 'dashboard'))
-        return super().handle_no_permission()
-
     permission_required = 'acoes.delete_acao'
     model = Acao
     success_url = reverse_lazy('acao_list')
@@ -447,13 +325,6 @@ class AcaoDeleteView(PermissionRequiredMixin, ModernDeleteView):
 
 # Calendário de Ações
 class AcaoCalendarioView(PermissionRequiredMixin, TemplateView):
-
-    def handle_no_permission(self):
-        if self.request.user.is_authenticated:
-            messages.error(self.request, "Você não possui permissão para acessar esta funcionalidade ou excluir este registro.")
-            return redirect(getattr(self, 'success_url', 'dashboard'))
-        return super().handle_no_permission()
-
     permission_required = 'acoes.view_acao'
     template_name = 'acoes/acoes_calendario.html'
 
@@ -462,12 +333,12 @@ class AcaoCalendarioView(PermissionRequiredMixin, TemplateView):
 def acoes_json(request):
     """Retorna as ações em formato JSON para o FullCalendar"""
     user = request.user
-
+    
     queryset = Acao.objects.select_related('responsavel', 'obrigacao')
-
+    
     if user.perfil in [3, 4]:
         queryset = queryset.filter(Q(responsavel=user) | Q(executores=user)).distinct()
-
+        
     acoes = queryset.all()
     eventos = []
 
@@ -490,11 +361,11 @@ def acoes_json(request):
 def cor_status(status):
     """Define a cor com base no status"""
     cores = {
-        'a_iniciar': '#f57c00',
-        'em_andamento': '#1976d2',
-        'atrasado': '#c62828',
-        'em_validacao': '#6a1b9a',
-        'finalizado': '#2e7d32',
+        'a_iniciar': '#f57c00',       # laranja
+        'em_andamento': '#1976d2',    # azul
+        'atrasado': '#c62828',        # vermelho
+        'em_validacao': '#6a1b9a',    # roxo
+        'finalizado': '#2e7d32',      # verde
     }
     return cores.get(status, '#607d8b')
 
@@ -506,7 +377,7 @@ def listar_marcadores_ajax(request, acao_id):
     """Lista todos os marcadores de uma ação específica"""
     acao = get_object_or_404(Acao, id=acao_id)
     marcadores = acao.marcadores.all()
-
+    
     data = []
     for m in marcadores:
         fotos = m.fotos.all()
@@ -520,7 +391,7 @@ def listar_marcadores_ajax(request, acao_id):
             'usuario': m.usuario.get_full_name() if m.usuario else "Sistema",
             'fotos': [{'id': f.id, 'url': f.imagem.url, 'legenda': f.legenda} for f in fotos]
         })
-
+    
     return JsonResponse({'status': 'success', 'marcadores': data})
 
 
@@ -532,14 +403,14 @@ def salvar_marcador_ajax(request, acao_id):
     try:
         acao = get_object_or_404(Acao, id=acao_id)
         marcador_id = request.POST.get('marcador_id')
-
+        
         titulo = request.POST.get('titulo')
         latitude = request.POST.get('latitude')
         longitude = request.POST.get('longitude')
-
+        
         if not titulo or not latitude or not longitude:
             return JsonResponse({
-                'status': 'error',
+                'status': 'error', 
                 'message': 'Título, Latitude e Longitude são obrigatórios.'
             }, status=400)
 
@@ -547,13 +418,14 @@ def salvar_marcador_ajax(request, acao_id):
             marcador = AcaoMarcador.objects.get(id=marcador_id, acao=acao)
         else:
             marcador = AcaoMarcador(acao=acao, usuario=request.user)
-
+            
         marcador.titulo = titulo
         marcador.descricao = request.POST.get('descricao', '')
         marcador.latitude = latitude
         marcador.longitude = longitude
         marcador.save()
-
+        
+        # Processar novas fotos específicas do marcador se enviadas
         fotos_count = 0
         if 'fotos' in request.FILES:
             for f in request.FILES.getlist('fotos'):
@@ -566,7 +438,7 @@ def salvar_marcador_ajax(request, acao_id):
                     coordenadas=f"{marcador.latitude}, {marcador.longitude}"
                 )
                 fotos_count += 1
-
+        
         return JsonResponse({
             'status': 'success',
             'marcador': {
@@ -589,5 +461,8 @@ def salvar_marcador_ajax(request, acao_id):
 def deletar_marcador_ajax(request, marcador_id):
     """Deleta um marcador do mapa"""
     marcador = get_object_or_404(AcaoMarcador, id=marcador_id)
+    # Fotos vinculadas não são deletadas, apenas perdem o vínculo com o marcador
+    # Isso garante que a evidência de campo continue na aba Fotos.
     marcador.delete()
     return JsonResponse({'status': 'success'})
+

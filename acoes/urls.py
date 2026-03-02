@@ -21,4 +21,7 @@ urlpatterns = [
     path('acao/<int:acao_id>/marcadores/', views.listar_marcadores_ajax, name='listar_marcadores_ajax'),
     path('acao/<int:acao_id>/marcador/salvar/', views.salvar_marcador_ajax, name='salvar_marcador_ajax'),
     path('marcador/<int:marcador_id>/deletar/', views.deletar_marcador_ajax, name='deletar_marcador_ajax'),
+
+    # Modal de seleção de tipo de ação (carregado via fetch no botão Adicionar)
+    path('tipo-seletor/', views.acao_tipo_selector, name='acao_tipo_selector'),
 ]

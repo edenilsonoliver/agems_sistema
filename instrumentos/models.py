@@ -92,6 +92,16 @@ class Instrumento(models.Model):
         verbose_name_plural = 'Instrumentos'
         ordering = ['-data_inicio']
     
+
+    @property
+    def safe_size(self):
+        try:
+            if self.arquivo and hasattr(self.arquivo, 'size'):
+                return self.arquivo.size
+        except (FileNotFoundError, ValueError):
+            return None
+        return None
+
     def __str__(self):
         return f"{self.numero} - {self.tipo_instrumento}"
     
@@ -175,7 +185,7 @@ class Obrigacao(models.Model):
     percentual_atendimento = models.IntegerField(
         'Percentual de Atendimento (%)',
         default=0,
-        help_text='Média ponderada baseada nos itens de checklist das ações'
+        help_text='Percentual de atendimento definido manualmente pelo gestor (0 a 100)'
     )
     
     # Status
@@ -191,62 +201,51 @@ class Obrigacao(models.Model):
         verbose_name_plural = 'Obrigações'
         ordering = ['data_vencimento', 'titulo']
     
+
+    @property
+    def safe_size(self):
+        try:
+            if self.arquivo and hasattr(self.arquivo, 'size'):
+                return self.arquivo.size
+        except (FileNotFoundError, ValueError):
+            return None
+        return None
+
     def __str__(self):
         return f"{self.titulo} - {self.instrumento.numero}"
     
-    @property
-    def percentual_conclusao(self):
-        """Calcula o percentual de conclusão baseado nas ações vinculadas."""
-        total = self.acoes.count()
-        if total == 0:
-            return 0
-        concluidas = self.acoes.filter(status='finalizado').count()
-        return int((concluidas / total) * 100)
-
     def atualizar_status_por_acoes(self):
         """
-        Atualiza o status e o percentual de atendimento da Obrigação.
-        O percentual é a média dos percentuais de conclusão de todas as ações.
+        Verifica e atualiza o STATUS da Obrigação com base nas regras automáticas.
+        O percentual de atendimento é MANUAL e não é alterado aqui.
+
+        Regras:
+        1) Prazo vencido (data_vencimento < hoje) → status = 'vencida' (prioritário)
+        2) Não recorrente E todas as ações finalizadas → status = 'cumprida' (sugestão automática)
+        O usuário pode sobrescrever o status manualmente a qualquer momento.
         """
         from django.utils import timezone
         hoje = timezone.now().date()
-        
-        # 1. Cálculo do Percentual de Atendimento (Média das Ações)
-        acoes = self.acoes.all()
-        total_acoes = acoes.count()
-        
-        novo_percentual = 0
-        if total_acoes > 0:
-            soma_percentuais = sum([acao.percentual_cumprido for acao in acoes])
-            novo_percentual = int(soma_percentuais / total_acoes)
 
-        from django.utils import timezone
-        hoje = timezone.now().date()
-        
-        # 2. Determinação do Status
-        if total_acoes > 0 and novo_percentual >= 100:
-            novo_status = 'cumprida'
-        elif self.data_vencimento and self.data_vencimento < hoje:
-            novo_status = 'vencida'
-        elif self.acoes.filter(status__in=['em_andamento', 'atrasado', 'em_validacao']).exists() or novo_percentual > 0:
-            novo_status = 'em_andamento'
-        else:
-            novo_status = 'pendente'
+        novo_status = None
 
-        # 3. Salvar alterações
-        campos_alterados = []
-        
-        if novo_percentual != self.percentual_atendimento:
-            self.percentual_atendimento = novo_percentual
-            campos_alterados.append('percentual_atendimento')
-            
-        if novo_status != self.status:
+        # REGRA 1 (prioritária): prazo vencido → Vencida
+        if self.data_vencimento and self.data_vencimento < hoje:
+            if self.status != 'vencida':
+                novo_status = 'vencida'
+
+        # REGRA 2: não recorrente + todas as ações finalizadas → Cumprida
+        elif not self.recorrente:
+            acoes = self.acoes.all()
+            total = acoes.count()
+            if total > 0 and acoes.filter(status='finalizado').count() == total:
+                if self.status not in ('cumprida',):
+                    novo_status = 'cumprida'
+
+        # Salvar apenas se houver mudança de status automática
+        if novo_status is not None:
             self.status = novo_status
-            campos_alterados.append('status')
-        
-        if campos_alterados:
-            campos_alterados.append('data_atualizacao')
-            self.save(update_fields=campos_alterados)
+            self.save(update_fields=['status', 'data_atualizacao'])
 
     def clean(self):
         """Validações de integridade da obrigação."""
@@ -296,5 +295,15 @@ class ArquivoInstrumento(models.Model):
         verbose_name_plural = 'Arquivos do Instrumento'
         ordering = ['-data_upload']
     
+
+    @property
+    def safe_size(self):
+        try:
+            if self.arquivo and hasattr(self.arquivo, 'size'):
+                return self.arquivo.size
+        except (FileNotFoundError, ValueError):
+            return None
+        return None
+
     def __str__(self):
         return f"{self.nome_arquivo or self.arquivo.name} - {self.instrumento}"

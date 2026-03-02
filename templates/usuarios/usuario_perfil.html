@@ -1,0 +1,35 @@
+{% extends 'base_modern.html' %}
+{% load crispy_forms_tags %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">
+        <i class="{{icon}} me-2"></i>
+        {{title}}
+    </h1>
+    <p class="page-subtitle">{{subtitle}}</p>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body p-4">
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="row">
+                        <div class="col-12">
+                            {{ form|crispy }}
+                        </div>
+                    </div>
+                    <div class="mt-4 d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-save me-2"></i>Salvar Alterações
+                        </button>
+                        <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary">Cancelar</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

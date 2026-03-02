@@ -233,3 +233,36 @@ class UsuarioVisualizadorView(VerificaSenhaTemporariaMixin, LoginRequiredMixin, 
             f'Diretorias de visualização configuradas para {self.object.get_full_name()}!'
         )
         return response
+
+class UsuarioPerfilView(LoginRequiredMixin, UpdateView):
+    model = User
+    form_class = UsuarioUpdateForm
+    template_name = 'usuarios/usuario_perfil.html'
+    success_url = reverse_lazy('dashboard')
+
+    def get_object(self, queryset=None):
+        return self.request.user
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update({
+            'title': 'Meu Perfil',
+            'subtitle': 'Visualize e atualize seus dados cadastrais',
+            'icon': 'bi bi-person-circle',
+            'form_title': 'Dados do Meu Perfil',
+        })
+        return context
+
+    def get_form(self, form_class=None):
+        form = super().get_form(form_class)
+        # Usuários comuns não podem alterar o próprio perfil ou diretoria
+        if self.request.user.perfil != 0:
+            if 'perfil' in form.fields: form.fields['perfil'].disabled = True
+            if 'diretoria' in form.fields: form.fields['diretoria'].disabled = True
+            if 'subunidade' in form.fields: form.fields['subunidade'].disabled = True
+            if 'username' in form.fields: form.fields['username'].disabled = True
+        return form
+
+    def form_valid(self, form):
+        messages.success(self.request, "Perfil atualizado com sucesso!")
+        return super().form_valid(form)

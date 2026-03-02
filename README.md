@@ -1,8 +1,8 @@
 # 🚀 AGEMS - Sistema de Gestão Regulatória
 
-**Versão 2.1 - Outubro 2025**
+**Versão 3.0 - Fevereiro 2026**
 
-Sistema completo de gestão de instrumentos regulatórios, obrigações, entidades e ações para a **AGEMS - Agência de Regulação de Serviços Públicos de Mato Grosso do Sul**.
+Sistema completo de **Gestão de Instrumentos Jurídicos, Regulamentação e Fiscalização de Entidades Reguladas** da **AGEMS - Agência de Regulação de Serviços Públicos de Mato Grosso do Sul**.
 
 ---
 
@@ -15,7 +15,7 @@ Sistema completo de gestão de instrumentos regulatórios, obrigações, entidad
 3. Execute: `.\iniciar.ps1`
 4. Aguarde e acesse: `http://localhost:8000`
 
-### **Opção 2: Manual (Se o script não funcionar)**
+### **Opção 2: Manual**
 
 Siga o guia detalhado em: **`INSTALACAO_MANUAL.md`**
 
@@ -26,6 +26,8 @@ Siga o guia detalhado em: **`INSTALACAO_MANUAL.md`**
 - **URL:** http://localhost:8000
 - **Usuário:** `admin`
 - **Senha:** `admin123`
+
+> ⚠️ Alterar senha do administrador imediatamente em produção.
 
 ---
 
@@ -39,28 +41,63 @@ Siga o guia detalhado em: **`INSTALACAO_MANUAL.md`**
 
 ## 🎯 Módulos Implementados
 
-### **9 Módulos Completos**
+### **10 Módulos Completos**
 
-1. **Usuários** - Gestão com perfis (Administrador, Gestor, Analista, Consulta)
-2. **Entidades** - Concessionárias e órgãos públicos com logo
-3. **Instrumentos** - Contratos, convênios, acordos com NUP (E-MS)
-4. **Obrigações** - Vinculadas aos instrumentos (gerenciadas inline)
-5. **Ações** - Fiscalizações, análises, projetos, averiguações
-6. **Indicadores** - Metas, valores ideais e conformidade
-7. **Alertas** - Sistema de notificações
-8. **Documentos** - Upload múltiplo de arquivos
-9. **Dashboards** - Visão executiva com estatísticas
+| # | Módulo | Descrição |
+|---|--------|-----------|
+| 1 | **Usuários** | Gestão com 5 perfis hierárquicos de acesso |
+| 2 | **Entidades** | Concessionárias, Permissionárias e Entidades Reguladas |
+| 3 | **Instrumentos** | Contratos, Convênios, Acordos com NUP (E-MS) |
+| 4 | **Obrigações** | Vinculadas aos instrumentos (gerenciadas inline) |
+| 5 | **Ações** | Fiscalizações, análises, projetos, averiguações |
+| 6 | **Indicadores** | Metas, valores ideais e conformidade contratual |
+| 7 | **Mapas/Geo** | Camadas KML, mapa de fiscalização por ocorrência |
+| 8 | **Documentos** | Upload múltiplo com validação MIME |
+| 9 | **Fotos** | Registro fotográfico de campo com GPS |
+| 10 | **Painel** | Painel de Acompanhamento com gráficos e estatísticas |
 
-### **Recursos Especiais**
+---
 
-- ✨ Sistema de abas (Dados Gerais, Obrigações, Arquivos)
-- ✨ CRUD inline de tipos (criar/editar sem sair da tela)
-- ✨ Upload múltiplo de arquivos por instrumento
-- ✨ Busca e filtros em todas as listagens
-- ✨ Badges coloridos para status
-- ✨ Interface responsiva (mobile-friendly)
-- ✨ Identidade visual AGEMS (azul #0066B3)
-- ✨ Logo institucional integrado
+## 🔐 Controle de Acesso por Perfil
+
+O sistema implementa **Controle de Acesso Baseado em Funções (RBAC)** com 4 perfis mapeados para Grupos de Permissão do Django. Para detalhes completos, consulte [PERFIS_ACESSO.md](./PERFIS_ACESSO.md).
+
+| Perfil | Grupo | Foco | Permissões Chave |
+|--------|-------|------|-----------------|
+| **Administrador** | *Superuser* | Sistema/TI | Acesso total e irrestrito (inclui `/admin` e configurações globais) |
+| **Gestor** (Perfil 1-2) | `Gestores` | Gerência | CRUD completo de Entidades, Instrumentos, Obrigações e Ações. Gerencia Usuários |
+| **Técnico** (Perfil 3-4) | `Tecnicos` | Execução | Pode criar e editar Ações. **Não pode excluir**. Vê apenas suas próprias tarefas (filtrado por Responsável/Executor). Somente leitura em Entidades e Instrumentos |
+| **Visualizador** (Perfil 5) | `Visualizadores` | Auditoria | Somente leitura em todo o sistema. Sem botões de Criar/Editar/Excluir |
+
+### **Comportamento para Acesso Restrito**
+- Usuários sem permissão de edição veem formulários em **Modo de Visualização** (banner azul, campos desabilitados)
+- Tentativas de exclusão sem permissão resultam em **redirecionamento com mensagem amigável** — sem erro 403
+- Botões de ação (Salvar, Excluir) são ocultados automaticamente
+
+### **Mapeamento Técnico**
+
+```
+perfil 1 ou 2  →  Grupo 'Gestores'   (add/change/delete/view nos modelos principais)
+perfil 3 ou 4  →  Grupo 'Tecnicos'   (add/change/view em Acao; view em Entidade/Instrumento/Obrigacao)
+perfil 5       →  Grupo 'Visualizadores' (view em todos os modelos)
+```
+
+---
+
+## 📊 Regras de Negócio — Obrigações
+
+### **Percentual de Atendimento (% ATEND.)**
+- Definido **manualmente** pelo Gestor ou Diretor responsável
+- Valor entre 0 e 100 — editável diretamente na tabela de obrigações do instrumento
+
+### **Status Automático (editável)**
+| Condição | Status Automático |
+|----------|------------------|
+| Data de vencimento ultrapassada | `Vencida` (prioritário) |
+| Não recorrente + todas as ações finalizadas | `Cumprida` |
+| Demais casos | Controlado manualmente |
+
+> O usuário pode sobrescrever o status a qualquer momento.
 
 ---
 
@@ -79,31 +116,21 @@ Siga o guia detalhado em: **`INSTALACAO_MANUAL.md`**
 ## 📁 Estrutura do Projeto
 
 ```
-agems_sistema_final/
-├── 📄 README.md                  # Este arquivo
-├── 📄 INSTALACAO_MANUAL.md       # Guia passo a passo manual
-├── 📄 iniciar.ps1                # ⭐ Script de inicialização
-├── 📄 parar.ps1                  # Parar sistema
-├── 📄 reiniciar.ps1              # Reiniciar sistema
-├── 📄 logs.ps1                   # Ver logs
-├── 📄 backup.ps1                 # Fazer backup
-├── 📄 docker-compose.yml         # Configuração Docker
-├── 📄 Dockerfile                 # Imagem Docker
-├── 📄 db.sqlite3                 # ⭐ Banco de dados
-├── 📄 manage.py                  # Django CLI
-├── 📄 requirements.txt           # Dependências Python
+agems_sistema/
+├── 📄 README.md
+├── 📄 docker-compose.yml
+├── 📄 Dockerfile
+├── 📄 manage.py
+├── 📄 requirements.txt
 ├── 📂 config/                    # Configurações Django
-├── 📂 usuarios/                  # Módulo usuários
-├── 📂 entidades/                 # Módulo entidades
-├── 📂 instrumentos/              # Módulo instrumentos
-├── 📂 acoes/                     # Módulo ações
-├── 📂 indicadores/               # Módulo indicadores
-├── 📂 alertas/                   # Módulo alertas
-├── 📂 documentos/                # Módulo documentos
-├── 📂 dashboards/                # Módulo dashboards
-├── 📂 fiscalizacao/              # Módulo fiscalização
-├── 📂 core/                      # App principal
-├── 📂 templates/                 # Templates HTML
+├── 📂 core/                      # App principal, views base, modelos de domínio
+├── 📂 usuarios/                  # Módulo usuários e perfis
+├── 📂 entidades/                 # Módulo entidades reguladas
+├── 📂 instrumentos/              # Módulo instrumentos e obrigações
+├── 📂 acoes/                     # Módulo ações de fiscalização
+├── 📂 indicadores/               # Módulo indicadores contratuais
+├── 📂 georeferencias/            # Módulo mapas e camadas KML
+├── 📂 templates/                 # Templates HTML por módulo
 ├── 📂 static/                    # CSS, JS, imagens
 └── 📂 backups/                   # Backups do banco
 ```
@@ -123,78 +150,29 @@ docker-compose logs -f
 docker-compose down
 
 # Reiniciar o sistema
-docker-compose restart
+docker-compose restart web
 
-# Reconstruir do zero
-docker-compose down -v
-docker-compose build --no-cache
-docker-compose up -d
+# Rodar validação do Django
+docker-compose exec web python manage.py check
 ```
 
 ---
 
 ## 🐛 Solução de Problemas
 
-### **Script iniciar.ps1 não funciona?**
-- Consulte o arquivo **`INSTALACAO_MANUAL.md`** para comandos passo a passo
+### **Porta 8000 ocupada?**
+- Edite `docker-compose.yml`
+- Altere `"8000:8000"` para `"8001:8000"`
+
+### **Sistema não carrega?**
+```powershell
+docker-compose logs -f
+```
 
 ### **Erro de permissão no PowerShell?**
 ```powershell
 Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 ```
-
-### **Docker não está rodando?**
-- Abra o Docker Desktop manualmente
-- Aguarde até o ícone ficar estável
-- Tente novamente
-
-### **Porta 8000 ocupada?**
-- Edite `docker-compose.yml`
-- Altere `"8000:8000"` para `"8001:8000"`
-- Acesse em `http://localhost:8001`
-
-### **Sistema não carrega?**
-```powershell
-# Ver logs para identificar erro
-.\logs.ps1
-
-# Ou manualmente
-docker-compose logs -f
-```
-
----
-
-## 🎨 Identidade Visual
-
-O sistema utiliza a identidade visual oficial da AGEMS:
-
-- **Cor principal:** Azul #0066B3 (Governo de MS)
-- **Logo:** AGEMS oficial
-- **Design:** Moderno, limpo e responsivo
-
----
-
-## 💾 Backup e Restauração
-
-### **Criar Backup**
-```powershell
-.\backup.ps1
-```
-Os backups são salvos em `backups/` com data e hora.
-
-### **Restaurar Backup**
-1. Pare o sistema: `.\parar.ps1`
-2. Substitua `db.sqlite3` pelo backup desejado
-3. Inicie: `.\iniciar.ps1`
-
----
-
-## 🔐 Segurança
-
-⚠️ **IMPORTANTE:**
-- As credenciais padrão (`admin/admin123`) são para desenvolvimento local
-- Para produção, altere imediatamente a senha do administrador
-- Configure variáveis de ambiente adequadas
 
 ---
 
@@ -203,49 +181,32 @@ Os backups são salvos em `backups/` com data e hora.
 | Tecnologia | Versão | Uso |
 |------------|--------|-----|
 | Python | 3.11 | Backend |
-| Django | 5.2 | Framework web |
-| SQLite | 3 | Banco de dados |
+| Django | 5.x | Framework web |
+| PostgreSQL | 15 | Banco de dados |
 | Docker | Latest | Containerização |
 | Bootstrap | 5 | Frontend |
+| Leaflet.js | 1.9 | Mapas interativos |
+| Chart.js | Latest | Gráficos no Painel |
 | Gunicorn | Latest | Servidor WSGI |
 
 ---
 
-## ✅ Correções Implementadas (14/14)
+## 💾 Backup e Restauração
 
-### **ENTIDADES**
-- ✅ CRUD inline de tipos de entidade
-- ✅ CRUD inline de tipos de serviço
-- ✅ Upload de logo da entidade
-- ✅ Campo "Diretoria Responsável"
+```powershell
+# Criar backup
+.\backup.ps1
 
-### **INSTRUMENTOS**
-- ✅ Sistema de abas (Dados Gerais, Obrigações, Arquivos)
-- ✅ CRUD inline de tipos de instrumento
-- ✅ Campo NUP (E-MS)
-- ✅ Upload múltiplo de arquivos
-- ✅ Redirecionamento para edição após salvar
-
-### **OBRIGAÇÕES**
-- ✅ Formset inline (salvar junto com instrumento)
-- ✅ Campo "Instrumento" oculto no formulário
-- ✅ Menu "Obrigações" removido da sidebar
-- ✅ CRUD inline de tipos de obrigação
-
-### **IDENTIDADE VISUAL**
-- ✅ Cores AGEMS (#0066B3)
-- ✅ Logo institucional
+# Restaurar: substituir volume do PostgreSQL pelo backup desejado
+```
 
 ---
 
-## 📞 Suporte
+## 🎨 Identidade Visual
 
-Para problemas técnicos:
-
-1. Consulte **`INSTALACAO_MANUAL.md`**
-2. Execute `.\logs.ps1` para ver erros
-3. Verifique se Docker Desktop está rodando
-4. Tente reiniciar com `.\reiniciar.ps1`
+- **Cor principal:** Azul `#0066B3` (Governo de MS)
+- **Logo:** AGEMS oficial
+- **Design:** Moderno, responsivo, com suporte a dispositivos móveis
 
 ---
 
@@ -255,8 +216,4 @@ Sistema desenvolvido exclusivamente para a **AGEMS - Agência de Regulação de 
 
 ---
 
-**Desenvolvido com dedicação para a AGEMS** ❤️  
-**Versão:** 2.1  
-**Data:** Outubro 2025  
-**Status:** ✅ PRONTO PARA USO
-
+**Versão:** 3.0 | **Data:** Fevereiro 2026 | **Status:** ✅ Em Produção

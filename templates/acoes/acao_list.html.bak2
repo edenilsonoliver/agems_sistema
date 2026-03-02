@@ -12,7 +12,7 @@
     <select name="instrumento" id="instrumento" class="form-select" style="height: 40px;">
         <option value=""> Filtrar por Instrumento...</option>
         {% for inst in instrumentos %}
-        <option value="{{inst.id}}" {% if instrumento_selecionado == inst.id %}selected{% endif %}>{{inst}}</option>
+        <option value="{{inst.id}}" {% if instrumento_selecionado==inst.id %}selected{% endif %}>{{inst}}</option>
         {% endfor %}
     </select>
 </div>
@@ -20,7 +20,7 @@
     <select name="obrigacao" id="obrigacao" class="form-select" style="height: 40px;">
         <option value=""> Filtrar por Obrigação...</option>
         {% for obrigacao in obrigacoes %}
-        <option value="{{obrigacao.id}}" {% if obrigacao_selecionada == obrigacao.id %}selected{% endif %}>
+        <option value="{{obrigacao.id}}" {% if obrigacao_selecionada==obrigacao.id %}selected{% endif %}>
             {{obrigacao.titulo}}</option>
         {% endfor %}
     </select>
@@ -29,7 +29,7 @@
     <select name="tipo_acao" id="tipo_acao" class="form-select" style="height: 40px;">
         <option value=""> Filtrar por Tipo...</option>
         {% for tipo in tipos_acao %}
-        <option value="{{tipo.id}}" {% if tipo_acao_selecionado == tipo.id %}selected{% endif %}>{{tipo.nome}}</option>
+        <option value="{{tipo.id}}" {% if tipo_acao_selecionado==tipo.id %}selected{% endif %}>{{tipo.nome}}</option>
         {% endfor %}
     </select>
 </div>
@@ -64,7 +64,7 @@
 <th>Tipo</th>
 <th>Responsável</th>
 <th>Período</th>
-<th>Resultado</th>
+<th>Progresso</th>
 <th>Status</th>
 {% endblock %}
 
@@ -98,20 +98,14 @@
     <td><small>{{acao.responsavel.get_full_name|default:acao.responsavel.username}}</small></td>
     <td><small><i class="bi bi-calendar me-1"></i>{{acao.data_inicio|date:"d/m/Y"}} -
             {{acao.data_fim|date:"d/m/Y"}}</small></td>
-        <td>
-        {% if acao.resultado == 'atendido' %}
-            <span class="rounded-circle d-inline-block" style="width:18px;height:18px;background:#2E7D32;cursor:help;" 
-                  data-bs-toggle="tooltip" title="Atendido"></span>
-        {% elif acao.resultado == 'parcialmente_atendido' %}
-            <span class="rounded-circle d-inline-block" style="width:18px;height:18px;background:#E65100;cursor:help;" 
-                  data-bs-toggle="tooltip" title="Parcialmente Atendido"></span>
-        {% elif acao.resultado == 'nao_atendido' %}
-            <span class="rounded-circle d-inline-block" style="width:18px;height:18px;background:#C62828;cursor:help;" 
-                  data-bs-toggle="tooltip" title="Não Atendido"></span>
-        {% else %}
-            <span class="rounded-circle d-inline-block" style="width:18px;height:18px;background:#B0BEC5;cursor:help;" 
-                  data-bs-toggle="tooltip" title="Pendente de análise"></span>
-        {% endif %}
+    <td>
+        <div class="progress mb-1" style="height: 8px; border-radius: 4px; background-color: #e9ecef;">
+            <div class="progress-bar" role="progressbar"
+                style="width: {{acao.percentual_cumprido}}%; background: linear-gradient(90deg, #0066B3 0%, #004A8F 100%);"
+                aria-valuenow="{{acao.percentual_cumprido}}" aria-valuemin="0" aria-valuemax="100">
+            </div>
+        </div>
+        <small class="text-muted fw-medium">{{acao.percentual_cumprido}}%</small>
     </td>
     <td>
         {% if acao.status == 'finalizado' %}

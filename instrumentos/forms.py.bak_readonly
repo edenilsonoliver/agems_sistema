@@ -28,13 +28,6 @@ class InstrumentoForm(forms.ModelForm):
             'observacoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
         }
 
-    def __init__(self, *args, **kwargs):
-        self.readonly = kwargs.pop('readonly', False)
-        super().__init__(*args, **kwargs)
-        if self.readonly:
-            for field in self.fields.values():
-                field.disabled = True
-
     def clean(self):
         cleaned_data = super().clean()
         data_inicio = cleaned_data.get('data_inicio')
@@ -60,7 +53,7 @@ class ObrigacaoForm(forms.ModelForm):
             'prazo_dias': forms.NumberInput(attrs={'class': 'form-control'}),
             'data_vencimento': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}, format='%Y-%m-%d'),
             'status': forms.Select(attrs={'class': 'form-select'}),
-            'percentual_atendimento': forms.NumberInput(attrs={'class': 'form-control', 'min': '0', 'max': '100', 'placeholder': '0-100'}),
+            'percentual_atendimento': forms.NumberInput(attrs={'class': 'form-control', 'readonly': 'readonly'}),
             'recorrente': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'observacoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
         }
