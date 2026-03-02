@@ -23,6 +23,16 @@
                 <form method="post" enctype="multipart/form-data" novalidate>
                     {% csrf_token %}
 
+                    {% if readonly %}
+                    <div class="alert alert-info shadow-sm d-flex align-items-center mb-4" role="alert">
+                        <i class="bi bi-eye-fill fs-4 me-3"></i>
+                        <div>
+                            <strong>Modo de Visualização:</strong> Você não possui permissão para editar este registro.
+                            Os campos estão desabilitados.
+                        </div>
+                    </div>
+                    {% endif %}
+
                     {% if form.errors %}
                     <div class="alert alert-danger alert-dismissible fade show" role="alert">
                         <i class="bi bi-exclamation-triangle me-2"></i>
@@ -43,15 +53,15 @@
                     <hr class="my-4">
 
                     <div class="d-flex gap-2">
-                        <button type="submit" class="btn btn-primary">
+                        {% if not readonly %}<button type="submit" class="btn btn-primary">
                             <i class="bi bi-check-circle me-2"></i>
                             Salvar
-                        </button>
+                        </button>{% endif %}
                         <button type="button" class="btn btn-outline-secondary" onclick="window.history.back()">
                             <i class="bi bi-x-circle me-2"></i>
                             Cancelar
                         </button>
-                        {% if object %}
+                        {% if object and not readonly %}
                         <button type="button" class="btn btn-outline-danger ms-auto" data-bs-toggle="modal"
                             data-bs-target="#deleteModal">
                             <i class="bi bi-trash me-2"></i>

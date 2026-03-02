@@ -4,6 +4,7 @@ from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
 from core.models import TipoAcao
 from instrumentos.models import Instrumento, Obrigacao
+from entidades.models import Entidade
 
 
 class Acao(models.Model):
@@ -113,6 +114,36 @@ class Acao(models.Model):
     observacoes = models.TextField('Observações', blank=True)
     data_cadastro = models.DateTimeField('Data de Cadastro', auto_now_add=True)
     data_atualizacao = models.DateTimeField('Última Atualização', auto_now=True)
+
+    # Resultado de Atendimento (pela entidade fiscalizada)
+    RESULTADO_CHOICES = [
+        ('atendido', 'Atendido'),
+        ('parcialmente_atendido', 'Parcialmente Atendido'),
+        ('nao_atendido', 'Não Atendido'),
+    ]
+    resultado = models.CharField(
+        'Resultado',
+        max_length=25,
+        choices=RESULTADO_CHOICES,
+        null=True,
+        blank=True,
+        help_text='Indica se a entidade fiscalizada atendeu ao que foi solicitado pela ação'
+    )
+    entidade = models.ForeignKey(
+        Entidade,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        verbose_name='Entidade',
+        related_name='acoes_resultado',
+        help_text='Entidade fiscalizada sobre qual esta ação foi aplicada'
+    )
+    justificativa_resultado = models.TextField(
+        'Justificativa do Resultado',
+        null=True,
+        blank=True,
+        help_text='Justificativa para o resultado informado'
+    )
 
     class Meta:
         verbose_name = 'Ação'

@@ -46,18 +46,21 @@ class CamadaCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
                     if not pontos:
                         messages.warning(self.request, "O arquivo KML foi salvo, mas nenhum ponto válido (Placemark) foi encontrado.")
                     else:
-                        # Criar pontos em bulk
-                        pontos_objs = [
+                        # Criar objetos em bulk (Pontos, Linhas, Polígonos)
+                        elementos_objs = [
                             PontoReferencia(
                                 camada=self.object,
                                 nome=p.get('nome', 'Sem Nome')[:200],
                                 descricao=p.get('descricao', ''),
+                                tipo_geometria=p.get('tipo_geometria', 'Point'),
                                 latitude=p['latitude'],
-                                longitude=p['longitude']
+                                longitude=p['longitude'],
+                                coordenadas_json=p.get('coordenadas'),
+                                estilo_json=p.get('estilo')
                             ) for p in pontos
                         ]
-                        PontoReferencia.objects.bulk_create(pontos_objs)
-                        messages.success(self.request, f"Camada processada com sucesso! {len(pontos)} pontos de referência importados.")
+                        PontoReferencia.objects.bulk_create(elementos_objs)
+                        messages.success(self.request, f"Camada processada com sucesso! {len(pontos)} elementos de referência importados.")
                         
                 except Exception as e:
                     # Se falhar o parse, vamos avisar mas manter a camada (ou rollback?)
@@ -88,8 +91,6 @@ class CamadaUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
         return super().form_valid(form)
 
 class CamadaDeleteView(LoginRequiredMixin, PermissionRequiredMixin, DeleteView):
-# ... (restante do código)
-
     model = CamadaReferencia
     permission_required = 'georeferencias.delete_camadareferencia'
     success_url = reverse_lazy('georeferencias:camada_list')
@@ -116,11 +117,14 @@ def api_get_pontos_camada(request, camada_id):
     """Retorna os pontos de uma camada específica"""
     try:
         camada = CamadaReferencia.objects.get(id=camada_id, ativo=True)
-        pontos = camada.pontos.values('nome', 'descricao', 'latitude', 'longitude')
+        pontos = camada.pontos.values(
+            'nome', 'descricao', 'latitude', 'longitude', 
+            'tipo_geometria', 'coordenadas_json', 'estilo_json'
+        )
         return JsonResponse({
             'camada_id': camada.id,
-            'cor': camada.cor_marcador,
-            'icone': camada.icone,
+            'cor_padrao': camada.cor_marcador,
+            'icone_padrao': camada.icone,
             'pontos': list(pontos)
         })
     except CamadaReferencia.DoesNotExist:

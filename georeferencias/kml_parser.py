@@ -5,30 +5,20 @@ logger = logging.getLogger(__name__)
 
 def parse_kml(file_path):
     """
-    Lê um arquivo KML e retorna uma lista de dicionários com 'nome', 'descricao', 'latitude', 'longitude'.
-    Utiliza lxml para maior robustez e independência de versão do fastkml.
-    Extrai apenas geometrias do tipo POINT.
+    Lê um arquivo KML e retorna uma lista de dicionários com:
+    'nome', 'descricao', 'tipo_geometria', 'latitude', 'longitude', 'coordenadas', 'estilo'
     """
-    pontos_encontrados = []
+    elementos_encontrados = []
     
     try:
-        # Parse XML (Security Hardened)
-        # recover=True: tenta ignorar erros de sintaxe leves
-        # resolve_entities=False: PREVINE XXE (XML External Entity attacks)
-        # no_network=True: PREVINE acesso a rede externa durante parse
         parser = etree.XMLParser(recover=True, resolve_entities=False, no_network=True)
         tree = etree.parse(file_path, parser)
         root = tree.getroot()
         
-        # Handle Namespace
-        # O namespace padrão (None) geralmente é o do KML.
-        # Se houver, lxml coloca no nsmap com chave None (ou outra se especificado).
+        # Namespace handling
         ns = root.nsmap.get(None) if hasattr(root, 'nsmap') else None
-        
-        # Mapa de namespaces para find/findall
         namespaces = {'kml': ns} if ns else None
 
-        # Função auxiliar para buscar com ou sem namespace
         def find_all(element, tag):
             if ns:
                 return element.findall(f'.//kml:{tag}', namespaces)
@@ -40,80 +30,137 @@ def parse_kml(file_path):
             return element.find(tag)
         
         def get_text(element, tag):
-            # Procura filho direto
-            # find procura direto se for ./tag ou kml:tag
-            # Se a estrutura for complexa, adjust. Mas Placemark -> name é padrão.
-            if ns:
-                node = element.find(f'kml:{tag}', namespaces)
-            else:
-                node = element.find(tag)
-            return node.text if node is not None else None
+            node = find(element, tag)
+            return node.text.strip() if node is not None and node.text else None
 
-        # Encontrar todos os Placemarks (profundidade qualquer)
-        placemarks = find_all(root, 'Placemark')
-        
-        logger.info(f"Encontrados {len(placemarks)} Placemarks no KML.")
-
-        for pm in placemarks:
-            # Extrair Nome e Descrição
-            name = get_text(pm, 'name') or 'Sem Nome'
-            desc = get_text(pm, 'description') or ''
+        # 1. Mapear Estilos (Dicionário id -> estilo)
+        estilos_map = {}
+        for style in find_all(root, 'Style'):
+            s_id = style.get('id')
+            if not s_id: continue
             
-            # Verificar se tem Point
-            point = find(pm, 'Point')
-            if point is not None:
-                # Extrair coordinates
+            estilo = {}
+            # Cor de Linha (Stroke)
+            line_style = find(style, 'LineStyle')
+            if line_style is not None:
+                color_kml = get_text(line_style, 'color') # aabbggrr
+                if color_kml:
+                    estilo['stroke_color'] = kml_color_to_hex(color_kml)
+                    estilo['stroke_opacity'] = int(color_kml[:2], 16) / 255.0
+                
+                width = get_text(line_style, 'width')
+                if width:
+                    estilo['stroke_width'] = float(width)
+
+            # Cor de Preenchimento (Fill)
+            poly_style = find(style, 'PolyStyle')
+            if poly_style is not None:
+                color_kml = get_text(poly_style, 'color')
+                if color_kml:
+                    estilo['fill_color'] = kml_color_to_hex(color_kml)
+                    estilo['fill_opacity'] = int(color_kml[:2], 16) / 255.0
+                
+                fill = get_text(poly_style, 'fill')
+                if fill == '0': estilo['fill_opacity'] = 0
+
+            # Cor de Ícone (Point Style)
+            icon_style = find(style, 'IconStyle')
+            if icon_style is not None:
+                color_kml = get_text(icon_style, 'color')
+                if color_kml:
+                    estilo['icon_color'] = kml_color_to_hex(color_kml)
+                    estilo['icon_opacity'] = int(color_kml[:2], 16) / 255.0
+
+            if estilo:
+                estilos_map[f"#{s_id}"] = estilo
+
+        # 2. Processar Placemarks
+        for pm in find_all(root, 'Placemark'):
+            name = get_text(pm, 'name') or 'Sem Nome'
+            desc = pm.find('.//kml:description', namespaces) if ns else pm.find('.//description')
+            desc_text = desc.text.strip() if desc is not None and desc.text else ''
+            
+            # Extrair Estilo do Placemark
+            style_url = get_text(pm, 'styleUrl')
+            pm_style = estilos_map.get(style_url, {}).copy()
+
+            # Coletar todas as geometrias do Placemark
+            pm_geometries = []
+            
+            # Polígonos
+            for poly in find_all(pm, 'Polygon'):
+                ext_ring = poly.find('.//kml:outerBoundaryIs//kml:coordinates', namespaces) if ns else poly.find('.//outerBoundaryIs//coordinates')
+                if ext_ring is not None and ext_ring.text:
+                    pm_geometries.append(('Polygon', ext_ring.text))
+            
+            # Linhas
+            for line in find_all(pm, 'LineString'):
+                coords_node = find(line, 'coordinates')
+                if coords_node is not None and coords_node.text:
+                    pm_geometries.append(('LineString', coords_node.text))
+            
+            # Pontos
+            for point in find_all(pm, 'Point'):
                 coords_node = find(point, 'coordinates')
                 if coords_node is not None and coords_node.text:
-                    coords_text = coords_node.text.strip()
-                    # Formato: lon,lat,alt (espaço separando tuplas se for LineString, mas Point é um so)
-                    parts = coords_text.split(',')
-                    if len(parts) >= 2:
-                        try:
-                            lon = float(parts[0])
-                            lat = float(parts[1])
-                            
-                            pontos_encontrados.append({
-                                'nome': name,
-                                'descricao': desc,
-                                'latitude': lat,
-                                'longitude': lon
-                            })
-                        except ValueError:
-                            logger.warning(f"Coordenadas inválidas para Placemark '{name}': {coords_text}")
+                    pm_geometries.append(('Point', coords_node.text))
 
-            else:
-                # Se não tem Point, pode ser MultiGeometry? 
-                # Por simplificação, focamos em Point direto ou dentro de MultiGeometry
-                # Se quiser suporte a MultiGeometry, precisa recurse.
-                # Vamos tentar buscar Point dentro do Placemark recursivamente se não achou direto?
-                # find_all procura recursivo (.//).
-                # find('Point') procura filho direto.
-                # Placemark pode ter MultiGeometry -> Point.
-                # Vamos usar find_all('Point') dentro do Placemark e pegar o primeiro?
-                points_recursive = find_all(pm, 'Point')
-                if points_recursive and not point:
-                    # Pegar o primeiro ponto encontrado na geometria complexa
-                    p_node = points_recursive[0]
-                    coords_node = find(p_node, 'coordinates')
-                    if coords_node is not None and coords_node.text:
-                        coords_text = coords_node.text.strip()
-                        parts = coords_text.split(',')
-                        if len(parts) >= 2:
-                            try:
-                                lon = float(parts[0])
-                                lat = float(parts[1])
-                                pontos_encontrados.append({
-                                    'nome': name,
-                                    'descricao': desc,
-                                    'latitude': lat,
-                                    'longitude': lon
-                                })
-                            except ValueError:
-                                pass
+            # Processar cada geometria encontrada
+            for tipo, raw_coords in pm_geometries:
+                coords_parsed = parse_kml_coordinates(raw_coords)
+                if not coords_parsed: continue
+
+                # Âncora (usar o primeiro ponto para centralizar)
+                anchor_lat, anchor_lon = 0, 0
+                if tipo == 'Point':
+                    anchor_lon, anchor_lat = coords_parsed[0]
+                    coords_final = coords_parsed[0] # [lon, lat]
+                elif tipo == 'LineString':
+                    anchor_lon, anchor_lat = coords_parsed[0]
+                    coords_final = coords_parsed # [[lon, lat], ...]
+                elif tipo == 'Polygon':
+                    anchor_lon, anchor_lat = coords_parsed[0]
+                    coords_final = [coords_parsed] # [[[lon, lat], ...]]
+
+                elementos_encontrados.append({
+                    'nome': name,
+                    'descricao': desc_text,
+                    'tipo_geometria': tipo,
+                    'latitude': anchor_lat,
+                    'longitude': anchor_lon,
+                    'coordenadas': coords_final,
+                    'estilo': pm_style
+                })
 
     except Exception as e:
         logger.error(f"Erro ao processar KML {file_path}: {e}")
         raise ValueError(f"Erro ao processar estrutura do KML: {str(e)}")
         
-    return pontos_encontrados
+    return elementos_encontrados
+
+def kml_color_to_hex(kml_color):
+    """Converte aabbggrr (KML) para #rrggbb (Hex)"""
+    # KML color é aabbggrr (alpha, blue, green, red)
+    if len(kml_color) == 8:
+        # aabbggrr -> rrggbb
+        r = kml_color[6:8]
+        g = kml_color[4:6]
+        b = kml_color[2:4]
+        return f"#{r}{g}{b}"
+    return "#3388ff"
+
+def parse_kml_coordinates(coords_text):
+    """
+    Converte string de coordenadas KML em lista de tuplas [lon, lat].
+    """
+    try:
+        points = []
+        # Limpar espaços e quebras de linha
+        clean_text = coords_text.strip()
+        for tuple_str in clean_text.split():
+            c = tuple_str.split(',')
+            if len(c) >= 2:
+                points.append([float(c[0]), float(c[1])])
+        return points
+    except:
+        return None

@@ -7,8 +7,8 @@ from .models import (
 
 from usuarios.models import Usuario
 from django.forms import inlineformset_factory
-# import magic
-
+from instrumentos.models import Instrumento
+from entidades.models import Entidade
 import os
 import logging
 
@@ -17,43 +17,79 @@ logger = logging.getLogger(__name__)
 
 class AcaoForm(forms.ModelForm):
     """
-    Formulário unificado para Ação (substitui Acao e Tarefa antigos).
+    Formulário unificado para Ação.
     """
-    
+    # Campo extra (não é campo do model Acao) para filtro dinâmico de Obrigação
+    instrumento = forms.ModelChoiceField(
+        queryset=Instrumento.objects.all(),
+        required=False,
+        label='Instrumento',
+        widget=forms.Select(attrs={'class': 'form-control', 'id': 'id_instrumento'})
+    )
+
     class Meta:
         model = Acao
         fields = [
             'nome', 'descricao', 'obrigacao', 'tipo_acao',
-            'responsavel', 'executores', 'status', 
+            'responsavel', 'executores', 'status',
             'data_inicio', 'data_fim', 'data_conclusao',
             'prioridade', 'periodicidade', 'dias_antecedencia_alerta',
-            'acoes_predecessoras', 'observacoes'
+            'observacoes',
+            # Novos campos de resultado
+            'resultado', 'entidade', 'justificativa_resultado',
+            # NOTA: acoes_predecessoras mantido no banco mas removido do formulário
         ]
         widgets = {
-            'descricao': forms.Textarea(attrs={'rows': 3}),
-            'observacoes': forms.Textarea(attrs={'rows': 3}),
-            'data_inicio': forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d'),
-            'data_fim': forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d'),
-            'data_conclusao': forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d'),
+            'descricao': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'observacoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'justificativa_resultado': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 3,
+                'placeholder': 'Descreva o motivo do resultado informado...'
+            }),
+            'data_inicio': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}, format='%Y-%m-%d'),
+            'data_fim': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}, format='%Y-%m-%d'),
+            'data_conclusao': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}, format='%Y-%m-%d'),
             'executores': forms.SelectMultiple(attrs={
                 'class': 'form-control',
                 'size': '5'
             }),
-            'acoes_predecessoras': forms.CheckboxSelectMultiple(),
         }
 
     def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop('user', None)
+
+        self.readonly = kwargs.pop('readonly', False)
         super().__init__(*args, **kwargs)
         
-        # Buscar usuários com relações
-        usuarios = Usuario.objects.select_related('subunidade__diretoria').all()
+        if self.readonly:
+            for field in self.fields.values():
+                field.disabled = True
+
+
+        # Adicionar form-control em todos os campos que não têm via widget
+        for field_name, field in self.fields.items():
+            widget = field.widget
+            css = widget.attrs.get('class', '')
+            if 'form-control' not in css and 'form-check-input' not in css:
+                widget.attrs['class'] = ('form-control ' + css).strip()
+
+        # Lógica de filtragem de usuários (Responsável/Executores)
+        usuarios = Usuario.objects.select_related('subunidade__diretoria').filter(is_active=True)
         
+        if self.user and self.user.perfil != 0:  # Se não for admin
+            # Filtra pela diretoria do usuário logado
+            if self.user.diretoria:
+                usuarios = usuarios.filter(diretoria=self.user.diretoria)
+            # Remove admins da listagem para usuários comuns
+            usuarios = usuarios.exclude(perfil=0)
+
         # Configurar campos de usuários
         self.fields['responsavel'].queryset = usuarios
         self.fields['responsavel'].label_from_instance = self.formatar_usuario
         self.fields['executores'].queryset = usuarios
         self.fields['executores'].label_from_instance = self.formatar_usuario
-        
+
         # Campos opcionais
         self.fields['descricao'].required = False
         self.fields['data_conclusao'].required = False
@@ -98,12 +134,22 @@ class AcaoForm(forms.ModelForm):
         self.fields['nome'].widget.attrs.update({'placeholder': 'Ex: Vistoria Técnica de Campo'})
         self.fields['obrigacao'].widget.attrs.update({'class': 'form-select'})
         self.fields['tipo_acao'].required = False
-        
-        # Remover 'Finalizado' das opções manuais (será automático pelo checklist)
-        self.fields['status'].choices = [
-            choice for choice in self.fields['status'].choices 
-            if choice[0] != 'finalizado'
-        ]
+        self.fields['resultado'].required = False
+        self.fields['entidade'].required = False
+        self.fields['justificativa_resultado'].required = False
+
+        # Se estamos editando uma ação existente, pré-preencher instrumento e filtrar entidades
+        if self.instance and self.instance.pk and self.instance.obrigacao_id:
+            try:
+                instrumento = self.instance.obrigacao.instrumento
+                self.fields['instrumento'].initial = instrumento
+                # Filtrar entidades apenas do instrumento desta ação
+                self.fields['entidade'].queryset = instrumento.entidades.all()
+            except Exception:
+                self.fields['entidade'].queryset = Entidade.objects.none()
+        else:
+            # Nova ação: sem entidades disponíveis até instrumento ser selecionado
+            self.fields['entidade'].queryset = Entidade.objects.none()
 
     def clean(self):
         cleaned_data = super().clean()
@@ -112,10 +158,8 @@ class AcaoForm(forms.ModelForm):
 
         if data_inicio and data_fim and data_fim < data_inicio:
             self.add_error('data_fim', "A data de fim não pode ser anterior à data de início.")
-        
-        return cleaned_data
-        
 
+        return cleaned_data
 
     def formatar_usuario(self, usuario):
         """Formata a exibição do usuário no select"""
@@ -160,8 +204,6 @@ for field in ChecklistItemFormSet.form.base_fields.values():
 # Forms e FormSets para Documentos e Fotos (Fase 5)
 from .models import AcaoDocumento, AcaoFoto
 
-# Formset para Documentos
-# Formset para Documentos
 
 class AcaoDocumentoForm(forms.ModelForm):
     class Meta:
@@ -179,18 +221,18 @@ class AcaoDocumentoForm(forms.ModelForm):
 
         if self.cleaned_data.get('DELETE'):
             return arquivo
-            
+
         # 1. Validação de Extensão
         ext = os.path.splitext(arquivo.name)[1].lower()
         allowed_extensions = {'.pdf', '.docx', '.xlsx', '.doc', '.xls', '.ppt', '.pptx', '.txt', '.csv', '.zip', '.rar'}
-        
+
         if ext not in allowed_extensions:
              raise forms.ValidationError(f'Extensão {ext} não permitida.')
 
         # 2. Validação de MIME Type Real
         ALLOWED_MIMES = {
             'application/pdf',
-            'application/msword', 
+            'application/msword',
             'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
             'application/vnd.ms-excel',
             'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
@@ -205,8 +247,6 @@ class AcaoDocumentoForm(forms.ModelForm):
         }
 
         try:
-            # Tolerância a arquivos "fantasmas" (existentes no banco mas não no disco após migração de volume)
-            # Se for um arquivo já existente (instância salva) e ele não estiver no disco, ignorar erro de MIME
             if self.instance.pk and self.instance.arquivo == arquivo:
                 if not os.path.exists(arquivo.path):
                     logger.warning(f"Arquivo legado não encontrado no disco: {arquivo.path}. Pulando validação MIME.")
@@ -215,21 +255,17 @@ class AcaoDocumentoForm(forms.ModelForm):
             arquivo.seek(0)
             chunk = arquivo.read(2048)
             arquivo.seek(0)
-            
-            # Detecção de MIME universal (tenta API v0.4.x e APIs alternativas)
-            mime_type = None
-            # try:
-            #     # Tentativa 1: API orientada a objeto (mais estável)
-            #     m = magic.Magic(mime=True)
-            #     mime_type = m.from_buffer(chunk)
-            # except AttributeError:
-            #     try:
-            #         # Tentativa 2: API de módulo (python-magic padrão)
-            #         mime_type = magic.from_buffer(chunk, mime=True)
-            #     except Exception as e2:
-            #         logger.error(f"Falha total em detectar MIME: {e2}")
 
-            
+            mime_type = None
+            try:
+                import magic
+                m = magic.Magic(mime=True)
+                mime_type = m.from_buffer(chunk)
+            except AttributeError:
+                try:
+                    mime_type = magic.from_buffer(chunk, mime=True)
+                except Exception as e2:
+                    logger.error(f"Falha total em detectar MIME: {e2}")
             if mime_type:
                 if mime_type not in ALLOWED_MIMES:
                      if ext == '.csv' and mime_type in ['text/plain', 'application/csv']:
@@ -247,7 +283,6 @@ class AcaoDocumentoForm(forms.ModelForm):
             raise
         except Exception as e:
             logger.error(f"Erro na validação MIME em Acoes: {e}")
-            # Em caso de erro técnico na lib, permitir se a extensão for válida
             return arquivo
 
         return arquivo
@@ -261,8 +296,7 @@ AcaoDocumentoFormSet = inlineformset_factory(
     can_delete=True
 )
 
-# Formset para Fotos
-# Formset para Fotos
+
 class AcaoFotoForm(forms.ModelForm):
     class Meta:
         model = AcaoFoto
@@ -281,11 +315,11 @@ class AcaoFotoForm(forms.ModelForm):
 
         if self.cleaned_data.get('DELETE'):
             return imagem
-            
+
         # 1. Validação de Extensão
         ext = os.path.splitext(imagem.name)[1].lower()
         allowed_extensions = {'.jpg', '.jpeg', '.png', '.webp', '.heic', '.heif'}
-        
+
         if ext not in allowed_extensions:
              raise forms.ValidationError(f'Extensão {ext} não permitida para fotos.')
 
@@ -294,14 +328,13 @@ class AcaoFotoForm(forms.ModelForm):
             'image/jpeg',
             'image/png',
             'image/webp',
-            'image/heic', 
+            'image/heic',
             'image/heif',
-            'application/octet-stream', # Algumas variantes de HEIC podem vir assim
-            'application/x-ole-storage' # Raramente para fotos, mas por segurança
+            'application/octet-stream',
+            'application/x-ole-storage'
         }
 
         try:
-            # Tolerância a arquivos legados que podem não existir no disco após migração de volume
             if self.instance.pk and self.instance.imagem == imagem:
                 if not os.path.exists(imagem.path):
                     logger.warning(f"Foto legada não encontrada no disco: {imagem.path}. Pulando validação MIME.")
@@ -310,23 +343,20 @@ class AcaoFotoForm(forms.ModelForm):
             imagem.seek(0)
             chunk = imagem.read(2048)
             imagem.seek(0)
-            
-            # Detecção de MIME universal
-            mime_type = None
-            # try:
-            #     m = magic.Magic(mime=True)
-            #     mime_type = m.from_buffer(chunk)
-            # except AttributeError:
-            #     try:
-            #         mime_type = magic.from_buffer(chunk, mime=True)
-            #     except Exception as e2:
-            #         logger.error(f"Falha total em detectar MIME de Imagem: {e2}")
 
-            
+            mime_type = None
+            try:
+                import magic
+                m = magic.Magic(mime=True)
+                mime_type = m.from_buffer(chunk)
+            except AttributeError:
+                try:
+                    mime_type = magic.from_buffer(chunk, mime=True)
+                except Exception as e2:
+                    logger.error(f"Falha total em detectar MIME de Imagem: {e2}")
             if mime_type:
-                # Tratamento especial para HEIC/HEIF
                 if ext in ['.heic', '.heif'] and mime_type in ['application/octet-stream', 'application/x-ole-storage']:
-                    pass 
+                    pass
                 elif mime_type not in ALLOWED_MIMES:
                     raise forms.ValidationError(f'Arquivo inválido. Tipo de imagem detectado: {mime_type}')
             else:
@@ -336,7 +366,6 @@ class AcaoFotoForm(forms.ModelForm):
             raise
         except Exception as e:
             logger.error(f"Erro na validação MIME de Foto: {e}")
-            # Em caso de erro na lib, confiar na extensão
             return imagem
 
         return imagem

@@ -1,0 +1,2008 @@
+{% extends 'base_modern.html' %}
+{% load crispy_forms_tags %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+<style>
+    #mapa-fiscalizacao {
+        height: 500px;
+        width: 100%;
+        border-radius: 12px;
+        border: 2px solid #dee2e6;
+        z-index: 1;
+        /* Garantir que fique abaixo de dropdowns mas acima da base */
+    }
+
+    .leaflet-popup-content-wrapper {
+        border-radius: 8px;
+        padding: 5px;
+    }
+
+    .marcador-form-popup label {
+        font-weight: 600;
+        font-size: 0.8rem;
+        margin-bottom: 2px;
+        display: block;
+    }
+
+    .marcador-form-popup input,
+    .marcador-form-popup textarea {
+        margin-bottom: 8px;
+    }
+
+    /* Radio buttons de Resultado */
+    .resultado-radio-label {
+        user-select: none;
+        background: #fff;
+        border-color: #dee2e6 !important;
+    }
+
+    .resultado-radio-label:has(input:checked) {
+        background: #f8f9fa;
+        border-width: 2px !important;
+    }
+
+    #label-atendido:has(input:checked) {
+        border-color: #2E7D32 !important;
+    }
+
+    #label-parcialmente:has(input:checked) {
+        border-color: #E65100 !important;
+    }
+
+    #label-nao:has(input:checked) {
+        border-color: #C62828 !important;
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/exif-js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="{{list_url}}">{{module_name}}</a></li>
+            <li class="breadcrumb-item active">{% if object %}Editar{% else %}Adicionar{% endif %} Ação</li>
+        </ol>
+    </nav>
+    <h1 class="page-title">
+        <i class="{{icon}} me-2"></i>
+        {% if object %}Editar{% else %}Adicionar{% endif %} Ação
+    </h1>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body p-4">
+                <form method="post" enctype="multipart/form-data" novalidate id="acao-form">
+                    {% csrf_token %}
+
+                    {% if form.errors or checklist_formset.errors or docs_formset.errors or fotos_formset.errors %}
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        <strong>Erro!</strong> Por favor, verifique os dados preenchidos.
+                        <ul class="mb-0 mt-2 small">
+                            {% if form.errors %}
+                            <li>Dados Gerais: {{ form.non_field_errors }}{{ form.errors }}</li>
+                            {% endif %}
+
+                            {% if checklist_formset.errors %}
+                            <li>Checklist: {{ checklist_formset.non_form_errors }}{{checklist_formset.errors }}</li>
+                            {% endif %}
+
+                            {% if docs_formset.errors %}
+                            <li>Documentos: {{ docs_formset.non_form_errors }}{{docs_formset.errors }}</li>
+                            {% endif %}
+
+                            {% if fotos_formset.errors %}
+                            <li>Fotos: {{ fotos_formset.non_form_errors }}{{fotos_formset.errors }}</li>
+                            {% endif %}
+                        </ul>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                    {% endif %}
+
+                    <p class="small text-muted mb-4">
+                        <i class="bi bi-info-circle me-1"></i>
+                        Preencha todos os campos obrigatórios marcados com <span class="text-danger">*</span>
+                    </p>
+
+                    <!-- Navegação em Abas -->
+                    <ul class="nav nav-tabs mb-4" id="acaoTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="dados-tab" data-bs-toggle="tab" data-bs-target="#dados"
+                                type="button" role="tab"><i class="bi bi-file-text me-2"></i>Dados Gerais</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="docs-tab" data-bs-toggle="tab" data-bs-target="#docs"
+                                type="button" role="tab"><i
+                                    class="bi bi-paperclip me-2"></i>Documentos/Evidências</button>
+                        </li>
+                        <li class="nav-item" role="presentation" id="fotos-tab-item">
+                            <button class="nav-link" id="fotos-tab" data-bs-toggle="tab" data-bs-target="#fotos"
+                                type="button" role="tab"><i class="bi bi-camera me-2"></i>Fotos/Evidências de
+                                Campo</button>
+                        </li>
+                        <li class="nav-item" role="presentation" id="mapa-tab-item" style="display: none;">
+                            <button class="nav-link" id="mapa-tab" data-bs-toggle="tab" data-bs-target="#mapa-content"
+                                type="button" role="tab"><i class="bi bi-geo-alt me-2"></i>Mapa de Ocorrências</button>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content" id="acaoTabsContent">
+
+                        <!-- ABA 1: Dados Gerais, Checklist e Resultado -->
+                        <div class="tab-pane fade show active" id="dados" role="tabpanel" aria-labelledby="dados-tab">
+
+                            <!-- ============================================================ -->
+                            <!-- SEÇÃO A: DADOS GERAIS -->
+                            <!-- ============================================================ -->
+                            <div class="card border shadow-sm mb-4">
+                                <div class="card-header bg-light py-2">
+                                    <h6 class="mb-0 fw-bold text-primary small"><i
+                                            class="bi bi-file-text me-2"></i>Dados Gerais</h6>
+                                </div>
+                                <div class="card-body">
+
+                                    <!-- Linha 1: Instrumento | Obrigação -->
+                                    <div class="row g-3 mb-3">
+                                        <div class="col-md-6">
+                                            <label for="id_instrumento"
+                                                class="form-label fw-semibold small">Instrumento</label>
+                                            {{ form.instrumento }}
+                                            {% if form.instrumento.errors %}<div class="text-danger small mt-1">{{
+                                                form.instrumento.errors }}</div>{% endif %}
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label for="id_obrigacao" class="form-label fw-semibold small">Obrigação
+                                                <span class="text-danger">*</span></label>
+                                            {{ form.obrigacao }}
+                                            {% if form.obrigacao.errors %}<div class="text-danger small mt-1">{{
+                                                form.obrigacao.errors }}</div>{% endif %}
+                                        </div>
+                                    </div>
+
+                                    <!-- Linha 2: Nome da Ação | Tipo de Ação -->
+                                    <div class="row g-3 mb-3">
+                                        <div class="col-md-6">
+                                            <label for="id_nome" class="form-label fw-semibold small">Nome da Ação <span
+                                                    class="text-danger">*</span></label>
+                                            {{ form.nome }}
+                                            {% if form.nome.errors %}<div class="text-danger small mt-1">{{
+                                                form.nome.errors }}</div>{% endif %}
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label for="id_tipo_acao" class="form-label fw-semibold small">Tipo de
+                                                Ação</label>
+                                            <select name="tipo_acao" id="id_tipo_acao" class="form-control">
+                                                <option value="">---------</option>
+                                                {% for tipo in tipos_acao_ordenados %}
+ <option value="{{ tipo.id }}" {% if form.tipo_acao.value|stringformat:'s' == tipo.id|stringformat:'s' %}selected{% endif %}>{{ tipo.nome }}</option>
+                                                {% endfor %}
+                                            </select>
+                                            {% if form.tipo_acao.errors %}<div class="text-danger small mt-1">{{
+                                                form.tipo_acao.errors }}</div>{% endif %}
+                                        </div>
+                                    </div>
+
+                                    <!-- Linha 3: Descrição -->
+                                    <div class="row g-3 mb-3">
+                                        <div class="col-12">
+                                            <label for="id_descricao"
+                                                class="form-label fw-semibold small">Descrição</label>
+                                            {{ form.descricao }}
+                                        </div>
+                                    </div>
+
+                                    <!-- Linha 4: Responsável | Executores -->
+                                    <div class="row g-3 mb-3">
+                                        <div class="col-md-6">
+                                            <label for="id_responsavel" class="form-label fw-semibold small">Responsável
+                                                <span class="text-danger">*</span></label>
+                                            {{ form.responsavel }}
+                                            {% if form.responsavel.errors %}<div class="text-danger small mt-1">{{
+                                                form.responsavel.errors }}</div>{% endif %}
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label for="id_executores"
+                                                class="form-label fw-semibold small">Executores</label>
+                                            {{ form.executores }}
+                                        </div>
+                                    </div>
+
+                                    <!-- Linha 5: Status | Prioridade | Periodicidade -->
+                                    <div class="row g-3 mb-3">
+                                        <div class="col-md-4">
+                                            <label for="id_status" class="form-label fw-semibold small">Status <span
+                                                    class="text-danger">*</span></label>
+                                            {{ form.status }}
+                                            {% if form.status.errors %}<div class="text-danger small mt-1">{{
+                                                form.status.errors }}</div>{% endif %}
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label for="id_prioridade"
+                                                class="form-label fw-semibold small">Prioridade</label>
+                                            {{ form.prioridade }}
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label for="id_periodicidade"
+                                                class="form-label fw-semibold small">Periodicidade</label>
+                                            {{ form.periodicidade }}
+                                        </div>
+                                    </div>
+
+                                    <!-- Linha 6: Data Início | Data Fim | Dias Antec. -->
+                                    <div class="row g-3 mb-3">
+                                        <div class="col-md-4">
+                                            <label for="id_data_inicio" class="form-label fw-semibold small">Data de
+                                                Início <span class="text-danger">*</span></label>
+                                            {{ form.data_inicio }}
+                                            {% if form.data_inicio.errors %}<div class="text-danger small mt-1">{{
+                                                form.data_inicio.errors }}</div>{% endif %}
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label for="id_data_fim" class="form-label fw-semibold small">Data de Fim
+                                                <span class="text-danger">*</span></label>
+                                            {{ form.data_fim }}
+                                            {% if form.data_fim.errors %}<div class="text-danger small mt-1">{{
+                                                form.data_fim.errors }}</div>{% endif %}
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label for="id_dias_antecedencia_alerta"
+                                                class="form-label fw-semibold small">Dias Antec. Alerta</label>
+                                            {{ form.dias_antecedencia_alerta }}
+                                        </div>
+                                    </div>
+
+                                    <!-- Linha 7: Data de Conclusão Real -->
+                                    <div class="row g-3 mb-3">
+                                        <div class="col-md-4">
+                                            <label for="id_data_conclusao" class="form-label fw-semibold small">Data de
+                                                Conclusão Real</label>
+                                            {{ form.data_conclusao }}
+                                        </div>
+                                    </div>
+
+                                    <!-- Linha 8: Observações -->
+                                    <div class="row g-3">
+                                        <div class="col-12">
+                                            <label for="id_observacoes"
+                                                class="form-label fw-semibold small">Observações</label>
+                                            {{ form.observacoes }}
+                                        </div>
+                                    </div>
+
+                                </div><!-- /card-body -->
+                            </div><!-- /card Dados Gerais -->
+
+                            <!-- ============================================================ -->
+                            <!-- SEÇÃO B: CONTROLE DE TAREFAS (CHECKLIST - RETRÁTIL) -->
+                            <!-- ============================================================ -->
+                            <div class="card border shadow-sm mb-4">
+                                <div
+                                    class="card-header bg-light py-2 d-flex justify-content-between align-items-center">
+                                    <h6 class="mb-0 fw-bold text-primary small"><i
+                                            class="bi bi-list-check me-2"></i>Controle de Tarefas</h6>
+<div id="checklist-toggle-container" {% if checklist_formset.forms %}style="display:none;" {% else %}style="display:block;" {% endif %}>
+                                        <button type="button" class="btn btn-sm btn-outline-primary"
+                                            id="show-checklist-btn">
+                                            <i class="bi bi-plus-circle me-1"></i> Criar Checklist de Tarefas
+                                        </button>
+                                    </div>
+                                </div>
+<div id="checklist-container" class="card-body" {% if not checklist_formset.forms %}style="display:none;" {% endif %}>
+                                    <p class="text-muted small mb-3">Defina o passo-a-passo detalhado para execução
+                                        desta Ação. Arraste para reordenar.</p>
+
+                                    {{checklist_formset.management_form}}
+
+                                    <div id="checklist-items">
+                                        {% for c_form in checklist_formset %}
+                                        <div class="checklist-item mb-2 d-flex align-items-center gap-2 bg-white p-2 rounded border"
+                                            data-form-index="{{forloop.counter0}}">
+                                            <div class="drag-handle px-2 text-muted border-end" style="cursor: grab;">
+                                                <i class="bi bi-grip-vertical fs-5"></i>
+                                            </div>
+                                            {{ c_form.id }}
+                                            {{ c_form.ordem }}
+
+                                            <input type="text" name="{{c_form.nome.html_name}}"
+                                                id="{{c_form.nome.id_for_label}}"
+                                                value="{{c_form.nome.value|default:''}}" class="form-control"
+                                                placeholder="Ex: Enviar ofício, Conferir documento...">
+
+                                            <div class="form-check">
+                                                <input type="checkbox" name="{{c_form.concluido.html_name}}"
+                                                    id="{{c_form.concluido.id_for_label}}" class="form-check-input"
+                                                    {{c_form.concluido.value|yesno:"checked," }}>
+                                                <label class="form-check-label small text-muted"
+                                                    for="{{c_form.concluido.id_for_label}}">
+                                                    Concluído
+                                                </label>
+                                            </div>
+
+                                            <input type="checkbox" name="{{c_form.DELETE.html_name}}"
+                                                id="{{c_form.DELETE.id_for_label}}" class="d-none"
+                                                {{c_form.DELETE.value|yesno:"checked," }}>
+
+                                            <button type="button"
+                                                class="btn btn-sm btn-outline-danger remove-checklist-item"
+                                                title="Remover item">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+
+                                    <button type="button" class="btn btn-sm btn-outline-secondary mt-2"
+                                        id="add-checklist-item">
+                                        <i class="bi bi-plus me-1"></i> Adicionar tarefa operacional
+                                    </button>
+
+                                    <!-- Visualizador de Percentual Automático -->
+                                    <div id="percentual-display" class="mt-4 p-3 bg-light rounded border"
+                                        style="display:none;">
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <span class="fw-bold text-muted">
+                                                <i class="bi bi-percent me-2"></i>Progresso da Ação
+                                            </span>
+                                            <span id="percentual-value" class="badge bg-primary fs-6">0%</span>
+                                        </div>
+                                        <div class="progress" style="height: 25px;">
+                                            <div id="percentual-bar"
+                                                class="progress-bar progress-bar-striped progress-bar-animated"
+                                                role="progressbar" style="width: 0%;" aria-valuenow="0"
+                                                aria-valuemin="0" aria-valuemax="100">
+                                                0%
+                                            </div>
+                                        </div>
+                                        <small class="text-muted d-block mt-2">
+                                            <i class="bi bi-info-circle me-1"></i>
+                                            Calculado automaticamente com base nos itens marcados como concluídos
+                                        </small>
+                                    </div>
+                                </div><!-- /checklist-container -->
+                            </div><!-- /card Controle de Tarefas -->
+
+                            <!-- ============================================================ -->
+                            <!-- SEÇÃO C: FOI ATENDIDO? (RESULTADO) -->
+                            <!-- ============================================================ -->
+                            <div class="card border shadow-sm mb-4">
+                                <div class="card-header bg-light py-2">
+                                    <h6 class="mb-0 fw-bold text-primary small"><i
+                                            class="bi bi-patch-check me-2"></i>Foi Atendido?</h6>
+                                </div>
+                                <div class="card-body">
+
+                                    <!-- Entidade -->
+                                    <div class="row g-3 mb-4">
+                                        <div class="col-md-6">
+                                            <label for="id_entidade"
+                                                class="form-label fw-semibold small">Entidade</label>
+                                            <select name="entidade" id="id_entidade" class="form-control">
+                                                <option value="">---------</option>
+                                                {% for ent in entidades_disponiveis %}
+ <option value="{{ ent.id }}" {% if form.entidade.value|stringformat:'s' == ent.id|stringformat:'s' %}selected{% endif %}>{{ ent.razao_social }}</option>
+                                                {% endfor %}
+                                            </select>
+                                            <small class="text-muted">Selecione o instrumento e a obrigação para ver as
+                                                entidades disponíveis.</small>
+                                        </div>
+                                    </div>
+
+                                    <!-- Resultado (Radio buttons coloridos) -->
+                                    <div class="mb-4">
+                                        <label class="form-label fw-semibold small d-block mb-3">Resultado</label>
+                                        <div class="d-flex gap-3 flex-wrap">
+
+                                            <!-- Atendido -->
+                                            <label
+                                                class="resultado-radio-label d-flex align-items-center gap-2 px-4 py-2 rounded-pill border cursor-pointer"
+                                                style="cursor:pointer; transition: all 0.2s;" id="label-atendido">
+                                                <input type="radio" name="resultado" value="atendido"
+ id="resultado-atendido" class="d-none" {% if form.resultado.value == 'atendido' %}checked{% endif %}>
+                                                <span class="rounded-circle d-inline-block"
+                                                    style="width:16px;height:16px;background:#2E7D32;flex-shrink:0;"></span>
+                                                <span class="fw-semibold small" style="color:#2E7D32;">Atendido</span>
+                                            </label>
+
+                                            <!-- Parcialmente Atendido -->
+                                            <label
+                                                class="resultado-radio-label d-flex align-items-center gap-2 px-4 py-2 rounded-pill border cursor-pointer"
+                                                style="cursor:pointer; transition: all 0.2s;" id="label-parcialmente">
+                                                <input type="radio" name="resultado" value="parcialmente_atendido"
+ id="resultado-parcialmente" class="d-none" {% if form.resultado.value == 'parcialmente_atendido' %}checked{% endif %}>
+                                                <span class="rounded-circle d-inline-block"
+                                                    style="width:16px;height:16px;background:#E65100;flex-shrink:0;"></span>
+                                                <span class="fw-semibold small" style="color:#E65100;">Parcialmente
+                                                    Atendido</span>
+                                            </label>
+
+                                            <!-- Não Atendido -->
+                                            <label
+                                                class="resultado-radio-label d-flex align-items-center gap-2 px-4 py-2 rounded-pill border cursor-pointer"
+                                                style="cursor:pointer; transition: all 0.2s;" id="label-nao">
+                                                <input type="radio" name="resultado" value="nao_atendido"
+ id="resultado-nao" class="d-none" {% if form.resultado.value == 'nao_atendido' %}checked{% endif %}>
+                                                <span class="rounded-circle d-inline-block"
+                                                    style="width:16px;height:16px;background:#C62828;flex-shrink:0;"></span>
+                                                <span class="fw-semibold small" style="color:#C62828;">Não
+                                                    Atendido</span>
+                                            </label>
+
+                                        </div>
+                                    </div>
+
+                                    <!-- Justificativa retrátil -->
+                                    <div>
+                                        <button type="button" id="btn-toggle-justificativa"
+                                            class="btn btn-sm btn-outline-secondary mb-3">
+                                            <i class="bi bi-chat-left-text me-1"></i>
+                                            <span id="btn-justificativa-label">+ Adicionar Justificativa</span>
+                                        </button>
+<div id="justificativa-container" {% if not form.justificativa_resultado.value %}style="display:none;" {% endif %}>
+                                            <label for="id_justificativa_resultado"
+                                                class="form-label fw-semibold small">Justificativa</label>
+                                            {{ form.justificativa_resultado }}
+                                            <small class="text-muted">Explique o motivo do resultado informado
+                                                (opcional).</small>
+                                        </div>
+                                    </div>
+
+                                </div><!-- /card-body -->
+                            </div><!-- /card Resultado -->
+
+                        </div><!-- /tab-pane #dados -->
+
+                        <hr class="my-4">
+
+                        <h5 class="mt-3">
+                            <i class="bi bi-list-check me-2"></i> Checklist de Tarefas Operativas
+                        </h5>
+                        <p class="text-muted small">Defina o passo-a-passo detalhado para execução desta Ação.
+                            Arraste para reordenar.</p>
+
+ <div id="checklist-toggle-container" {% if checklist_formset.forms %}style="display:none;" {% else %}style="display:block;" {% endif %}>
+                            <button type="button" class="btn btn-sm btn-outline-primary" id="show-checklist-btn">
+                                <i class="bi bi-plus-circle me-1"></i> Adicionar Itens de Tarefa
+                            </button>
+                        </div>
+
+ <div id="checklist-container" {% if not checklist_formset.forms %}style="display:none;" {% else %}style="display:block;" {% endif %}>
+                            {{checklist_formset.management_form}}
+
+                            <div id="checklist-items">
+                                {% for c_form in checklist_formset %}
+                                <div class="checklist-item mb-2 d-flex align-items-center gap-2 bg-white p-2 rounded border"
+                                    data-form-index="{{forloop.counter0}}">
+                                    <div class="drag-handle px-2 text-muted border-end" style="cursor: grab;">
+                                        <i class="bi bi-grip-vertical fs-5"></i>
+                                    </div>
+                                    {{ c_form.id }}
+                                    {{ c_form.ordem }}
+
+                                    <input type="text" name="{{c_form.nome.html_name}}"
+                                        id="{{c_form.nome.id_for_label}}" value="{{c_form.nome.value|default:''}}"
+                                        class="form-control" placeholder="Ex: Enviar ofício, Conferir documento...">
+
+                                    <div class="form-check">
+                                        <input type="checkbox" name="{{c_form.concluido.html_name}}"
+                                            id="{{c_form.concluido.id_for_label}}" class="form-check-input"
+                                            {{c_form.concluido.value|yesno:"checked," }}>
+                                        <label class="form-check-label small text-muted"
+                                            for="{{c_form.concluido.id_for_label}}">
+                                            Concluído
+                                        </label>
+                                    </div>
+
+                                    <input type="checkbox" name="{{c_form.DELETE.html_name}}"
+                                        id="{{c_form.DELETE.id_for_label}}" class="d-none"
+                                        {{c_form.DELETE.value|yesno:"checked," }}>
+
+                                    <button type="button" class="btn btn-sm btn-outline-danger remove-checklist-item"
+                                        title="Remover item">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+                                {% endfor %}
+                            </div>
+
+                            <button type="button" class="btn btn-sm btn-outline-secondary mt-2" id="add-checklist-item">
+                                <i class="bi bi-plus me-1"></i> Adicionar tarefa operacional
+                            </button>
+
+                            <!-- Visualizador de Percentual Automático -->
+                            <div id="percentual-display" class="mt-4 p-3 bg-light rounded border" style="display:none;">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span class="fw-bold text-muted">
+                                        <i class="bi bi-percent me-2"></i>Progresso da Ação
+                                    </span>
+                                    <span id="percentual-value" class="badge bg-primary fs-6">0%</span>
+                                </div>
+                                <div class="progress" style="height: 25px;">
+                                    <div id="percentual-bar"
+                                        class="progress-bar progress-bar-striped progress-bar-animated"
+                                        role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0"
+                                        aria-valuemax="100">
+                                        0%
+                                    </div>
+                                </div>
+                                <small class="text-muted d-block mt-2">
+                                    <i class="bi bi-info-circle me-1"></i>
+                                    Calculado automaticamente com base nos itens marcados como concluídos
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ABA 2: Documentos -->
+                    <div class="tab-pane fade" id="docs" role="tabpanel" aria-labelledby="docs-tab">
+                        <div class="upload-zone" id="docs-upload-zone">
+                            <i class="bi bi-cloud-arrow-up"></i>
+                            <h5>Carregar Documentos</h5>
+                            <p class="text-muted">Arraste arquivos aqui ou clique para selecionar (PDF, DOCX, XLSX)
+                            </p>
+                            <input type="file" id="docs-input" multiple style="display: none;"
+                                accept=".pdf,.docx,.xlsx,.doc,.xls,.txt,.zip">
+                        </div>
+
+                        <div class="table-responsive mt-4">
+                            <table class="table asset-table align-middle">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 50px;">Tipo</th>
+                                        <th>Nome do Arquivo</th>
+                                        <th>Descrição do Documento</th>
+                                        <th>Enviado por</th>
+                                        <th>Data</th>
+                                        <th style="width: 100px;" class="text-center">Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="docs-table-body">
+                                    <!-- Preenchido via JS -->
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Formset Oculto (Persistência) -->
+                        <div id="docs-formset-container" style="display: none;">
+                            {{ docs_formset.management_form }}
+                            <div id="docs-hidden-forms">
+                                {% for d_form in docs_formset %}
+                                <div class="hidden-doc-form" data-index="{{ forloop.counter0 }}"
+                                    data-filename="{% if d_form.instance.arquivo %}{{ d_form.instance.arquivo.name }}{% endif %}"
+                                    data-url="{% if d_form.instance.arquivo %}{{ d_form.instance.arquivo.url }}{% endif %}"
+                                    data-usuario="{% if d_form.instance.usuario %}{{ d_form.instance.usuario.get_full_name|default:d_form.instance.usuario.username }}{% endif %}"
+                                    data-data="{{ d_form.instance.data_envio|date:'d/m/Y H:i' }}">
+                                    {{ d_form.id }}
+                                    {{ d_form.arquivo }}
+                                    {{ d_form.descricao }}
+                                    {{ d_form.DELETE }}
+                                </div>
+                                {% endfor %}
+                            </div>
+                            <div id="empty-doc-form-template">
+                                {{ docs_formset.empty_form.id }}
+                                {{ docs_formset.empty_form.arquivo }}
+                                {{ docs_formset.empty_form.descricao }}
+                                {{ docs_formset.empty_form.DELETE }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ABA 3: Fotos -->
+                    <div class="tab-pane fade" id="fotos" role="tabpanel" aria-labelledby="fotos-tab">
+                        <div class="upload-zone" id="fotos-upload-zone">
+                            <i class="bi bi-camera"></i>
+                            <h5>Capturar Fotos</h5>
+                            <p class="text-muted">Arraste fotos aqui ou clique para selecionar (JPG, PNG)</p>
+                            <input type="file" id="fotos-input" multiple style="display: none;"
+                                accept="image/jpeg,image/png,image/webp,image/heic,image/heif">
+                        </div>
+
+                        <div class="table-responsive mt-4">
+                            <table class="table asset-table align-middle">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 80px;">Miniatura</th>
+                                        <th>Descrição da Foto</th>
+                                        <th>GPS (Coordenadas)</th>
+                                        <th>Data/Hora Captura</th>
+                                        <th>Enviado por</th>
+                                        <th style="width: 100px;" class="text-center">Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="fotos-table-body">
+                                    <!-- Preenchido via JS -->
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Formset Oculto (Persistência) -->
+                        <div id="fotos-formset-container" style="display: none;">
+                            {{ fotos_formset.management_form }}
+                            <div id="fotos-hidden-forms">
+                                {% for f_form in fotos_formset %}
+                                <div class="hidden-foto-form" data-index="{{ forloop.counter0 }}"
+                                    data-coordenadas="{{ f_form.instance.coordenadas|default:'' }}"
+                                    data-registro="{{ f_form.instance.data_registro|date:'d/m/Y H:i'|default:'' }}"
+                                    data-envio="{{ f_form.instance.data_envio|date:'d/m/Y H:i' }}"
+                                    data-usuario="{% if f_form.instance.usuario %}{{ f_form.instance.usuario.get_full_name|default:f_form.instance.usuario.username }}{% endif %}">
+                                    {{ f_form.id }}
+                                    {{ f_form.imagem }}
+                                    {{ f_form.legenda }}
+                                    {{ f_form.coordenadas }}
+                                    {{ f_form.data_registro }}
+                                    {{ f_form.DELETE }}
+                                </div>
+                                {% endfor %}
+                            </div>
+                            <div id="empty-foto-form-template">
+                                {{ fotos_formset.empty_form.id }}
+                                {{ fotos_formset.empty_form.imagem }}
+                                {{ fotos_formset.empty_form.legenda }}
+                                {{ fotos_formset.empty_form.coordenadas }}
+                                {{ fotos_formset.empty_form.data_registro }}
+                                {{ fotos_formset.empty_form.DELETE }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ABA 4: Mapa de Ocorrências (FASE 5) -->
+                    <div class="tab-pane fade" id="mapa-content" role="tabpanel" aria-labelledby="mapa-tab">
+                        <div class="alert alert-info shadow-sm border-0 d-flex align-items-center mb-4">
+                            <i class="bi bi-info-circle-fill fs-4 me-3"></i>
+                            <div>
+                                <strong>Mapa Interativo de Fiscalização</strong><br>
+                                Clique em qualquer local do mapa para registrar uma ocorrência ou ponto de
+                                interesse.
+                                Você poderá adicionar fotos e descrições a cada ponto.
+                            </div>
+
+                        </div>
+
+                        <!-- Controle de Camadas -->
+                        <div class="card mb-3 border shadow-sm">
+                            <div class="card-header bg-light py-2">
+                                <h6 class="mb-0 fw-bold text-primary small"><i class="bi bi-layers me-1"></i>Camadas
+                                    de Referência</h6>
+                            </div>
+                            <div class="card-body p-2">
+                                <div id="camadas-referencia-container" class="d-flex flex-wrap gap-2">
+                                    <span class="text-muted small fst-italic">Carregando camadas...</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Container do Mapa -->
+                        <div class="card border shadow-sm mb-4">
+                            <div class="card-body p-0">
+                                <div id="mapa-fiscalizacao" style="height: 600px; width: 100%; z-index: 1;"></div>
+                            </div>
+                        </div>
+
+                        <!-- LISTA DE PINS ABAIXO DO MAPA -->
+                        <div class="mt-4">
+                            <h6 class="fw-bold mb-3"><i class="bi bi-list-ul me-2"></i>Lista de Ocorrências no Mapa
+                            </h6>
+                            <div class="table-responsive">
+                                <table
+                                    class="table table-sm table-hover border align-middle shadow-sm bg-white rounded overflow-hidden">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Título/Ponto</th>
+                                            <th>Descrição</th>
+                                            <th>Coordenadas</th>
+                                            <th class="text-center">Evidências</th>
+                                            <th class="text-center">Ações</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="lista-marcadores-body">
+                                        <tr>
+                                            <td colspan="5" class="text-center py-3 text-muted">Carregando
+                                                marcadores...
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div class="mt-3 text-muted small">
+                            <i class="bi bi-cursor me-1"></i>
+                            Coordenadas capturadas via mapa serão automaticamente vinculadas às fotos registradas em
+                            cada ponto.
+
+                        </div>
+                    </div>
+
+                    <hr class="my-4">
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-circle me-2"></i> Salvar
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary" onclick="window.history.back()">
+                            <i class="bi bi-x-circle me-2"></i> Cancelar
+                        </button>
+                        {% if object %}
+                        <button type="button" class="btn btn-outline-danger ms-auto" data-bs-toggle="modal"
+                            data-bs-target="#deleteModal">
+                            <i class="bi bi-trash me-2"></i> Excluir
+                        </button>
+                        {% endif %}
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script>
+    // ========= JS DA ABA 1 (DADOS GERAIS / RESULTADO) =========
+    document.addEventListener('DOMContentLoaded', function () {
+
+        // --- 1. Filtro Instrumento → Obrigação + Entidade ---
+        const instrumentoSel = document.getElementById('id_instrumento');
+        const obrigacaoSel = document.getElementById('id_obrigacao');
+        const entidadeSel = document.getElementById('id_entidade');
+
+        if (instrumentoSel) {
+            instrumentoSel.addEventListener('change', async function () {
+                const instrId = this.value;
+
+                // Resetar selects dependentes
+                if (obrigacaoSel) {
+                    obrigacaoSel.innerHTML = '<option value="">Carregando...</option>';
+                }
+                if (entidadeSel) {
+                    entidadeSel.innerHTML = '<option value="">Carregando...</option>';
+                }
+
+                if (!instrId) {
+                    if (obrigacaoSel) obrigacaoSel.innerHTML = '<option value="">---------</option>';
+                    if (entidadeSel) entidadeSel.innerHTML = '<option value="">---------</option>';
+                    return;
+                }
+
+                try {
+                    const resp = await fetch(`/acoes/obrigacoes/?instrumento_id=${instrId}`);
+                    const data = await resp.json();
+
+                    if (obrigacaoSel) {
+                        obrigacaoSel.innerHTML = '<option value="">---------</option>';
+                        (data.obrigacoes || []).forEach(o => {
+                            const opt = document.createElement('option');
+                            opt.value = o.id;
+                            opt.textContent = o.titulo;
+                            obrigacaoSel.appendChild(opt);
+                        });
+                    }
+
+                    if (entidadeSel) {
+                        entidadeSel.innerHTML = '<option value="">---------</option>';
+                        (data.entidades || []).forEach(e => {
+                            const opt = document.createElement('option');
+                            opt.value = e.id;
+                            opt.textContent = e.razao_social;
+                            entidadeSel.appendChild(opt);
+                        });
+                    }
+                } catch (err) {
+                    console.error('Erro ao buscar obrigações/entidades:', err);
+                }
+            });
+        }
+
+        // --- 2. Toggle Justificativa ---
+        const btnJust = document.getElementById('btn-toggle-justificativa');
+        const justContainer = document.getElementById('justificativa-container');
+        const btnLabel = document.getElementById('btn-justificativa-label');
+
+        if (btnJust && justContainer) {
+            btnJust.addEventListener('click', function () {
+                const visible = justContainer.style.display !== 'none';
+                justContainer.style.display = visible ? 'none' : 'block';
+                if (btnLabel) {
+                    btnLabel.textContent = visible ? '+ Adicionar Justificativa' : '− Ocultar Justificativa';
+                }
+            });
+        }
+
+        // --- 3. Pré-selecionar Tipo de Ação via query param ?tipo_acao=<id> ---
+        const urlParams = new URLSearchParams(window.location.search);
+        const tipoAcaoParam = urlParams.get('tipo_acao');
+        const tipoAcaoSel = document.getElementById('id_tipo_acao');
+
+        if (tipoAcaoParam && tipoAcaoSel) {
+            tipoAcaoSel.value = tipoAcaoParam;
+        }
+
+        // --- 4. Disparar animação no radio button selecionado ao carregar ---
+        document.querySelectorAll('.resultado-radio-label input[type=radio]:checked').forEach(radio => {
+            radio.closest('label').classList.add('active');
+        });
+
+        // --- 5. Visibilidade inicial da tab Mapa (só para Fiscalização) ---
+        const fiscIds = {{ fiscalizacao_ids| safe
+    }};
+    const tabMapa = document.getElementById('mapa-tab');
+    const tabMapaPane = document.getElementById('mapa');
+
+    function toggleMapaTab(tipoId) {
+        const isFiscalizacao = fiscIds.includes(parseInt(tipoId));
+        if (tabMapa) tabMapa.style.display = isFiscalizacao ? '' : 'none';
+        if (tabMapaPane && !isFiscalizacao && tabMapaPane.classList.contains('show')) {
+            const dadosTab = document.getElementById('dados-tab');
+            if (dadosTab) dadosTab.click();
+        }
+    }
+
+    if (tipoAcaoSel) {
+        toggleMapaTab(tipoAcaoSel.value);
+        tipoAcaoSel.addEventListener('change', function () {
+            toggleMapaTab(this.value);
+        });
+    }
+
+    });
+</script>
+
+
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirmar Exclusão</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Tem certeza que deseja excluir este registro?</p>
+                <p class="text-danger"><strong>Esta ação não pode ser desfeita!</strong></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <form method="post" action="{% url 'acao_delete' object.pk %}" class="d-inline">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">Excluir</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Modal de Validação de Datas -->
+<div class="modal fade" id="dateValidationModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header text-white bg-danger">
+                <h5 class="modal-title"><i class="bi bi-exclamation-triangle-fill me-2"></i>Atenção</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-0 fw-bold">Não é possível salvar com DATA DE FIM anterior a DATA DE INÍCIO.</p>
+                <p class="text-muted small mt-2">Por favor, corrija as datas e tente novamente.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Entendi</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const form = document.getElementById('acao-form');
+        const modalEl = document.getElementById('dateValidationModal');
+        const modal = new bootstrap.Modal(modalEl);
+
+        if (form) {
+            form.addEventListener('submit', function (event) {
+                const dataInicio = document.getElementById('id_data_inicio')?.value;
+                const dataFim = document.getElementById('id_data_fim')?.value;
+
+                if (dataInicio && dataFim) {
+                    if (new Date(dataFim) < new Date(dataInicio)) {
+                        event.preventDefault();
+                        modal.show();
+                    }
+                }
+            });
+        }
+    });
+</script>
+
+{{ fiscalizacao_ids|json_script:"fiscalizacao-ids-data" }}
+
+<script>
+    // ===== FASE 5: Interface Condicional para Fiscalização =====
+    document.addEventListener('DOMContentLoaded', function () {
+        // IDs vindos do Backend via json_script (mais seguro)
+        const fiscalizacaoIds = JSON.parse(document.getElementById('fiscalizacao-ids-data').textContent);
+
+        const tipoAcaoSelect = document.getElementById('id_tipo_acao');
+        const fotosTabItem = document.getElementById('fotos-tab-item');
+        const mapaTabItem = document.getElementById('mapa-tab-item');
+
+        function toggleFiscalizacaoTabs() {
+            if (!tipoAcaoSelect) return;
+
+            const selectedValue = parseInt(tipoAcaoSelect.value);
+            const isFiscalizacao = fiscalizacaoIds.includes(selectedValue);
+
+            console.log("DEBUG: Fiscalização Check:", isFiscalizacao);
+
+            if (fotosTabItem) fotosTabItem.style.display = isFiscalizacao ? 'block' : 'none';
+            if (mapaTabItem) mapaTabItem.style.display = isFiscalizacao ? 'block' : 'none';
+
+            // Se as abas estavam ativas e sumiram, volta para Dados
+            if (!isFiscalizacao) {
+                if (fotosTabItem?.querySelector('.active') || mapaTabItem?.querySelector('.active')) {
+                    const dadosTabBtn = document.getElementById('dados-tab');
+                    if (dadosTabBtn) {
+                        const tab = new bootstrap.Tab(dadosTabBtn);
+                        tab.show();
+                    }
+                }
+            }
+
+            // Inicializar mapa se a aba for visível
+            if (isFiscalizacao && typeof initMapa === 'function') {
+                // Timeout para garantir que o container está pronto se a aba for aberta
+                document.getElementById('mapa-tab').addEventListener('shown.bs.tab', function () {
+                    initMapa();
+                }, { once: true });
+            }
+        }
+
+        if (tipoAcaoSelect) {
+            tipoAcaoSelect.addEventListener('change', toggleFiscalizacaoTabs);
+            toggleFiscalizacaoTabs();
+        }
+    });
+</script>
+
+
+<script>
+    // ===== LÓGICA DO MAPA DE FISCALIZAÇÃO (LEAFLET) =====
+    let leafletMap = null;
+    let marcadoresLayer = null;
+    let camadasReferencia = {}; // Armazena grupos de camadas de referência
+    const acaoId = "{{ object.id|default:'' }}";
+
+    function initMapa() {
+        if (leafletMap) {
+            leafletMap.invalidateSize();
+            return;
+        }
+
+        if (!document.getElementById('mapa-fiscalizacao')) return;
+
+        // Centralizar em MS por padrão se não houver marcadores
+        const defaultLat = -20.4697;
+        const defaultLng = -54.6201;
+
+        leafletMap = L.map('mapa-fiscalizacao').setView([defaultLat, defaultLng], 13);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(leafletMap);
+
+        // Inicializar camadas de referência
+        carregarCamadasDisponiveis();
+
+        marcadoresLayer = L.layerGroup().addTo(leafletMap);
+
+        // Carregar marcadores existentes se a ação já estiver salva
+        if (acaoId) {
+            carregarMarcadores();
+        } else {
+            L.popup()
+                .setLatLng([defaultLat, defaultLng])
+                .setContent('<div class="p-2"><strong>Aviso:</strong> Salve a Ação primeiro para poder registrar pontos no mapa.</div>')
+                .openOn(leafletMap);
+        }
+
+        // Adicionar novo marcador ao clicar
+        leafletMap.on('click', function (e) {
+            if (!acaoId) return;
+            showNovoMarcadorPopup(e.latlng);
+        });
+    }
+
+    function carregarCamadasDisponiveis() {
+        const container = document.getElementById('camadas-referencia-container');
+        if (!container) return;
+
+        container.innerHTML = '<span class="spinner-border spinner-border-sm text-secondary"></span>';
+
+        fetch('/georeferencias/api/camadas/')
+            .then(res => res.json())
+            .then(data => {
+                container.innerHTML = '';
+                if (data.camadas && data.camadas.length > 0) {
+                    data.camadas.forEach(camada => {
+                        const div = document.createElement('div');
+                        div.className = 'form-check form-check-inline m-0 border rounded px-2 py-1 bg-white shadow-sm';
+                        div.innerHTML = `
+                            <input class="form-check-input" type="checkbox" id="camada-${camada.id}" value="${camada.id}" onchange="toggleCamadaReferencia(this, '${camada.cor_marcador}', '${camada.icone}')">
+                            <label class="form-check-label small fw-bold" for="camada-${camada.id}" style="cursor: pointer;">
+                                <i class="bi bi-${camada.icone || 'circle'} me-1" style="color: ${camada.cor_marcador}"></i>${camada.nome}
+                            </label>
+                        `;
+                        container.appendChild(div);
+                    });
+                } else {
+                    container.innerHTML = '<span class="text-muted small">Nenhuma camada disponível.</span>';
+                }
+            })
+            .catch(err => {
+                console.error("Erro ao carregar camadas:", err);
+                container.innerHTML = '<span class="text-danger small">Erro ao carregar referências.</span>';
+            });
+    }
+
+    function toggleCamadaReferencia(checkbox, cor, icone) {
+        const camadaId = checkbox.value;
+        if (checkbox.checked) {
+            if (camadasReferencia[camadaId]) {
+                leafletMap.addLayer(camadasReferencia[camadaId]);
+            } else {
+                carregarPontosCamada(camadaId, cor, icone);
+            }
+        } else {
+            if (camadasReferencia[camadaId]) {
+                leafletMap.removeLayer(camadasReferencia[camadaId]);
+            }
+        }
+    }
+
+    function carregarPontosCamada(camadaId, corPadrao, iconePadrao) {
+        fetch(`/georeferencias/api/camada/${camadaId}/pontos/`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.pontos) {
+                    const layerGroup = L.layerGroup();
+                    data.pontos.forEach(p => {
+                        let layer;
+                        const estilo = p.estilo_json || {};
+                        const color = estilo.icon_color || estilo.stroke_color || corPadrao || '#3388ff';
+                        const weight = estilo.stroke_width || 3;
+                        const opacity = estilo.stroke_opacity || 0.8;
+                        const fillColor = estilo.fill_color || color;
+                        const fillOpacity = estilo.fill_opacity || 0.2;
+
+                        if (p.tipo_geometria === 'Point') {
+                            layer = L.circleMarker([p.latitude, p.longitude], {
+                                radius: 6,
+                                fillColor: color,
+                                color: '#fff',
+                                weight: 1,
+                                opacity: 1,
+                                fillOpacity: 0.8
+                            });
+                        } else if (p.tipo_geometria === 'LineString' && p.coordenadas_json) {
+                            // Converter [lon, lat] para [lat, lon] para o Leaflet
+                            const latlngs = p.coordenadas_json.map(c => [c[1], c[0]]);
+                            layer = L.polyline(latlngs, {
+                                color: color,
+                                weight: weight,
+                                opacity: opacity
+                            });
+                        } else if (p.tipo_geometria === 'Polygon' && p.coordenadas_json) {
+                            // Polygon no GeoJSON style é [[[lon, lat], ...]]
+                            // Leaflet Polygon quer [lat, lon] ou [[lat, lon], ...]
+                            const latlngs = p.coordenadas_json[0].map(c => [c[1], c[0]]);
+                            layer = L.polygon(latlngs, {
+                                color: color,
+                                weight: weight,
+                                opacity: opacity,
+                                fillColor: fillColor,
+                                fillOpacity: fillOpacity
+                            });
+                        }
+
+                        if (layer) {
+                            // Tooltip no mouseover (Requisito 2)
+                            layer.bindTooltip(p.nome, {
+                                sticky: true,
+                                direction: 'top',
+                                offset: [0, -5]
+                            });
+
+                            // Popup no clique (Interatividade)
+                            layer.bindPopup(`
+                                <div class="p-1" style="min-width: 150px;">
+                                    <h6 class="mb-1 fw-bold text-primary">${p.nome}</h6>
+                                    <p class="small text-muted mb-0">${p.descricao || ''}</p>
+                                    <hr class="my-1">
+                                    <small class="text-muted">Tipo: ${p.tipo_geometria}</small>
+                                </div>
+                            `);
+                            layerGroup.addLayer(layer);
+                        }
+                    });
+                    camadasReferencia[camadaId] = layerGroup;
+                    leafletMap.addLayer(layerGroup);
+                }
+            })
+            .catch(err => console.error(`Erro ao carregar pontos:`, err));
+    }
+
+    function carregarMarcadores() {
+
+        const body = document.getElementById('lista-marcadores-body');
+
+        fetch(`/acoes/acao/${acaoId}/marcadores/`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    marcadoresLayer.clearLayers();
+                    if (body) body.innerHTML = '';
+
+                    if (data.marcadores.length === 0) {
+                        if (body) body.innerHTML = '<tr><td colspan="5" class="text-center py-3 text-muted">Nenhum ponto registrado neste mapa.</td></tr>';
+                    } else {
+                        data.marcadores.forEach(m => {
+                            addMarcadorAoMapa(m);
+                            addMarcadorALista(m);
+                        });
+                    }
+                }
+            })
+            .catch(err => {
+                console.error("Erro ao carregar marcadores:", err);
+                if (body) body.innerHTML = '<tr><td colspan="5" class="text-center text-danger">Erro ao carregar lista.</td></tr>';
+            });
+    }
+
+    function addMarcadorAoMapa(m) {
+        const marker = L.marker([m.latitude, m.longitude]).addTo(marcadoresLayer);
+
+        let fotosHtml = '';
+        if (m.fotos && m.fotos.length > 0) {
+            fotosHtml = '<div class="mt-2 d-flex gap-1 flex-wrap">';
+            m.fotos.forEach(f => {
+                fotosHtml += `<img src="${f.url}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px;" class="border">`;
+            });
+            fotosHtml += '</div>';
+        }
+
+        const content = `
+            <div class="marcador-info p-1" style="min-width: 150px;">
+                <h6 class="mb-1 fw-bold">${m.titulo}</h6>
+                <p class="small text-muted mb-1">${m.descricao || 'Sem descrição'}</p>
+                <div class="small mb-2" style="font-size: 0.75rem;">
+                    <i class="bi bi-clock me-1"></i>${m.data_criacao}<br>
+                    <i class="bi bi-person me-1"></i>${m.usuario}
+                </div>
+                ${fotosHtml}
+                <hr class="my-2">
+                <button class="btn btn-sm btn-outline-danger w-100" style="font-size: 0.7rem;" onclick="deletarMarcador(${m.id})">
+                    <i class="bi bi-trash me-1"></i>Remover do Mapa
+                </button>
+            </div>
+        `;
+        marker.bindPopup(content);
+    }
+
+    function addMarcadorALista(m) {
+        const body = document.getElementById('lista-marcadores-body');
+        if (!body) return;
+
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td><strong>${m.titulo}</strong></td>
+            <td><span class="text-muted small">${m.descricao || '-'}</span></td>
+            <td><code class="text-primary small">${parseFloat(m.latitude).toFixed(6)}, ${parseFloat(m.longitude).toFixed(6)}</code></td>
+            <td class="text-center">
+                <span class="badge ${m.fotos.length > 0 ? 'bg-success' : 'bg-secondary'} rounded-pill">
+                    <i class="bi bi-camera me-1"></i>${m.fotos.length}
+                </span>
+            </td>
+            <td class="text-center">
+                <div class="btn-group btn-group-sm">
+                    <button type="button" class="btn btn-outline-primary" onclick="focarNoMapa(${m.latitude}, ${m.longitude}, ${m.id})" title="Ver no Mapa">
+                        <i class="bi bi-geo-alt"></i>
+                    </button>
+                    <button type="button" class="btn btn-outline-danger" onclick="deletarMarcador(${m.id})" title="Excluir">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </div>
+            </td>
+        `;
+        body.appendChild(row);
+    }
+
+    function focarNoMapa(lat, lng, id) {
+        leafletMap.setView([lat, lng], 18);
+        marcadoresLayer.eachLayer(layer => {
+            if (layer instanceof L.Marker && layer.getLatLng().lat == lat && layer.getLatLng().lng == lng) {
+                layer.openPopup();
+            }
+        });
+        document.getElementById('mapa-fiscalizacao').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    function showNovoMarcadorPopup(latlng) {
+        const content = `
+            <div class="marcador-form-popup p-2" style="min-width: 250px;">
+                <h6 class="mb-3 fw-bold"><i class="bi bi-plus-circle me-2"></i>Registrar Ponto</h6>
+                <form id="form-novo-marcador">
+                    <div class="mb-2">
+                        <label>Título / Identificação do Ponto:</label>
+                        <input type="text" id="m-titulo" class="form-control form-control-sm" required placeholder="Ex: Poste A32 ou Vazamento">
+                    </div>
+                    <div class="mb-2">
+                        <label>Observações/Descritivo:</label>
+                        <textarea id="m-descricao" class="form-control form-control-sm" rows="3" placeholder="Detalhes da ocorrência..."></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label>Fotos da Evidência:</label>
+                        <input type="file" id="m-fotos" class="form-control form-control-sm" multiple accept="image/*">
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-sm btn-secondary w-100" onclick="leafletMap.closePopup()">Cancelar</button>
+                        <button type="button" id="btn-salvar-marcador" class="btn btn-sm btn-primary w-100" onclick="salvarMarcador(${latlng.lat}, ${latlng.lng})">
+                            <i class="bi bi-save me-1"></i>Salvar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        `;
+
+        L.popup()
+            .setLatLng(latlng)
+            .setContent(content)
+            .openOn(leafletMap);
+    }
+
+    function salvarMarcador(lat, lng) {
+        const titulo = document.getElementById('m-titulo').value;
+        const descricao = document.getElementById('m-descricao').value;
+        const fotoInput = document.getElementById('m-fotos');
+        const btn = document.getElementById('btn-salvar-marcador');
+
+        if (!titulo) {
+            alert("Por favor, preencha o título do ponto.");
+            return;
+        }
+
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+        }
+
+        const formData = new FormData();
+        formData.append('titulo', titulo);
+        formData.append('descricao', descricao);
+        formData.append('latitude', lat);
+        formData.append('longitude', lng);
+
+        if (fotoInput && fotoInput.files.length > 0) {
+            for (let i = 0; i < fotoInput.files.length; i++) {
+                formData.append('fotos', fotoInput.files[i]);
+            }
+        }
+
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+        fetch(`/acoes/acao/${acaoId}/marcador/salvar/`, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': csrfToken
+            }
+        })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    leafletMap.closePopup();
+                    carregarMarcadores();
+                    if (data.marcador.fotos_count > 0 && typeof renderExistingAssets === 'function') {
+                        renderExistingAssets('fotos');
+                    }
+                } else {
+                    alert('Erro ao salvar: ' + (data.message || 'Erro desconhecido'));
+                    if (btn) {
+                        btn.disabled = false;
+                        btn.innerHTML = '<i class="bi bi-save me-1"></i>Salvar';
+                    }
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                alert('Falha na comunicação com o servidor ao salvar.');
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="bi bi-save me-1"></i>Salvar';
+                }
+            });
+    }
+
+    function deletarMarcador(id) {
+        if (!confirm('Tem certeza que deseja remover este marcador? As fotos vinculadas serão mantidas na aba "Fotos", perdendo apenas a referência a este ponto.')) return;
+
+        fetch(`/acoes/marcador/${id}/deletar/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+        })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    carregarMarcadores();
+                }
+            });
+    }
+</script>
+
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        console.log('Checklist JS initializing...');
+        const container = document.getElementById('checklist-container');
+        const toggleContainer = document.getElementById('checklist-toggle-container');
+        const showBtn = document.getElementById('show-checklist-btn');
+        const addBtn = document.getElementById('add-checklist-item');
+        const itemsContainer = document.getElementById('checklist-items');
+        const totalFormsInput = document.querySelector('input[name="checklist_itens-TOTAL_FORMS"]');
+
+        if (!itemsContainer) {
+            console.error('Checklist items container not found!');
+            return;
+        }
+
+        console.log('Sortable Check:', typeof Sortable);
+
+        function initSortable() {
+            if (typeof Sortable !== 'undefined') {
+                new Sortable(itemsContainer, {
+                    handle: '.drag-handle',
+                    animation: 150,
+                    ghostClass: 'sortable-ghost',
+                    chosenClass: 'sortable-chosen',
+                    dragClass: 'sortable-drag',
+                    onEnd: function () {
+                        updateOrders();
+                    }
+                });
+                console.log('Sortable initialized on', itemsContainer);
+            } else {
+                console.error('SortableJS library not loaded!');
+            }
+        }
+
+        initSortable();
+
+        if (showBtn) {
+            showBtn.addEventListener('click', function () {
+                container.style.display = 'block';
+                toggleContainer.style.display = 'none';
+                addNewChecklistItem();
+            });
+        }
+
+        if (addBtn) {
+            addBtn.addEventListener('click', function () {
+                addNewChecklistItem();
+            });
+        }
+
+        itemsContainer.addEventListener('click', function (e) {
+            const removeBtn = e.target.closest('.remove-checklist-item');
+            if (removeBtn) {
+                e.preventDefault();
+                const item = removeBtn.closest('.checklist-item');
+                const isNew = item.getAttribute('data-is-new') === 'true';
+                if (!isNew) {
+                    const deleteCheckbox = item.querySelector('input[name$="-DELETE"]');
+                    if (deleteCheckbox) deleteCheckbox.checked = true;
+                    item.style.setProperty('display', 'none', 'important');
+                } else {
+                    item.remove();
+                    updateOrders();
+                }
+            }
+        });
+
+        itemsContainer.addEventListener('input', function (e) {
+            if (e.target.type === 'text') {
+                const item = e.target.closest('.checklist-item');
+                updateCheckboxState(item);
+            }
+        });
+
+        function updateCheckboxState(itemDiv) {
+            const nameInput = itemDiv.querySelector('input[type="text"]');
+            const checkbox = itemDiv.querySelector('input[type="checkbox"]:not([name$="-DELETE"])');
+            if (nameInput && checkbox) {
+                const hasText = nameInput.value.trim().length > 0;
+                checkbox.disabled = !hasText;
+                if (!hasText) checkbox.checked = false;
+            }
+        }
+
+        itemsContainer.querySelectorAll('.checklist-item').forEach(updateCheckboxState);
+
+        function addNewChecklistItem() {
+            const newIndex = parseInt(totalFormsInput.value);
+            const prefix = 'checklist_itens';
+            const newItemDiv = document.createElement('div');
+            newItemDiv.className = 'checklist-item mb-2 d-flex align-items-center gap-2 bg-white p-2 rounded border';
+            newItemDiv.setAttribute('data-form-index', newIndex);
+            newItemDiv.setAttribute('data-is-new', 'true');
+
+            newItemDiv.innerHTML = `
+                <div class="drag-handle px-2 text-muted border-end" style="cursor: grab;"><i class="bi bi-grip-vertical fs-5"></i></div>
+                <input type="hidden" name="${prefix}-${newIndex}-ordem" id="id_${prefix}-${newIndex}-ordem" class="checklist-order-field" value="${newIndex}">
+                <input type="text" name="${prefix}-${newIndex}-nome" id="id_${prefix}-${newIndex}-nome" class="form-control" placeholder="Nova tarefa operacional">
+                <div class="form-check">
+                    <input type="checkbox" name="${prefix}-${newIndex}-concluido" id="id_${prefix}-${newIndex}-concluido" class="form-check-input">
+                    <label class="form-check-label small text-muted" for="id_${prefix}-${newIndex}-concluido">Concluído</label>
+                </div>
+                <button type="button" class="btn btn-sm btn-outline-danger remove-checklist-item" title="Remover item"><i class="bi bi-trash"></i></button>
+            `;
+
+            itemsContainer.appendChild(newItemDiv);
+            updateCheckboxState(newItemDiv);
+            totalFormsInput.value = newIndex + 1;
+            updateOrders();
+        }
+
+        function updateOrders() {
+            const items = itemsContainer.querySelectorAll('.checklist-item');
+            items.forEach((item, index) => {
+                const orderInput = item.querySelector('.checklist-order-field');
+                if (orderInput) orderInput.value = index;
+            });
+            console.log('Orders updated');
+            if (typeof atualizarPercentual === 'function') atualizarPercentual();
+        }
+
+        // --- LÓGICA DE PERCENTUAL AUTOMÁTICO ---
+        window.atualizarPercentual = function () {
+            const items = document.querySelectorAll('.checklist-item:not([style*="display: none"])');
+            const total = items.length;
+            const percentualDisplay = document.getElementById('percentual-display');
+
+            if (total === 0) {
+                if (percentualDisplay) percentualDisplay.style.display = 'none';
+                return;
+            } else {
+                if (percentualDisplay) percentualDisplay.style.display = 'block';
+            }
+
+            let concluidos = 0;
+            items.forEach(item => {
+                const checkbox = item.querySelector('input[type="checkbox"]:not([name$="-DELETE"])');
+                if (checkbox && checkbox.checked) {
+                    concluidos++;
+                }
+            });
+
+            // Evitar divisão por zero (redundante mas seguro)
+            const percentual = total > 0 ? Math.round((concluidos / total) * 100) : 0;
+
+            const valueEl = document.getElementById('percentual-value');
+            if (valueEl) valueEl.textContent = `${percentual}%`;
+
+            const bar = document.getElementById('percentual-bar');
+            if (bar) {
+                bar.style.width = `${percentual}%`;
+                bar.textContent = `${percentual}%`;
+                bar.setAttribute('aria-valuenow', percentual);
+
+                bar.className = 'progress-bar progress-bar-striped progress-bar-animated';
+                if (percentual >= 100) {
+                    bar.classList.add('bg-success');
+                } else if (percentual >= 50) {
+                    bar.classList.add('bg-primary');
+                } else if (percentual > 0) {
+                    bar.classList.add('bg-warning');
+                } else {
+                    bar.classList.add('bg-secondary');
+                }
+            }
+        };
+
+        // Listeners
+        itemsContainer.addEventListener('change', function (e) {
+            if (e.target.type === 'checkbox' && !e.target.name.endsWith('-DELETE')) {
+                atualizarPercentual();
+            }
+        });
+
+        // Observer para capturar adições/remoções
+        const observer = new MutationObserver(() => {
+            atualizarPercentual();
+        });
+        observer.observe(itemsContainer, { childList: true, subtree: true });
+
+        // Inicializar
+        atualizarPercentual();
+    });
+</script>
+
+<style>
+    .drag-handle {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: #f8f9fa;
+        margin: -8px 0 -8px -8px;
+        padding: 8px 12px !important;
+        border-right: 1px solid #dee2e6;
+        color: #adb5bd !important;
+        transition: all 0.2s;
+        border-top-left-radius: 6px;
+        border-bottom-left-radius: 6px;
+        cursor: grab !important;
+    }
+
+    .drag-handle:active {
+        cursor: grabbing !important;
+    }
+
+    .drag-handle:hover {
+        background-color: #e9ecef;
+        color: var(--primary-color) !important;
+    }
+
+    .checklist-item {
+        transition: transform 0.2s, box-shadow 0.2s;
+        padding-left: 0 !important;
+        overflow: hidden;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    }
+
+    .sortable-ghost {
+        opacity: 0.3;
+        background-color: #dee2e6 !important;
+        border: 2px dashed var(--primary-color) !important;
+    }
+
+    .sortable-chosen {
+        background-color: #f1f8ff !important;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+    }
+
+    .sortable-drag {
+        opacity: 1 !important;
+        background-color: white !important;
+    }
+
+    /* Estilos Customizados para Upload de Docs e Fotos */
+    .upload-zone {
+        border: 2px dashed #dee2e6;
+        border-radius: 12px;
+        padding: 40px;
+        text-align: center;
+        background-color: #f8f9fa;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        margin-bottom: 2rem;
+    }
+
+    .upload-zone:hover {
+        border-color: var(--primary-color);
+        background-color: #f1f8ff;
+    }
+
+    .upload-zone i {
+        font-size: 3rem;
+        color: #adb5bd;
+        margin-bottom: 1rem;
+        display: block;
+    }
+
+    .upload-zone.dragover {
+        border-color: #198754;
+        background-color: #e8f5e9;
+    }
+
+    .asset-table th {
+        background-color: #f8f9fa;
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        letter-spacing: 0.5px;
+        color: #6c757d;
+        border-top: none;
+    }
+
+    .asset-row {
+        vertical-align: middle;
+        transition: background-color 0.2s;
+    }
+
+    .asset-row:hover {
+        background-color: #fcfcfc;
+    }
+
+    .thumb-preview {
+        width: 60px;
+        height: 60px;
+        object-fit: cover;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: transform 0.2s;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .thumb-preview:hover {
+        transform: scale(1.1);
+    }
+
+    .file-icon {
+        font-size: 1.5rem;
+    }
+
+    .btn-remove-asset {
+        color: #dc3545;
+        background: none;
+        border: none;
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        transition: background-color 0.2s;
+    }
+
+    .btn-remove-asset:hover {
+        background-color: #fee2e2;
+    }
+
+    .gps-badge {
+        font-size: 0.7rem;
+        background-color: #e9ecef;
+        color: #495057;
+        padding: 2px 6px;
+        border-radius: 4px;
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const form = document.getElementById('acao-form');
+        const submitBtn = form.querySelector('button[type="submit"]');
+
+        form.addEventListener('submit', function () {
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Salvando...';
+            }
+        });
+
+        // --- GESTÃO DE DOCUMENTOS ---
+        const docsZone = document.getElementById('docs-upload-zone');
+        const docsInput = document.getElementById('docs-input');
+        const docsTableBody = document.getElementById('docs-table-body');
+        const docsTotalForms = document.querySelector('input[name="docs-TOTAL_FORMS"]');
+        const docsHiddenContainer = document.getElementById('docs-hidden-forms');
+        const emptyDocTemplate = document.getElementById('empty-doc-form-template').innerHTML;
+
+        // Inicializar tabela com itens existentes
+        renderExistingAssets('docs');
+
+        docsZone.addEventListener('click', () => docsInput.click());
+        docsInput.addEventListener('change', handleDocsSelection);
+
+        function handleDocsSelection(e) {
+            const files = Array.from(e.target.files);
+
+            // FILTRO DE EXTENSÃO (Frontend Validation)
+            const allowedExtensions = ['.pdf', '.docx', '.xlsx', '.doc', '.xls', '.txt', '.zip', '.csv'];
+            const validFiles = files.filter(file => {
+                const ext = '.' + file.name.split('.').pop().toLowerCase();
+                if (!allowedExtensions.includes(ext)) {
+                    alert(`Arquivo NÃO PERMITIDO: "${file.name}".\n\nApenas PDF, DOCX, XLSX, TXT, CSV e ZIP são aceitos.`);
+                    return false;
+                }
+                return true;
+            });
+
+            // Se nenhum arquivo sobrou, limpa e sai
+            if (validFiles.length === 0) {
+                docsInput.value = '';
+                return;
+            }
+
+            validFiles.forEach(file => {
+                const nextIndex = parseInt(docsTotalForms.value);
+
+                // 1. Criar formulário oculto
+                const newFormHtml = emptyDocTemplate.replace(/__prefix__/g, nextIndex);
+                const wrapper = document.createElement('div');
+                wrapper.className = 'hidden-doc-form';
+                wrapper.dataset.index = nextIndex;
+                wrapper.innerHTML = newFormHtml;
+                docsHiddenContainer.appendChild(wrapper);
+
+                // 2. Injetar o arquivo no input oculto via DataTransfer
+                const dt = new DataTransfer();
+                dt.items.add(file);
+                wrapper.querySelector('input[type="file"]').files = dt.files;
+
+                // 3. Renderizar com FileReader para simetria com fotos
+                const reader = new FileReader();
+                reader.onload = function (re) {
+                    renderDocRow(file, nextIndex);
+                };
+                reader.readAsArrayBuffer(file);
+
+                // 4. Atualizar Management Form
+                docsTotalForms.value = nextIndex + 1;
+            });
+            docsInput.value = '';
+        }
+
+        function renderDocRow(file, index, isExisting = false, existingDoc = null) {
+            const row = document.createElement('tr');
+            row.className = 'asset-row';
+            row.id = `doc-row-${index}`;
+
+            const fileName = isExisting ? existingDoc.name : file.name;
+            const icon = getFileIcon(fileName);
+            let description = isExisting ? existingDoc.descricao : fileName.split('.').slice(0, -1).join('.');
+
+            row.innerHTML = `
+                <td class="text-center">${icon}</td>
+                <td><span class="text-truncate d-inline-block" style="max-width: 200px;" title="${fileName}">${fileName}</span></td>
+                <td>
+                    <input type="text" class="form-control form-control-sm doc-desc-input" 
+                           data-index="${index}" value="${description}" placeholder="Descrição do documento...">
+                </td>
+                <td><small class="text-muted">${isExisting && existingDoc.usuario ? existingDoc.usuario : 'Você'}</small></td>
+                <td><small class="text-muted">${isExisting && existingDoc.data ? existingDoc.data : 'Agora'}</small></td>
+                <td class="text-center">
+                    <button type="button" class="btn-remove-asset" onclick="removeAsset('docs', ${index})">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </td>
+            `;
+            docsTableBody.appendChild(row);
+
+            // Sync descrição inicial e em tempo real
+            setTimeout(() => {
+                const hiddenInput = document.querySelector(`input[name="docs-${index}-descricao"]`);
+                if (hiddenInput && !isExisting) hiddenInput.value = description;
+            }, 100);
+
+            row.querySelector('.doc-desc-input').addEventListener('input', function () {
+                const hInput = document.querySelector(`input[name="docs-${index}-descricao"]`);
+                if (hInput) hInput.value = this.value;
+            });
+        }
+
+        // --- GESTÃO DE FOTOS ---
+        const fotosZone = document.getElementById('fotos-upload-zone');
+        const fotosInput = document.getElementById('fotos-input');
+        const fotosTableBody = document.getElementById('fotos-table-body');
+        const fotosTotalForms = document.querySelector('input[name="fotos-TOTAL_FORMS"]');
+        const fotosHiddenContainer = document.getElementById('fotos-hidden-forms');
+        const emptyFotoTemplate = document.getElementById('empty-foto-form-template').innerHTML;
+
+        renderExistingAssets('fotos');
+
+        fotosZone.addEventListener('click', () => fotosInput.click());
+        fotosInput.addEventListener('change', handleFotosSelection);
+
+        function handleFotosSelection(e) {
+            const files = Array.from(e.target.files);
+
+            // FILTRO DE EXTENSÃO PARA FOTOS (Frontend Validation)
+            const allowedExtensions = ['.jpg', '.jpeg', '.png', '.webp', '.heic', '.heif'];
+            const validFiles = files.filter(file => {
+                const ext = '.' + file.name.split('.').pop().toLowerCase();
+                if (!allowedExtensions.includes(ext)) {
+                    alert(`Arquivo NÃO PERMITIDO: "${file.name}".\n\nApenas imagens JPG, PNG, WEBP, HEIC e HEIF são aceitas.`);
+                    return false;
+                }
+                return true;
+            });
+
+            // Se nenhum arquivo sobrou, limpa e sai
+            if (validFiles.length === 0) {
+                fotosInput.value = '';
+                return;
+            }
+
+            validFiles.forEach(file => {
+                const nextIndex = parseInt(fotosTotalForms.value);
+
+                // 1. Criar formulário oculto
+                const newFormHtml = emptyFotoTemplate.replace(/__prefix__/g, nextIndex);
+                const wrapper = document.createElement('div');
+                wrapper.className = 'hidden-foto-form';
+                wrapper.dataset.index = nextIndex;
+                wrapper.innerHTML = newFormHtml;
+                fotosHiddenContainer.appendChild(wrapper);
+
+                // 2. Injetar arquivo
+                const dataTransfer = new DataTransfer();
+                dataTransfer.items.add(file);
+                wrapper.querySelector('input[type="file"]').files = dataTransfer.files;
+
+                // 3. Extrair EXIF e Renderizar
+                processImageEXIF(file, nextIndex);
+
+                fotosTotalForms.value = nextIndex + 1;
+            });
+            fotosInput.value = '';
+        }
+
+        function processImageEXIF(file, index) {
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                const img = new Image();
+                img.src = e.target.result;
+
+                EXIF.getData(file, function () {
+                    const lat = EXIF.getTag(this, "GPSLatitude");
+                    const lon = EXIF.getTag(this, "GPSLongitude");
+                    const latRef = EXIF.getTag(this, "GPSLatitudeRef") || "N";
+                    const lonRef = EXIF.getTag(this, "GPSLongitudeRef") || "W";
+                    const dateTime = EXIF.getTag(this, "DateTimeOriginal");
+
+                    let coordsStr = '';
+                    if (lat && lon) {
+                        const latitude = convertDMSToDD(lat[0], lat[1], lat[2], latRef);
+                        const longitude = convertDMSToDD(lon[0], lon[1], lon[2], lonRef);
+                        coordsStr = `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
+
+                        // Salvar no form oculto
+                        const coordsInput = document.querySelector(`input[name="fotos-${index}-coordenadas"]`);
+                        if (coordsInput) coordsInput.value = coordsStr;
+                    }
+
+                    // Salvar no form oculto
+                    const dateInput = document.querySelector(`input[name="fotos-${index}-data_registro"]`);
+                    if (dateInput && dateTime) {
+                        // Converter formato EXIF (YYYY:MM:DD HH:MM:SS) para ISO ou compatível Django
+                        const parts = dateTime.split(/[: ]/);
+                        const isoDate = `${parts[0]}-${parts[1]}-${parts[2]}T${parts[3]}:${parts[4]}:${parts[5]}`;
+                        dateInput.value = isoDate;
+                    }
+
+                    renderFotoRow(file, index, coordsStr, dateTime, img.src);
+                });
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function renderFotoRow(file, index, coords, rawDate, thumbUrl, isExisting = false, existingData = null) {
+            const row = document.createElement('tr');
+            row.className = 'asset-row';
+            row.id = `foto-row-${index}`;
+
+            const displayCoords = coords ? `<span class="gps-badge"><i class="bi bi-geo-alt-fill me-1"></i>${coords}</span>` : '<span class="text-muted small">Sem GPS</span>';
+            const displayDate = rawDate || new Date().toLocaleString('pt-BR');
+            const description = isExisting ? existingData.legenda : '';
+            const finalThumb = isExisting ? existingData.url : thumbUrl;
+
+            row.innerHTML = `
+                <td><img src="${finalThumb}" class="thumb-preview" onclick="window.open('${finalThumb}', '_blank')"></td>
+                <td>
+                    <input type="text" class="form-control form-control-sm foto-desc-input" 
+                           data-index="${index}" value="${description}" placeholder="Legenda da foto...">
+                </td>
+                <td>${displayCoords}</td>
+                <td class="small text-muted">${displayDate}</td>
+                <td><small class="text-muted">${isExisting && existingData.usuario ? existingData.usuario : 'Você'}</small></td>
+                <td class="text-center">
+                    <button type="button" class="btn-remove-asset" onclick="removeAsset('fotos', ${index})">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </td>
+            `;
+            fotosTableBody.appendChild(row);
+
+            row.querySelector('.foto-desc-input').addEventListener('input', function () {
+                const hiddenInput = document.querySelector(`input[name="fotos-${index}-legenda"]`);
+                if (hiddenInput) hiddenInput.value = this.value;
+            });
+        }
+
+        // --- UTILITÁRIOS ---
+
+        function renderExistingAssets(type) {
+            const container = document.getElementById(`${type}-hidden-forms`);
+            const forms = container.querySelectorAll(`[class^="hidden-${type.slice(0, -1)}"]`);
+
+            forms.forEach(form => {
+                const index = form.dataset.index;
+                const idInput = form.querySelector('input[name$="-id"]');
+
+                // Só renderiza se for item existente (tem PK)
+                if (idInput && idInput.value) {
+                    if (type === 'docs') {
+                        const fileName = form.dataset.filename;
+                        const fileUrl = form.dataset.url;
+                        const descInput = form.querySelector('input[name$="-descricao"]');
+
+                        if (fileName && fileUrl) {
+                            renderDocRow(null, index, true, {
+                                name: fileName.split('/').pop(),
+                                url: fileUrl,
+                                descricao: descInput ? descInput.value : ''
+                            });
+                        }
+                    } else if (type === 'fotos') {
+                        const imgLink = form.querySelector('a');
+                        const descInput = document.querySelector(`input[name="fotos-${index}-legenda"]`);
+                        const coords = form.dataset.coordenadas;
+                        const dateReg = form.dataset.registro;
+                        const dateEnv = form.dataset.envio;
+
+                        if (imgLink) {
+                            renderFotoRow(null, index, coords, dateReg || dateEnv, null, true, {
+                                url: imgLink.href,
+                                legenda: descInput ? descInput.value : ''
+                            });
+                        }
+                    }
+                }
+            });
+        }
+
+        window.removeAsset = function (type, index) {
+            if (confirm('Deseja remover este item?')) {
+                const row = document.getElementById(`${type.slice(0, -1)}-row-${index}`);
+                const hiddenForm = document.querySelector(`[class^="hidden-${type.slice(0, -1)}"][data-index="${index}"]`);
+                const deleteCheckbox = hiddenForm ? hiddenForm.querySelector('input[name$="-DELETE"]') : null;
+
+                if (deleteCheckbox) {
+                    // Item existente: marcar para deleção
+                    deleteCheckbox.checked = true;
+                    row.style.display = 'none';
+                } else if (hiddenForm) {
+                    // Item novo: remover do DOM
+                    hiddenForm.remove();
+                    row.remove();
+                }
+            }
+        };
+
+        function getFileIcon(filename) {
+            const ext = filename.split('.').pop().toLowerCase();
+            if (ext === 'pdf') return '<i class="bi bi-file-earmark-pdf text-danger file-icon"></i>';
+            if (['docx', 'doc'].includes(ext)) return '<i class="bi bi-file-earmark-word text-primary file-icon"></i>';
+            if (['xlsx', 'xls'].includes(ext)) return '<i class="bi bi-file-earmark-excel text-success file-icon"></i>';
+            return '<i class="bi bi-file-earmark-text text-secondary file-icon"></i>';
+        }
+
+        function convertDMSToDD(degrees, minutes, seconds, direction) {
+            let dd = degrees + minutes / 60 + seconds / 3600;
+            if (direction === "S" || direction === "W") dd = dd * -1;
+            return dd;
+        }
+
+        // Suporte a Drag and Drop nas zonas
+        [docsZone, fotosZone].forEach(zone => {
+            zone.addEventListener('dragover', (e) => { e.preventDefault(); zone.classList.add('dragover'); });
+            zone.addEventListener('dragleave', () => zone.classList.remove('dragover'));
+            zone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                zone.classList.remove('dragover');
+                const input = zone.querySelector('input[type="file"]');
+                const dataTransfer = new DataTransfer();
+                Array.from(e.dataTransfer.files).forEach(file => dataTransfer.items.add(file));
+                input.files = dataTransfer.files;
+                input.dispatchEvent(new Event('change'));
+            });
+        });
+
+    });
+</script>
+{% endblock %}

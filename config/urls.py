@@ -144,6 +144,7 @@ urlpatterns = [
     path('tipos-acao/<int:pk>/excluir/', TipoAcaoDeleteView.as_view(), name='tipoacao_delete'),
 
     # Usuários
+    path('usuarios/perfil/', usuarios_views.UsuarioPerfilView.as_view(), name='usuario_perfil'),
     path('usuarios/', usuarios_views.UsuarioListView.as_view(), name='usuario_list'),
     path('usuarios/criar/', usuarios_views.UsuarioCreateView.as_view(), name='usuario_create'),
     path('usuarios/<int:pk>/editar/', usuarios_views.UsuarioUpdateView.as_view(), name='usuario_edit'),

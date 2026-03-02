@@ -518,7 +518,7 @@
             <li class="sidebar-nav-item">
                 <a href="/" class="sidebar-nav-link {% if request.path == '/' %}active{% endif %}">
                     <i class="bi bi-speedometer2"></i>
-                    <span>Dashboard</span>
+                    <span>Painel de Acompanhamento</span>
                 </a>
             </li>
 
@@ -568,22 +568,22 @@
             </li>
             {% endif %}
 
-            {% if user.is_authenticated and user.perfil <= 3 %} <!-- Apenas Gestores e Coordenadores podem ver
+            {% if user.is_authenticated and user.perfil == 0 %} <!-- Apenas Gestores e Coordenadores podem ver
                 Configurações de Usuários -->
-                <li class="sidebar-nav-item">
-                    <a href="{% url 'usuario_list' %}" class="sidebar-nav-link">
-                        <!-- Link corrigido para lista de usuários, 'configuracoes' pode ser ambíguo -->
-                        <i class="bi bi-people"></i>
-                        <span>Usuários</span>
-                    </a>
-                </li>
-                <li class="sidebar-nav-item">
-                    <a href="{% url 'configuracoes' %}" class="sidebar-nav-link">
-                        <i class="bi bi-gear"></i>
-                        <span>Configurações</span>
-                    </a>
-                </li>
-                {% endif %}
+            <li class="sidebar-nav-item">
+                <a href="{% url 'usuario_list' %}" class="sidebar-nav-link">
+                    <!-- Link corrigido para lista de usuários, 'configuracoes' pode ser ambíguo -->
+                    <i class="bi bi-people"></i>
+                    <span>Usuários</span>
+                </a>
+            </li>
+            <li class="sidebar-nav-item">
+                <a href="{% url 'configuracoes' %}" class="sidebar-nav-link">
+                    <i class="bi bi-gear"></i>
+                    <span>Configurações</span>
+                </a>
+            </li>
+            {% endif %}
         </ul>
 
         <div class="sidebar-footer">
@@ -639,8 +639,11 @@
                         </div>
                     </div>
                     <ul class="dropdown-menu dropdown-menu-end">
-                        <li><a class="dropdown-item" href="{% url 'configuracoes' %}"><i
-                                    class="bi bi-gear me-2"></i>Configurações</a></li>
+                        <li><a class="dropdown-item" href="{% url 'usuario_perfil' %}"><i
+                                    class="bi bi-person-circle me-2"></i>Meu Perfil</a></li>
+
+                        {% if user.perfil == 0 %}<li><a class="dropdown-item" href="{% url 'configuracoes' %}"><i
+                                    class="bi bi-gear me-2"></i>Configurações</a></li>{% endif %}
                         <li>
                             <hr class="dropdown-divider">
                         </li>

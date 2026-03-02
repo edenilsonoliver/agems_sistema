@@ -1,15 +1,18 @@
 {% extends 'components/list_view.html' %}
+
 {% block header_actions %}
 <a href="{% url 'acao_calendario' %}" class="btn btn-outline-primary me-2"><i class="bi bi-calendar3"></i> Ver
     Calendário</a>
-<a href="{% url 'acao_kanban' %}" class="btn btn-outline-success"><i class="bi bi-kanban"></i> Ver Kanban</a>
+<a href="{% url 'acao_kanban' %}" class="btn btn-outline-success me-2"><i class="bi bi-kanban"></i> Ver Kanban</a>
+<!-- Botão que abre o modal de seleção de tipo (sobrepõe o botão padrão do template base com JS) -->
 {% endblock %}
+
 {% block extra_filters %}
 <div class="col-md-3">
     <select name="instrumento" id="instrumento" class="form-select" style="height: 40px;">
         <option value=""> Filtrar por Instrumento...</option>
         {% for inst in instrumentos %}
-        <option value="{{inst.id}}" {% if instrumento_selecionado == inst.id %}selected{% endif %}>{{inst}}</option>
+        <option value="{{inst.id}}" {% if instrumento_selecionado==inst.id %}selected{% endif %}>{{inst}}</option>
         {% endfor %}
     </select>
 </div>
@@ -17,7 +20,7 @@
     <select name="obrigacao" id="obrigacao" class="form-select" style="height: 40px;">
         <option value=""> Filtrar por Obrigação...</option>
         {% for obrigacao in obrigacoes %}
-        <option value="{{obrigacao.id}}" {% if obrigacao_selecionada == obrigacao.id %}selected{% endif %}>
+        <option value="{{obrigacao.id}}" {% if obrigacao_selecionada==obrigacao.id %}selected{% endif %}>
             {{obrigacao.titulo}}</option>
         {% endfor %}
     </select>
@@ -26,7 +29,7 @@
     <select name="tipo_acao" id="tipo_acao" class="form-select" style="height: 40px;">
         <option value=""> Filtrar por Tipo...</option>
         {% for tipo in tipos_acao %}
-        <option value="{{tipo.id}}" {% if tipo_acao_selecionado == tipo.id %}selected{% endif %}>{{tipo.nome}}</option>
+        <option value="{{tipo.id}}" {% if tipo_acao_selecionado==tipo.id %}selected{% endif %}>{{tipo.nome}}</option>
         {% endfor %}
     </select>
 </div>
@@ -54,6 +57,7 @@
     });
 </script>
 {% endblock %}
+
 {% block table_headers %}
 <th>Nome da Ação</th>
 <th>Obrigação</th>
@@ -61,8 +65,10 @@
 <th>Responsável</th>
 <th>Período</th>
 <th width="120">Progresso</th>
+<th>Resultado</th>
 <th>Status</th>
 {% endblock %}
+
 {% block table_rows %}
 {% for acao in object_list %}
 <tr>
@@ -108,6 +114,21 @@
         <div style="font-size: 0.65rem;" class="text-muted mt-1 text-center">{{acao.percentual_cumprido}}%</div>
     </td>
     <td class="text-center">
+        {% if acao.resultado == 'atendido' %}
+        <span class="rounded-circle d-inline-block" style="width:18px;height:18px;background:#2E7D32;cursor:help;"
+            data-bs-toggle="tooltip" title="Atendido"></span>
+        {% elif acao.resultado == 'parcialmente_atendido' %}
+        <span class="rounded-circle d-inline-block" style="width:18px;height:18px;background:#E65100;cursor:help;"
+            data-bs-toggle="tooltip" title="Parcialmente Atendido"></span>
+        {% elif acao.resultado == 'nao_atendido' %}
+        <span class="rounded-circle d-inline-block" style="width:18px;height:18px;background:#C62828;cursor:help;"
+            data-bs-toggle="tooltip" title="Não Atendido"></span>
+        {% else %}
+        <span class="rounded-circle d-inline-block" style="width:18px;height:18px;background:#B0BEC5;cursor:help;"
+            data-bs-toggle="tooltip" title="Pendente de análise"></span>
+        {% endif %}
+    </td>
+    <td class="text-center">
         {% if acao.status == 'finalizado' %}
         <span class="badge rounded-pill bg-success fw-normal"
             style="font-size: 0.85rem; padding: 0.4em 0.8em;">Finalizado</span>
@@ -119,28 +140,69 @@
             style="font-size: 0.85rem; padding: 0.4em 0.8em;">Atrasado</span>
         {% else %}
         <span class="badge rounded-pill bg-secondary fw-normal"
-            style="font-size: 0.85rem; padding: 0.4em 0.8em;">{{acao.get_status_display}}</span>
+            style="font-size: 0.85rem; padding: 0.4em 0.8em;">Pendente</span>
         {% endif %}
     </td>
-    <td>
-        <div class="btn-group btn-group-sm">
-            <a href="{% url 'acao_edit' acao.pk %}" class="btn btn-outline-primary" title="Editar"><i
-                    class="bi bi-pencil"></i></a>
-            <a href="{% url 'acao_delete' acao.pk %}" class="btn btn-outline-danger" title="Excluir"><i
-                    class="bi bi-trash"></i></a>
+    <td class="text-end">
+        <div class="btn-group">
+            <a href="{% url 'acao_detail' acao.pk %}" class="btn btn-sm btn-outline-secondary" title="Visualizar">
+                <i class="bi bi-eye"></i>
+            </a>
+            <a href="{% url 'acao_update' acao.pk %}" class="btn btn-sm btn-outline-primary" title="Editar">
+                <i class="bi bi-pencil"></i>
+            </a>
+            <a href="{% url 'acao_mapa' acao.pk %}" class="btn btn-sm btn-outline-info" title="Mapa">
+                <i class="bi bi-geo-alt"></i>
+            </a>
         </div>
     </td>
 </tr>
 {% endfor %}
+{% endblock %}
+
+{% block extra_js %}
 <script>
-    document.addEventListener("DOMContentLoaded", function () {
-        document.querySelectorAll('.toggle-checklist').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const id = btn.getAttribute('data-acao');
-                const checklist = document.getElementById(`checklist-${id}`);
-                checklist.classList.toggle('show');
+    document.addEventListener('DOMContentLoaded', function () {
+        // Inicializa tooltips
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl)
+        })
+
+        // Toggle checklist
+        document.querySelectorAll('.toggle-checklist').forEach(el => {
+            el.addEventListener('click', function () {
+                const targetId = `checklist-${this.dataset.acao}`;
+                const targetEl = document.getElementById(targetId);
+                if (targetEl) {
+                    const bsCollapse = new bootstrap.Collapse(targetEl);
+                    bsCollapse.toggle();
+                }
             });
         });
+
+        // Modifica o comportamento do botão "Adicionar Nova Ação"
+        const addBtn = document.querySelector('a[href$="/create/"]');
+        if (addBtn) {
+            addBtn.addEventListener('click', function (e) {
+                e.preventDefault();
+                // Carrega o seletor via AJAX
+                fetch("{% url 'acao_tipo_selector' %}")
+                    .then(response => response.text())
+                    .then(html => {
+                        const modalDiv = document.createElement('div');
+                        modalDiv.innerHTML = html;
+                        document.body.appendChild(modalDiv);
+                        const modalEl = modalDiv.querySelector('.modal');
+                        const bsModal = new bootstrap.Modal(modalEl);
+                        bsModal.show();
+
+                        modalEl.addEventListener('hidden.bs.modal', function () {
+                            modalDiv.remove();
+                        });
+                    });
+            });
+        }
     });
 </script>
 {% endblock %}

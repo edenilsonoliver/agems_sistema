@@ -55,4 +55,6 @@ urlpatterns = [
     path('conformidades/template/item/rename/', views.template_rename_item_ajax, name='template_rename_item_ajax'),
     path('conformidades/template/<int:pk>/delete/', views.template_delete_ajax, name='template_delete_ajax'),
 
+    # Modal de seleção de tipo de ação (carregado via fetch no botão Adicionar)
+    path('tipo-seletor/', views.acao_tipo_selector, name='acao_tipo_selector'),
 ]
