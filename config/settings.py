@@ -42,29 +42,37 @@ DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
 
 if not DEBUG:
-    # Security Middleware settings
-    SECURE_SSL_REDIRECT = True
-    SESSION_COOKIE_SECURE = True
-    CSRF_COOKIE_SECURE = True
+    # =============================================
+    # SEGURANÇA - Controle via .env.prod
+    # Para HTTP interno, defina como False no .env.prod
+    # Para HTTPS real, mude para True no .env.prod
+    # =============================================
+    _USE_HTTPS = os.environ.get('USE_HTTPS', 'False') == 'True'
     
-    # HSTS settings
-    SECURE_HSTS_SECONDS = 31536000  # 1 year
-    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-    SECURE_HSTS_PRELOAD = True
+    SECURE_SSL_REDIRECT = _USE_HTTPS
+    SESSION_COOKIE_SECURE = _USE_HTTPS
+    CSRF_COOKIE_SECURE = _USE_HTTPS
     
-    # Cookies settings
-    SESSION_COOKIE_HTTPONLY = True 
-    SESSION_COOKIE_SAMESITE = 'Strict'
+    # HSTS: Só ativar se tiver HTTPS real
+    SECURE_HSTS_SECONDS = 31536000 if _USE_HTTPS else 0
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = _USE_HTTPS
+    SECURE_HSTS_PRELOAD = _USE_HTTPS
+    
+    # Cookies (Lax para HTTP, Strict para HTTPS)
+    SESSION_COOKIE_HTTPONLY = True
+    SESSION_COOKIE_SAMESITE = 'Strict' if _USE_HTTPS else 'Lax'
     CSRF_COOKIE_HTTPONLY = True
-    CSRF_COOKIE_SAMESITE = 'Strict'
+    CSRF_COOKIE_SAMESITE = 'Strict' if _USE_HTTPS else 'Lax'
     
-    # Content Security
+    # Hardening (sempre ativo, independente de HTTPS)
     SECURE_CONTENT_TYPE_NOSNIFF = True
-    SECURE_BROWSER_XSS_FILTER = True
     X_FRAME_OPTIONS = 'DENY'
     
-    # Proxy configuration (Standard for Docker/Nginx)
-    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    # Proxy SSL: Só ativar se tiver HTTPS com Nginx
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https') if _USE_HTTPS else None
+
+# CSRF: Lido do .env em todos os ambientes
+CSRF_TRUSTED_ORIGINS = os.environ.get('CSRF_TRUSTED_ORIGINS', 'http://localhost:8000').split(',')
 
 
 # Application definition
