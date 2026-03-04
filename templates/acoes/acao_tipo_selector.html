@@ -1,89 +1,92 @@
 {% load static %}
-<!DOCTYPE html>
-<html>
 
-<head>
-    <meta charset="utf-8">
-</head>
-
-<body>
-
-    <div class="modal-body p-4">
-        <div class="text-center mb-4">
-            <div class="rounded-circle d-inline-flex align-items-center justify-content-center mb-3"
-                style="width:56px;height:56px;background:linear-gradient(135deg,#1565C0,#0D47A1);">
-                <i class="bi bi-lightning-charge-fill text-white fs-4"></i>
+<div class="modal fade" id="modalAcaoTipo" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 16px; overflow: hidden;">
+            <div class="modal-header bg-primary text-white border-0 py-3">
+                <h5 class="modal-title d-flex align-items-center gap-2">
+                    <i class="bi bi-lightning-charge-fill"></i>
+                    Nova Ação
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                    aria-label="Close"></button>
             </div>
-            <h5 class="fw-bold mb-1">Qual tipo de ação deseja criar?</h5>
-            <p class="text-muted small mb-0">Selecione o tipo para começar. Passe o mouse para ver a descrição de cada
-                um.</p>
-        </div>
+            <div class="modal-body p-4">
+                <div class="text-center mb-4">
+                    <div class="rounded-circle d-inline-flex align-items-center justify-content-center mb-3"
+                        style="width:56px;height:56px;background:linear-gradient(135deg,#1565C0,#0D47A1);">
+                        <i class="bi bi-lightning-charge-fill text-white fs-4"></i>
+                    </div>
+                    <h5 class="fw-bold mb-1">Qual tipo de ação deseja criar?</h5>
+                    <p class="text-muted small mb-0">Selecione o tipo para começar. Passe o mouse para ver a descrição
+                        de cada
+                        um.</p>
+                </div>
 
-        <div class="row g-3">
-            {% for tipo in tipos %}
-            <div class="col-md-6 col-lg-3">
-                <a href="{% url 'acao_create' %}?tipo_acao={{ tipo.id }}"
-                    class="tipo-acao-btn text-decoration-none d-block" data-bs-toggle="tooltip" data-bs-placement="top"
-                    data-bs-trigger="hover" title="{{ tipo.descricao }}" style="--tipo-color: {{ tipo.cor }};">
-                    <div class="card border-0 shadow-sm h-100 tipo-card"
-                        style="border-radius:12px; border-left: 4px solid {{ tipo.cor }} !important; transition: all 0.2s ease;">
-                        <div class="card-body d-flex align-items-center gap-3 py-3">
-                            <div class="flex-shrink-0 rounded-circle d-flex align-items-center justify-content-center"
-                                style="width:40px;height:40px;background:{{ tipo.cor }}20;">
-                                <span class="fw-bold" style="color:{{ tipo.cor }};font-size:1rem;">●</span>
+                <div class="row g-3">
+                    {% for tipo in tipos %}
+                    <div class="col-md-6 col-lg-3">
+                        <a href="{% url 'acao_create' %}?tipo_acao={{ tipo.id }}"
+                            class="tipo-acao-btn text-decoration-none d-block" data-bs-toggle="tooltip"
+                            data-bs-placement="top" data-bs-trigger="hover" title="{{ tipo.descricao }}"
+                            style="--tipo-color: {{ tipo.cor }};">
+                            <div class="card border-0 shadow-sm h-100 tipo-card"
+                                style="border-radius:12px; border-left: 4px solid {{ tipo.cor }} !important; transition: all 0.2s ease;">
+                                <div class="card-body d-flex align-items-center gap-3 py-3">
+                                    <div class="flex-shrink-0 rounded-circle d-flex align-items-center justify-content-center"
+                                        style="width:40px;height:40px;background:{{ tipo.cor }}20;">
+                                        <span class="fw-bold" style="color:{{ tipo.cor }};font-size:1rem;">●</span>
+                                    </div>
+                                    <div>
+                                        <div class="fw-semibold text-dark small lh-sm">{{ tipo.nome }}</div>
+                                    </div>
+                                </div>
                             </div>
-                            <div>
-                                <div class="fw-semibold text-dark small lh-sm">{{ tipo.nome }}</div>
-                            </div>
+                        </a>
+                    </div>
+                    {% empty %}
+                    <div class="col-12">
+                        <div class="alert alert-warning mb-0">
+                            <i class="bi bi-exclamation-triangle me-2"></i>
+                            Nenhum tipo de ação cadastrado. Acesse o painel administrativo para cadastrar os tipos.
                         </div>
                     </div>
-                </a>
-            </div>
-            {% empty %}
-            <div class="col-12">
-                <div class="alert alert-warning mb-0">
-                    <i class="bi bi-exclamation-triangle me-2"></i>
-                    Nenhum tipo de ação cadastrado. Acesse o painel administrativo para cadastrar os tipos.
+                    {% endfor %}
+                </div>
+
+                <div class="mt-4 pt-3 border-top text-center">
+                    <a href="{% url 'acao_create' %}" class="btn btn-sm btn-outline-secondary">
+                        <i class="bi bi-arrow-right me-1"></i> Continuar sem selecionar tipo
+                    </a>
                 </div>
             </div>
-            {% endfor %}
-        </div>
-
-        <div class="mt-4 pt-3 border-top text-center">
-            <a href="{% url 'acao_create' %}" class="btn btn-sm btn-outline-secondary">
-                <i class="bi bi-arrow-right me-1"></i> Continuar sem selecionar tipo
-            </a>
         </div>
     </div>
+</div>
 
-    <style>
-        .tipo-card:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12) !important;
-            border-left-width: 5px !important;
-        }
+<style>
+    .tipo-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12) !important;
+        border-left-width: 5px !important;
+    }
 
-        .tipo-acao-btn:focus .tipo-card,
-        .tipo-acao-btn:active .tipo-card {
-            transform: scale(0.98);
-        }
-    </style>
+    .tipo-acao-btn:focus .tipo-card,
+    .tipo-acao-btn:active .tipo-card {
+        transform: scale(0.98);
+    }
+</style>
 
-    <script>
-        // Inicializar tooltips do Bootstrap neste fragmento
-        document.addEventListener('DOMContentLoaded', function () {
-            document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(function (el) {
-                new bootstrap.Tooltip(el, { html: false });
+<script>
+    // Inicializar tooltips do Bootstrap neste fragmento
+    (function () {
+        const modalEl = document.getElementById('modalAcaoTipo');
+        if (modalEl) {
+            modalEl.addEventListener('shown.bs.modal', function () {
+                modalEl.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(function (el) {
+                    new bootstrap.Tooltip(el, { html: false });
+                });
             });
-        });
-        // Inicializar imediatamente se o DOM já estiver pronto (carregamento via fetch)
-        if (document.readyState !== 'loading') {
-            document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(function (el) {
-                new bootstrap.Tooltip(el, { html: false });
-            });
         }
-    </script>
-
-</body>
-
-</html>
+    })();
+</script>

@@ -262,27 +262,49 @@ class AcaoCreateView(PermissionRequiredMixin, ModernCreateView):
             context['saved_conformidades_json'] = '[]'
         return context
 
-    def save_assets(self, acao, docs_formset, fotos_formset):
+    def save_assets(self, acao, docs_formset, fotos_formset, fake_item_mapping=None):
         """Helper para salvar ativos na criação"""
+        if fake_item_mapping is None:
+            fake_item_mapping = {}
+
         try:
+            # Documentos
             docs = docs_formset.save(commit=False)
             for doc in docs:
                 doc.acao = acao
-                doc.usuario = self.request.user
+                if not doc.pk:
+                    doc.usuario = self.request.user
                 doc.save()
             for obj in docs_formset.deleted_objects:
                 obj.delete()
 
-            fotos = fotos_formset.save(commit=False)
-            for foto in fotos:
-                foto.acao = acao
-                foto.usuario = self.request.user
-                foto.save()
+            # Fotos
+            fotos_formset.save(commit=False)
+            for f_form in fotos_formset:
+                if f_form.cleaned_data and not f_form.cleaned_data.get('DELETE'):
+                    foto = f_form.save(commit=False)
+                    foto.acao = acao
+                    if not foto.pk:
+                        foto.usuario = self.request.user
+                    
+                    # Tentar mapear para Item de Conformidade (Fase 5)
+                    item_id_str = str(self.request.POST.get(f"{f_form.prefix}-item_conformidade", ""))
+                    if item_id_str in fake_item_mapping:
+                        foto.item_conformidade = fake_item_mapping[item_id_str]
+                    elif item_id_str:
+                        try:
+                            foto.item_conformidade_id = int(item_id_str)
+                        except ValueError:
+                            pass
+                    
+                    foto.save()
             for obj in fotos_formset.deleted_objects:
                 obj.delete()
         except Exception as e:
             messages.error(self.request, f"Erro ao salvar arquivos: {str(e)}")
-            print(f"CRITICAL ERROR SAVING ASSETS (CREATE): {str(e)}")
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"CRITICAL ERROR SAVING ASSETS (CREATE): {str(e)}")
 
     def form_invalid(self, form):
         import logging
@@ -382,61 +404,6 @@ class AcaoCreateView(PermissionRequiredMixin, ModernCreateView):
                  messages.error(self.request, "Verifique os dados do formulário.")
 
             return self.render_to_response(self.get_context_data(form=form))
-
-        # Salvar Ativos
-        if docs_valid:
-            try:
-                docs = docs_formset.save(commit=False)
-                for doc in docs:
-                    doc.acao = self.object
-                    doc.usuario = self.request.user
-                    doc.save()
-                for obj in docs_formset.deleted_objects:
-                    obj.delete()
-            except Exception as e:
-                logger.error(f"Erro ao salvar documentos: {e}")
-                messages.warning(self.request, f"Erro ao salvar documento: {e}")
-        else:
-            messages.warning(self.request, "Documentos não foram salvos devido a erros de validação.")
-            
-        if fotos_valid:
-            try:
-                # Chamar save(commit=False) para popular deleted_objects e preparar instâncias
-                fotos_formset.save(commit=False)
-                
-                for f_form in fotos_formset:
-                    if f_form.cleaned_data and not f_form.cleaned_data.get('DELETE'):
-                        foto = f_form.save(commit=False)
-                        foto.acao = self.object
-                        if not foto.pk:
-                            foto.usuario = self.request.user
-                            
-                        # Extrair o fake_id que o form via JS injetou como input hidden
-                        fake_item_id_str = str(self.request.POST.get(f"{f_form.prefix}-item_conformidade", ""))
-                        if fake_item_id_str in fake_item_mapping:
-                            foto.item_conformidade = fake_item_mapping[fake_item_id_str]
-                            
-                        foto.save()
-                        
-                for obj in fotos_formset.deleted_objects:
-                    obj.delete()
-            except Exception as e:
-                logger.error(f"Erro ao salvar fotos: {e}")
-                import traceback
-                traceback.print_exc()
-                messages.warning(self.request, f"Erro ao detalhado ao salvar fotos: {e}")
-        else:
-            errs = fotos_formset.errors
-            messages.warning(self.request, f"Fotos ignoradas devido a erro de formato da imagem: verifique se não está enviando formato corrompido.")
-
-        
-        if self.request.headers.get('x-requested-with') == 'XMLHttpRequest':
-            print("=== RETORNANDO JSON SUCCESS")
-            return JsonResponse({'status': 'success', 'id': self.object.id})
-        
-        print(f"=== RETORNANDO 302 REDIRECT para {self.success_url}")
-        messages.success(self.request, f'Ação "{self.object.nome}" criada com sucesso!')
-        return redirect(self.success_url)
 
 
 
