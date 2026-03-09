@@ -56,11 +56,17 @@ class AcaoForm(forms.ModelForm):
         self.user = kwargs.pop('user', None)
 
         self.readonly = kwargs.pop('readonly', False)
+        self.executor_readonly = kwargs.pop('executor_readonly', False)
         super().__init__(*args, **kwargs)
         
         if self.readonly:
             for field in self.fields.values():
                 field.disabled = True
+        elif self.executor_readonly:
+            allowed_fields = ['status', 'data_conclusao', 'observacoes', 'resultado', 'entidade', 'justificativa_resultado']
+            for field_name, field in self.fields.items():
+                if field_name not in allowed_fields:
+                    field.disabled = True
 
 
         # Adicionar form-control em todos os campos que não têm via widget
@@ -70,15 +76,39 @@ class AcaoForm(forms.ModelForm):
             if 'form-control' not in css and 'form-check-input' not in css:
                 widget.attrs['class'] = ('form-control ' + css).strip()
 
-        # Lógica de filtragem de usuários (Responsável/Executores)
-        usuarios = Usuario.objects.select_related('subunidade__diretoria').filter(is_active=True)
+        # Lógica rigorosa de filtragem de usuários (Diretoria do Instrumento)
+        from django.db.models import Q
         
-        if self.user and self.user.perfil != 0:  # Se não for admin
-            # Filtra pela diretoria do usuário logado
-            if self.user.diretoria:
-                usuarios = usuarios.filter(diretoria=self.user.diretoria)
-            # Remove admins da listagem para usuários comuns
-            usuarios = usuarios.exclude(perfil=0)
+        # 1. Regra Absoluta: NENHUM Admin (perfil=0) pode figurar como Responsável/Executor.
+        base_usuarios = Usuario.objects.select_related('subunidade', 'subunidade__diretoria').filter(
+            is_active=True
+        ).exclude(perfil=0)
+        
+        # 2. Resolução do Instrumento ativo
+        inst = None
+        if self.instance and self.instance.pk and getattr(self.instance, 'obrigacao_id', None):
+            inst = self.instance.obrigacao.instrumento
+        elif self.data and self.data.get('instrumento'):
+            try:
+                inst = Instrumento.objects.get(pk=self.data.get('instrumento'))
+            except:
+                pass
+                
+        # 3. Filtrar pelas Subunidades do Instrumento (se houver), senão cair pro legado da Diretoria
+        if inst and inst.diretoria:
+            subunidades = inst.subunidades.all()
+            if subunidades.exists():
+                usuarios = base_usuarios.filter(subunidade__in=subunidades)
+            else:
+                usuarios = base_usuarios.filter(
+                    Q(diretoria=inst.diretoria) | Q(subunidade__diretoria=inst.diretoria)
+                )
+        else:
+            # Caso não haja instrumento selecionado (Formulário Limpo / Nova Ação)
+            # Retorna queryset vazia para forçar o usuário a escolher o Instrumento primeiro.
+            # E se por acaso já existirem na base legada dados fora disso, o queryset vazio no create garante que 
+            # a listagem inicie limpa até o AJAX preencher visualmente, e no post o self.data resolve.
+            usuarios = base_usuarios.none()
 
         # Configurar campos de usuários
         self.fields['responsavel'].queryset = usuarios
@@ -96,7 +126,7 @@ class AcaoForm(forms.ModelForm):
         self.fields['justificativa_resultado'].required = False
 
         # Se estamos editando uma ação existente, pré-preencher instrumento e filtrar entidades
-        if self.instance and self.instance.pk and self.instance.obrigacao_id:
+        if self.instance and self.instance.pk and getattr(self.instance, 'obrigacao_id', None):
             try:
                 instrumento = self.instance.obrigacao.instrumento
                 self.fields['instrumento'].initial = instrumento
@@ -104,8 +134,17 @@ class AcaoForm(forms.ModelForm):
                 self.fields['entidade'].queryset = instrumento.entidades.all()
             except Exception:
                 self.fields['entidade'].queryset = Entidade.objects.none()
+        elif self.data and self.data.get('instrumento'):
+            # Nova Ação via POST: instrumento já vem no request.POST (self.data)
+            try:
+                instrumento_id = self.data.get('instrumento')
+                instrumento = Instrumento.objects.get(pk=instrumento_id)
+                self.fields['entidade'].queryset = instrumento.entidades.all()
+            except Exception:
+                self.fields['entidade'].queryset = Entidade.objects.none()
         else:
-            # Nova ação: sem entidades disponíveis até instrumento ser selecionado
+            # Nova ação form vazio: para evitar erro de inicialização se JS manipular antes, abrimos fallback
+            # Mas o recomendado para forms vazios antes do usuário mexer é deixar o queryset vazio
             self.fields['entidade'].queryset = Entidade.objects.none()
 
     def clean(self):

@@ -155,6 +155,14 @@
                                         </div>
                                     </div>
                                 </div>
+                                <div class="row">
+                                    <div class="col-12 mb-3">
+                                        <label class="form-label">Subunidades Gestoras *</label>
+                                        {{form.subunidades}}
+                                        <small class="text-muted d-block">Selecione uma ou mais subunidades da mesma
+                                            diretoria que farão a gestão deste instrumento.</small>
+                                    </div>
+                                </div>
                                 <div class="mb-3">
                                     <label class="form-label">Objeto do Instrumento *</label>
                                     {{form.objeto}}
@@ -231,7 +239,7 @@
                             <h5 class="mb-0 text-primary"><i class="bi bi-list-check me-2"></i>Obrigações do Instrumento
                             </h5>
                             <div class="d-flex gap-2">
-                                {% if not readonly %}{% if not readonly %}<button type="button"
+                                {% if not readonly %}<button type="button"
                                     class="btn btn-primary btn-sm" onclick="adicionarObrigacao()">
                                     <i class="bi bi-plus-circle me-1"></i>Adicionar
                                 </button>{% endif %}
@@ -409,7 +417,7 @@
             </a>
             <button type="button" class="btn btn-primary" onclick="salvarFormulario(this)">
                 <i class="bi bi-check-circle me-1"></i> Salvar Instrumento e Obrigações
-            </button>{% endif %}
+            </button>
         </div>
     </form>
 </div>
@@ -427,7 +435,8 @@
                 <form id="formImportacaoCSV" enctype="multipart/form-data">
                     <div class="mb-3">
                         <label for="inputCsvFile" class="form-label">Selecione o arquivo CSV</label>
-                        <input class="form-control" type="file" id="inputCsvFile" accept=".csv" required>
+                        <input class="form-control" type="file" id="inputCsvFile" name="arquivo_csv" accept=".csv"
+                            required>
                         <div class="form-text">
                             O arquivo deve conter cabeçalhos: <strong>Titulo, Descricao, Clausula,
                                 Tipo</strong>.
@@ -479,6 +488,36 @@
 </div>
 
 <script>
+    function reindexarFormularios() {
+        const rows = document.querySelectorAll('#obrigacoes-container .obrigacao-form');
+        let index = 0;
+
+        rows.forEach(row => {
+            row.setAttribute('data-form-idx', index);
+            const elements = row.querySelectorAll('input, select, textarea');
+            elements.forEach(el => {
+                if (el.name) {
+                    el.name = el.name.replace(/obrigacoes-\d+-/, `obrigacoes-${index}-`);
+                }
+                if (el.id) {
+                    el.id = el.id.replace(/obrigacoes-\d+-/, `obrigacoes-${index}-`);
+                }
+            });
+            const labels = row.querySelectorAll('label');
+            labels.forEach(label => {
+                if (label.htmlFor) {
+                    label.htmlFor = label.htmlFor.replace(/obrigacoes-\d+-/, `obrigacoes-${index}-`);
+                }
+            });
+            index++;
+        });
+
+        const totalFormsInput = document.getElementById('id_obrigacoes-TOTAL_FORMS');
+        if (totalFormsInput) {
+            totalFormsInput.value = index;
+        }
+    }
+
     function salvarFormulario(btn) {
         const form = document.getElementById('formInstrumento');
 
@@ -507,6 +546,76 @@
             }
             form.submit();
         }, 50);
+    }
+</script>
+
+<script>
+    function realizarImportacaoCSV() {
+        var fileInput = document.getElementById('inputCsvFile');
+        var progressDiv = document.getElementById('importProgress');
+        var errorDiv = document.getElementById('importError');
+        var successDiv = document.getElementById('importSuccess');
+
+        if (!fileInput.files || fileInput.files.length === 0) {
+            errorDiv.textContent = 'Selecione um arquivo CSV antes de importar.';
+            errorDiv.classList.remove('d-none');
+            successDiv.classList.add('d-none');
+            return;
+        }
+
+        var file = fileInput.files[0];
+        if (!file.name.toLowerCase().endsWith('.csv')) {
+            errorDiv.textContent = 'O arquivo deve ter extensao .csv.';
+            errorDiv.classList.remove('d-none');
+            successDiv.classList.add('d-none');
+            return;
+        }
+
+        errorDiv.classList.add('d-none');
+        successDiv.classList.add('d-none');
+        progressDiv.classList.remove('d-none');
+        document.getElementById('progressStatus').textContent = 'Enviando arquivo...';
+
+        var csrfInput = document.querySelector('[name=csrfmiddlewaretoken]');
+        var csrfToken = csrfInput ? csrfInput.value : '';
+
+        var formData = new FormData();
+        formData.append('arquivo_csv', file);
+        formData.append('csrfmiddlewaretoken', csrfToken);
+
+        fetch('/api/obrigacoes/importar-csv/', {
+            method: 'POST',
+            body: formData
+        })
+            .then(function (response) { return response.json(); })
+            .then(function (data) {
+                progressDiv.classList.add('d-none');
+                if (data.status === 'success') {
+                    var registros = data.data || [];
+                    if (registros.length === 0) {
+                        errorDiv.textContent = 'Nenhuma obrigacao valida encontrada. Verifique se o cabecalho usa ponto-e-virgula (;) e a coluna Titulo esta preenchida.';
+                        errorDiv.classList.remove('d-none');
+                        return;
+                    }
+                    registros.forEach(function (item) { adicionarObrigacaoComDados(item); });
+                    document.getElementById('successCount').textContent = registros.length;
+                    successDiv.classList.remove('d-none');
+                    fileInput.value = '';
+                    setTimeout(function () {
+                        var modalEl = document.getElementById('modalImportarCSV');
+                        var modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+                        if (modal) modal.hide();
+                    }, 500);
+                } else {
+                    errorDiv.textContent = 'Erro ao processar: ' + (data.message || 'Erro desconhecido.');
+                    errorDiv.classList.remove('d-none');
+                }
+            })
+            .catch(function (err) {
+                progressDiv.classList.add('d-none');
+                errorDiv.textContent = 'Erro de comunicacao com o servidor: ' + String(err);
+                errorDiv.classList.remove('d-none');
+            });
     }
 </script>
 

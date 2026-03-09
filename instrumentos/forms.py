@@ -7,7 +7,7 @@ class InstrumentoForm(forms.ModelForm):
     class Meta:
         model = Instrumento
         fields = [
-            'numero', 'tipo_instrumento', 'diretoria', 'entidades',
+            'numero', 'tipo_instrumento', 'diretoria', 'subunidades', 'entidades',
             'objeto', 'nup', 'data_assinatura', 'data_inicio', 'data_fim',
             'status', 'periodicidade_revisao_tarifaria', 'data_proxima_revisao',
             'observacoes'
@@ -16,6 +16,7 @@ class InstrumentoForm(forms.ModelForm):
             'numero': forms.TextInput(attrs={'class': 'form-control'}),
             'tipo_instrumento': forms.Select(attrs={'class': 'form-select'}),
             'diretoria': forms.Select(attrs={'class': 'form-select'}),
+            'subunidades': forms.SelectMultiple(attrs={'class': 'form-select', 'size': '5'}),
             'entidades': forms.SelectMultiple(attrs={'class': 'form-select', 'size': '5'}),
             'objeto': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
             'nup': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: 12345.678901/2024-00'}),

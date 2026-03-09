@@ -676,10 +676,12 @@
         }
 
 
-        // --- 1. Filtro Instrumento → Obrigação + Entidade ---
+        // --- 1. Filtro Instrumento → Obrigação + Entidade + Usuários ---
         const instrumentoSel = document.getElementById('id_instrumento');
         const obrigacaoSel = document.getElementById('id_obrigacao');
         const entidadeSel = document.getElementById('id_entidade');
+        const responsavelSel = document.getElementById('id_responsavel');
+        const executoresSel = document.getElementById('id_executores');
 
         if (instrumentoSel) {
             instrumentoSel.addEventListener('change', async function () {
@@ -692,10 +694,22 @@
                 if (entidadeSel) {
                     entidadeSel.innerHTML = '<option value="">Carregando...</option>';
                 }
+                if (responsavelSel) {
+                    const currentResp = responsavelSel.value;
+                    responsavelSel.innerHTML = '<option value="">Carregando...</option>';
+                    responsavelSel.dataset.oldValue = currentResp;
+                }
+                if (executoresSel) {
+                    const currentExec = Array.from(executoresSel.selectedOptions).map(opt => opt.value);
+                    executoresSel.innerHTML = '<option value="">Carregando...</option>';
+                    executoresSel.dataset.oldValue = JSON.stringify(currentExec);
+                }
 
                 if (!instrId) {
                     if (obrigacaoSel) obrigacaoSel.innerHTML = '<option value="">---------</option>';
                     if (entidadeSel) entidadeSel.innerHTML = '<option value="">---------</option>';
+                    if (responsavelSel) responsavelSel.innerHTML = '<option value="">---------</option>';
+                    if (executoresSel) executoresSel.innerHTML = '<option value="">---------</option>';
                     return;
                 }
 
@@ -722,8 +736,38 @@
                             entidadeSel.appendChild(opt);
                         });
                     }
+                    
+                    if (responsavelSel) {
+                        responsavelSel.innerHTML = '<option value="">---------</option>';
+                        const oldResp = responsavelSel.dataset.oldValue;
+                        (data.usuarios || []).forEach(u => {
+                            const opt = document.createElement('option');
+                            opt.value = u.id;
+                            opt.textContent = u.label;
+                            if (oldResp && oldResp == u.id) opt.selected = true;
+                            responsavelSel.appendChild(opt);
+                        });
+                    }
+
+                    if (executoresSel) {
+                        executoresSel.innerHTML = '';
+                        let oldExec = [];
+                        try {
+                            if(executoresSel.dataset.oldValue) {
+                                oldExec = JSON.parse(executoresSel.dataset.oldValue);
+                            }
+                        } catch(e) {}
+                        
+                        (data.usuarios || []).forEach(u => {
+                            const opt = document.createElement('option');
+                            opt.value = u.id;
+                            opt.textContent = u.label;
+                            if (oldExec.includes(u.id.toString())) opt.selected = true;
+                            executoresSel.appendChild(opt);
+                        });
+                    }
                 } catch (err) {
-                    console.error('Erro ao buscar obrigações/entidades:', err);
+                    console.error('Erro ao buscar dependencias do Instrumento:', err);
                 }
             });
         }

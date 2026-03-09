@@ -51,3 +51,48 @@ def remover_arquivo_doc_post_delete(sender, instance, **kwargs):
     """
     if instance.arquivo:
         _remover_arquivo_fisico(instance, 'arquivo')
+
+from django.db.models.signals import m2m_changed
+from django.utils import timezone
+from datetime import timedelta
+from usuarios.models import Usuario
+try:
+    from alertas.models import Notificacao
+    from django.urls import reverse
+except ImportError:
+    pass
+
+@receiver(m2m_changed, sender=Acao.executores.through)
+def notificar_atribuicao_executor(sender, instance, action, pk_set, **kwargs):
+    """
+    Notifica novos executores quando adicionados a uma ação.
+    Inclui lógica de debounce (1 hora) para evitar flood.
+    """
+    if action == "post_add" and pk_set:
+        try:
+            agora = timezone.now()
+            limite_debounce = agora - timedelta(hours=1)
+            
+            url_acao = reverse('acao_edit', kwargs={'pk': instance.pk})
+            
+            for usuario_id in pk_set:
+                usuario = Usuario.objects.get(pk=usuario_id)
+                # Verifica se já mandou notificação para este usuário nesta mesma ação há pouco tempo
+                notificacao_recente = Notificacao.objects.filter(
+                    usuario=usuario,
+                    tipo='atribuicao',
+                    acao_id=instance.pk,
+                    data_criacao__gte=limite_debounce
+                ).exists()
+                
+                if not notificacao_recente:
+                    Notificacao.criar_notificacao(
+                        usuario=usuario,
+                        tipo='atribuicao',
+                        titulo=f"Nova Ação Atribuída: {instance.nome[:50]}...",
+                        mensagem=f"Você foi designado como executor na ação '{instance.nome}'.",
+                        link=url_acao,
+                        acao_id=instance.pk
+                    )
+        except Exception as e:
+            logger.error(f"Erro ao criar notificação de atribuição em Ação {instance.pk}: {str(e)}")

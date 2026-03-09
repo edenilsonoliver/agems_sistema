@@ -17,7 +17,7 @@
     </select>
 </div>
 <div class="col-md-3">
-    <select name="obrigacao" id="obrigacao" class="form-select" style="height: 40px;">
+    <select name="obrigacao" id="obrigacao" class="form-select" style="height: 48px;">
         <option value=""> Filtrar por Obrigação...</option>
         {% for obrigacao in obrigacoes %}
         <option value="{{obrigacao.id}}" {% if obrigacao_selecionada == obrigacao.id %}selected{% endif %}>
@@ -26,7 +26,7 @@
     </select>
 </div>
 <div class="col-md-3">
-    <select name="tipo_acao" id="tipo_acao" class="form-select" style="height: 40px;">
+    <select name="tipo_acao" id="tipo_acao" class="form-select" style="height: 48px;">
         <option value=""> Filtrar por Tipo...</option>
         {% for tipo in tipos_acao %}
         <option value="{{tipo.id}}" {% if tipo_acao_selecionado == tipo.id %}selected{% endif %}>{{tipo.nome}}</option>
@@ -98,19 +98,19 @@
     <td><small>{{acao.responsavel.get_full_name|default:acao.responsavel.username}}</small></td>
     <td><small><i class="bi bi-calendar me-1"></i>{{acao.data_inicio|date:"d/m/Y"}} -
             {{acao.data_fim|date:"d/m/Y"}}</small></td>
-        <td>
+    <td>
         {% if acao.resultado == 'atendido' %}
-            <span class="rounded-circle d-inline-block" style="width:18px;height:18px;background:#2E7D32;cursor:help;" 
-                  data-bs-toggle="tooltip" title="Atendido"></span>
+        <span class="rounded-circle d-inline-block" style="width:18px;height:18px;background:#2E7D32;cursor:help;"
+            data-bs-toggle="tooltip" title="Atendido"></span>
         {% elif acao.resultado == 'parcialmente_atendido' %}
-            <span class="rounded-circle d-inline-block" style="width:18px;height:18px;background:#E65100;cursor:help;" 
-                  data-bs-toggle="tooltip" title="Parcialmente Atendido"></span>
+        <span class="rounded-circle d-inline-block" style="width:18px;height:18px;background:#E65100;cursor:help;"
+            data-bs-toggle="tooltip" title="Parcialmente Atendido"></span>
         {% elif acao.resultado == 'nao_atendido' %}
-            <span class="rounded-circle d-inline-block" style="width:18px;height:18px;background:#C62828;cursor:help;" 
-                  data-bs-toggle="tooltip" title="Não Atendido"></span>
+        <span class="rounded-circle d-inline-block" style="width:18px;height:18px;background:#C62828;cursor:help;"
+            data-bs-toggle="tooltip" title="Não Atendido"></span>
         {% else %}
-            <span class="rounded-circle d-inline-block" style="width:18px;height:18px;background:#B0BEC5;cursor:help;" 
-                  data-bs-toggle="tooltip" title="Pendente de análise"></span>
+        <span class="rounded-circle d-inline-block" style="width:18px;height:18px;background:#B0BEC5;cursor:help;"
+            data-bs-toggle="tooltip" title="Pendente de análise"></span>
         {% endif %}
     </td>
     <td>
@@ -199,8 +199,11 @@
             document.body.appendChild(modal);
         }
 
-        // Abrir o modal Bootstrap
-        const bsModal = new bootstrap.Modal(modal);
+        // Abrir o modal Bootstrap sem re-instanciar múltiplas vezes (bug do backdrop)
+        let bsModal = bootstrap.Modal.getInstance(modal);
+        if (!bsModal) {
+            bsModal = new bootstrap.Modal(modal);
+        }
         bsModal.show();
 
         // Carregar conteúdo via fetch

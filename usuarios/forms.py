@@ -203,19 +203,30 @@ class UsuarioCreateForm(forms.ModelForm):
             user.groups.clear()
             
             grupo_nome = None
-            if user.perfil in [1, 2]: # Diretoria/Assessoria
+            if user.perfil == 0:  # Admin do Sistema: acesso total
+                user.is_superuser = True
+                user.is_staff = True
+                user.groups.clear()
+                user.save(update_fields=['is_superuser', 'is_staff'])
+            elif user.perfil in [1, 2]:  # Diretoria/Assessoria
+                user.is_superuser = False
+                user.is_staff = False
                 grupo_nome = 'Gestores'
-            elif user.perfil in [3, 4]: # Coordenação/Técnico
+            elif user.perfil in [3, 4]:  # Coordenação/Técnico
+                user.is_superuser = False
+                user.is_staff = False
                 grupo_nome = 'Tecnicos'
-            elif user.perfil == 5: # Visualizador
+            elif user.perfil == 5:  # Visualizador
+                user.is_superuser = False
+                user.is_staff = False
                 grupo_nome = 'Visualizadores'
-            
+
             if grupo_nome:
                 try:
                     grupo = Group.objects.get(name=grupo_nome)
                     user.groups.add(grupo)
                 except Group.DoesNotExist:
-                    pass # Grupo não criado ainda, ignorar silenciosamente ou logar erro
+                    pass  # Grupo não criado ainda
         
         return user
 
@@ -373,19 +384,30 @@ class UsuarioUpdateForm(forms.ModelForm):
             user.groups.clear()
             
             grupo_nome = None
-            if user.perfil in [1, 2]: 
+            if user.perfil == 0:  # Admin do Sistema: acesso total
+                user.is_superuser = True
+                user.is_staff = True
+                user.groups.clear()
+                user.save(update_fields=['is_superuser', 'is_staff'])
+            elif user.perfil in [1, 2]:  # Diretoria/Assessoria
+                user.is_superuser = False
+                user.is_staff = False
                 grupo_nome = 'Gestores'
-            elif user.perfil in [3, 4]: 
+            elif user.perfil in [3, 4]:  # Coordenação/Técnico
+                user.is_superuser = False
+                user.is_staff = False
                 grupo_nome = 'Tecnicos'
-            elif user.perfil == 5: 
+            elif user.perfil == 5:  # Visualizador
+                user.is_superuser = False
+                user.is_staff = False
                 grupo_nome = 'Visualizadores'
-            
+
             if grupo_nome:
                 try:
                     grupo = Group.objects.get(name=grupo_nome)
                     user.groups.add(grupo)
                 except Group.DoesNotExist:
-                    pass
+                    pass  # Grupo não criado ainda
         
         return user
 

@@ -142,43 +142,137 @@ class VerificaSenhaTemporariaMixin(LoginRequiredMixin):
         return super().dispatch(request, *args, **kwargs)
 
 
+def get_diretoria_filter(user, prefix=''):
+    """
+    Função utilitária que retorna um Q-filter de isolamento por diretoria.
+
+    Reutilizável em qualquer view ou queryset. O 'prefix' define a cadeia
+    de lookups até o campo 'diretoria' do modelo alvo. Exemplos:
+      - prefix=''                              → Instrumento.diretoria
+      - prefix='instrumento__'                 → Obrigacao → instrumento → diretoria
+      - prefix='obrigacao__instrumento__'      → Acao → obrigacao → instrumento → diretoria
+      - prefix='contrato__'                    → ValorIndicador → contrato → diretoria
+
+    Retorna None para Admin (sem restrição) ou queryset vazio (sem diretoria configurada).
+    """
+    from django.db.models import Q
+
+    if user.perfil == 0:
+        # Admin: sem restrição — retorna None para indicar "não filtrar"
+        return None
+
+    diretoria_field = f'{prefix}diretoria'
+
+    if user.perfil == 1:
+        # Diretor: filtra pela sua diretoria
+        if user.diretoria:
+            return Q(**{diretoria_field: user.diretoria})
+
+    elif user.perfil in [2, 3, 4]:
+        # Assessor/Coordenador/Executor: filtra rigidamente pela Subunidade
+        # Com Múltiplas Subunidades: O usuário vê o objeto se a sua subunidade estiver na lista de gestoras.
+        if user.subunidade:
+            return Q(**{f'{prefix}subunidades': user.subunidade})
+        elif user.diretoria:
+            # Fallback apenas para diretoria se o usuário não tiver subunidade (ex: Assessor Geral)
+            return Q(**{diretoria_field: user.diretoria})
+
+    elif user.perfil == 5:
+        # Visualizador: filtra pelas diretorias autorizadas
+        diretorias = user.diretorias_visualizacao.all()
+        if diretorias.exists():
+            return Q(**{f'{prefix}diretoria__in': diretorias})
+
+    # Sem diretoria configurada: retorna filtro impossível (nenhum resultado)
+    return Q(pk__in=[])
+
+
+def verifica_acesso_unidade(user, obj):
+    """
+    Verifica se o usuário tem acesso a um objeto específico (Instrumento ou Ação).
+    Considera Diretoria e Subunidade (múltiplas) conforme o perfil.
+    """
+    if user.perfil == 0:  # Admin
+        return True
+    
+    # Extrair diretoria e subunidades do objeto
+    from instrumentos.models import Instrumento
+    from acoes.models import Acao
+    
+    obj_diretoria = None
+    obj_subunidades = None
+    
+    if isinstance(obj, Instrumento):
+        obj_diretoria = obj.diretoria
+        obj_subunidades = obj.subunidades
+    elif isinstance(obj, Acao):
+        # Ação -> Obrigação -> Instrumento
+        try:
+            instrumento = obj.obrigacao.instrumento
+            obj_diretoria = instrumento.diretoria
+            obj_subunidades = instrumento.subunidades
+        except AttributeError:
+            return False
+    else:
+        obj_diretoria = getattr(obj, 'diretoria', None)
+        obj_subunidades = getattr(obj, 'subunidades', None)
+
+    if user.perfil == 1:  # Diretor
+        return user.diretoria == obj_diretoria
+
+    if user.perfil in [2, 3, 4]:  # Assessor, Coordenador, Executor
+        if user.subunidade:
+            # Se o usuário tem subunidade, ele acessa se a subunidade dele estiver entre as gestoras
+            if obj_subunidades:
+                try:
+                    return obj_subunidades.filter(pk=user.subunidade.pk).exists()
+                except (ValueError, TypeError):
+                    return False
+            return False
+        return user.diretoria == obj_diretoria
+
+    if user.perfil == 5:  # Visualizador
+        if obj_diretoria:
+            return user.diretorias_visualizacao.filter(pk=obj_diretoria.pk).exists()
+    
+    return False
+
+
+def verifica_acesso_diretoria(user, obj_diretoria):
+    """MANTIDO POR COMPATIBILIDADE MAS RECOMENDA-SE verifica_acesso_unidade"""
+    if user.perfil == 0:
+        return True
+    if user.perfil == 1:
+        return user.diretoria == obj_diretoria
+    if user.perfil in [2, 3, 4]:
+        user_diretoria = user.subunidade.diretoria if user.subunidade else user.diretoria
+        return user_diretoria == obj_diretoria
+    if user.perfil == 5:
+        return user.diretorias_visualizacao.filter(pk=obj_diretoria.pk).exists()
+    return False
+
+
 class FiltrarPorDiretoriaMixin:
     """
-    Mixin que filtra queryset baseado na diretoria do usuário
-    
+    Mixin que filtra queryset baseado na diretoria do usuário.
+    Usa get_diretoria_filter() internamente.
+
     Uso:
         class MinhaListView(FiltrarPorDiretoriaMixin, ListView):
+            diretoria_lookup_prefix = ''  # default: campo 'diretoria' direto
             ...
     """
+    # Subclasses podem sobrescrever este atributo para definir o prefixo de lookup
+    diretoria_lookup_prefix = ''
+
     def get_queryset(self):
         queryset = super().get_queryset()
         user = self.request.user
-        
-        # Admin vê tudo
-        if user.perfil == 0:
+
+        q_filter = get_diretoria_filter(user, prefix=self.diretoria_lookup_prefix)
+
+        if q_filter is None:
+            # Admin: sem filtro
             return queryset
-        
-        # Diretoria vê apenas sua diretoria
-        if user.perfil == 1 and user.diretoria:
-            if hasattr(queryset.model, 'diretoria'):
-                return queryset.filter(diretoria=user.diretoria)
-            elif hasattr(queryset.model, 'subunidade'):
-                return queryset.filter(subunidade__diretoria=user.diretoria)
-        
-        # Assessoria, Coordenação e Usuário Comum veem apenas sua subunidade
-        if user.perfil in [2, 3, 4] and user.subunidade:
-            if hasattr(queryset.model, 'subunidade'):
-                return queryset.filter(subunidade=user.subunidade)
-            elif hasattr(queryset.model, 'diretoria'):
-                return queryset.filter(diretoria=user.subunidade.diretoria)
-        
-        # Visualizador vê diretorias permitidas
-        if user.perfil == 5:
-            diretorias = user.diretorias_visualizacao.all()
-            if hasattr(queryset.model, 'diretoria'):
-                return queryset.filter(diretoria__in=diretorias)
-            elif hasattr(queryset.model, 'subunidade'):
-                return queryset.filter(subunidade__diretoria__in=diretorias)
-        
-        return queryset.none()
+        return queryset.filter(q_filter)
 
