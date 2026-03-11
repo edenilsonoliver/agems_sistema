@@ -1,4 +1,7 @@
+import logging
+logger = logging.getLogger(__name__)
 from django.contrib import messages
+
 from django.contrib.auth.mixins import PermissionRequiredMixin
 from django.contrib.auth.decorators import permission_required, login_required
 from core.views import ModernListView, ModernCreateView, ModernUpdateView, ModernDeleteView
@@ -15,8 +18,6 @@ from core.models import TipoAcao
 from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_exempt
 from usuarios.mixins import get_diretoria_filter, verifica_acesso_diretoria
-import logging
-logger = logging.getLogger(__name__)
 
 
 # Ordem canônica dos tipos de ação conforme definido pelo cliente
@@ -328,6 +329,7 @@ class AcaoCreateView(PermissionRequiredMixin, ModernCreateView):
                 obj.delete()
         except Exception as e:
             from django.contrib import messages
+
             messages.error(self.request, f"Erro ao salvar arquivos: {str(e)}")
             logger.error(f"CRITICAL ERROR SAVING ASSETS (CREATE): {str(e)}")
 
@@ -401,8 +403,6 @@ class AcaoUpdateView(PermissionRequiredMixin, ModernUpdateView):
         obj = self.get_object()
         user = request.user
         from usuarios.mixins import verifica_acesso_unidade
-import logging
-logger = logging.getLogger(__name__)
         
         # 1. Verificação Primária (Unidade/Diretoria)
         if not verifica_acesso_unidade(user, obj):
@@ -563,8 +563,6 @@ class AcaoDeleteView(PermissionRequiredMixin, ModernDeleteView):
         obj = self.get_object()
         user = request.user
         from usuarios.mixins import verifica_acesso_unidade
-import logging
-logger = logging.getLogger(__name__)
         
         # 1. Verificação Primária (Unidade/Diretoria)
         if not verifica_acesso_unidade(user, obj):
