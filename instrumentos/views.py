@@ -185,7 +185,18 @@ class InstrumentoUpdateView(PermissionRequiredMixin, ModernUpdateView):
         if form.is_valid() and formset.is_valid():
             self.object = form.save()
             formset.instance = self.object
-            formset.save()
+            from django.db.models.deletion import ProtectedError
+            try:
+                formset.save()
+            except ProtectedError as e:
+                protected_objects = e.protected_objects
+                acoes = [obj for obj in protected_objects if hasattr(obj, 'obrigacao')]
+                if acoes:
+                    messages.error(self.request, 'Não é possível excluir a obrigação(ões) pois existem ações vinculadas a elas.')
+                else:
+                    messages.error(self.request, 'Não é possível excluir: existem registros vinculados protegidos.')
+                return self.render_to_response(self.get_context_data(form=form, formset=formset))
+                
             messages.success(self.request, 'Instrumento atualizado com sucesso!')
             return redirect('instrumento_edit', pk=self.object.pk)
         else:

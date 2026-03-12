@@ -308,3 +308,6 @@ MESSAGE_TAGS = {
     messages.WARNING: 'warning',
     messages.ERROR: 'danger',
 }
+
+# Increase max number of GET/POST parameters to handle large formsets in Instrument updates
+DATA_UPLOAD_MAX_NUMBER_FIELDS = 10000
