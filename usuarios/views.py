@@ -189,6 +189,20 @@ class UsuarioDeleteView(VerificaSenhaTemporariaMixin, LoginRequiredMixin, Delete
             return redirect('usuario_list')
         
         return super().dispatch(request, *args, **kwargs)
+
+    def post(self, request, *args, **kwargs):
+        """Sobrescreve post para capturar o ProtectedError com mensagem personalizada"""
+        from django.db.models.deletion import ProtectedError
+        try:
+            return super().post(request, *args, **kwargs)
+        except ProtectedError:
+            messages.error(
+                request, 
+                f'Não é possível excluir o usuário "{self.get_object().get_full_name()}" '
+                f'porque ele é responsável por ações registradas no sistema. '
+                f'Reatribua as ações para outro usuário antes de excluir.'
+            )
+            return redirect('usuario_list')
     
     def delete(self, request, *args, **kwargs):
         nome_usuario = self.get_object().get_full_name()
