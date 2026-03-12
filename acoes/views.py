@@ -15,8 +15,6 @@ from core.models import TipoAcao
 from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_exempt
 from usuarios.mixins import get_diretoria_filter, verifica_acesso_diretoria
-import logging
-logger = logging.getLogger(__name__)
 
 
 # Ordem canônica dos tipos de ação conforme definido pelo cliente
@@ -87,13 +85,10 @@ def get_obrigacoes_por_instrumento(request):
         
         subunidades = instrumento.subunidades.all()
         if subunidades.exists():
-            # Regra: Se o instrumento tem subunidades, mostramos usuários dessas subunidades
-            # E TAMBÉM os Gestores (Diretores/Assessores) da diretoria do instrumento
             usuarios_qs = Usuario.objects.select_related('subunidade', 'subunidade__diretoria').filter(
-                is_active=True
-            ).exclude(perfil=0).filter(
-                Q(subunidade__in=subunidades) | Q(perfil__in=[1, 2], diretoria=instrumento.diretoria)
-            ).distinct().order_by('first_name')
+                is_active=True,
+                subunidade__in=subunidades
+            ).exclude(perfil=0).distinct().order_by('first_name')
         else:
             usuarios_qs = Usuario.objects.select_related('subunidade', 'subunidade__diretoria').filter(
                 is_active=True
@@ -329,7 +324,7 @@ class AcaoCreateView(PermissionRequiredMixin, ModernCreateView):
         except Exception as e:
             from django.contrib import messages
             messages.error(self.request, f"Erro ao salvar arquivos: {str(e)}")
-            logger.error(f"CRITICAL ERROR SAVING ASSETS (CREATE): {str(e)}")
+            print(f"CRITICAL ERROR SAVING ASSETS (CREATE): {str(e)}")
 
     def form_valid(self, form):
         context = self.get_context_data()
@@ -399,24 +394,11 @@ class AcaoUpdateView(PermissionRequiredMixin, ModernUpdateView):
 
     def dispatch(self, request, *args, **kwargs):
         obj = self.get_object()
-        user = request.user
         from usuarios.mixins import verifica_acesso_unidade
-import logging
-logger = logging.getLogger(__name__)
-        
-        # 1. Verificação Primária (Unidade/Diretoria)
-        if not verifica_acesso_unidade(user, obj):
+        # Verificar se o objeto pertence à diretoria/subunidade do usuário
+        if not verifica_acesso_unidade(request.user, obj):
             messages.error(request, "Você não tem permissão para acessar esta ação.")
             return redirect('acao_list')
-        
-        # 2. Verificação Secundária (Relação Individual para Perfis 3 e 4)
-        # Se for Técnico/Coordenador (Perfis 3/4), só entra na página se estiver vinculado (Responsável ou Executor)
-        if user.perfil in [3, 4]:
-            is_vinculado = (user == obj.responsavel) or (user in obj.executores.all())
-            if not is_vinculado:
-                messages.warning(request, "Você não é responsável nem executor desta ação.")
-                return redirect('acao_list')
-                
         return super().dispatch(request, *args, **kwargs)
 
     def get_form_kwargs(self):
@@ -425,10 +407,8 @@ logger = logging.getLogger(__name__)
         user = self.request.user
         
         is_apenas_executor = False
-        # Regra de Segurança: Perfil 4 (ou 3) que não seja o Responsável 
-        # entra no modo 'apenas executor' (somente progresso/checklist)
-        if user.perfil in [3, 4]:
-            if user != getattr(obj, 'responsavel', None):
+        if user != getattr(obj, 'responsavel', None) and user.perfil not in [0, 1, 2]:
+            if user in obj.executores.all():
                 is_apenas_executor = True
                 
         kwargs['user'] = user
@@ -443,10 +423,8 @@ logger = logging.getLogger(__name__)
         obj = self.get_object()
         user = self.request.user
         is_apenas_executor = False
-        # Regra de Segurança: Perfil 4 (ou 3) que não seja o Responsável 
-        # entra no modo 'apenas executor' (somente progresso/checklist)
-        if user.perfil in [3, 4]:
-            if user != getattr(obj, 'responsavel', None):
+        if user != getattr(obj, 'responsavel', None) and user.perfil not in [0, 1, 2]:
+            if user in obj.executores.all():
                 is_apenas_executor = True
         context['executor_readonly'] = is_apenas_executor
         if self.request.method == 'POST':
@@ -561,23 +539,10 @@ class AcaoDeleteView(PermissionRequiredMixin, ModernDeleteView):
 
     def dispatch(self, request, *args, **kwargs):
         obj = self.get_object()
-        user = request.user
         from usuarios.mixins import verifica_acesso_unidade
-import logging
-logger = logging.getLogger(__name__)
-        
-        # 1. Verificação Primária (Unidade/Diretoria)
-        if not verifica_acesso_unidade(user, obj):
+        if not verifica_acesso_unidade(request.user, obj):
             messages.error(request, "Você não tem permissão para acessar esta ação.")
             return redirect('acao_list')
-        
-        # 2. Verificação Secundária (Indivual para Perfis 3 e 4)
-        if user.perfil in [3, 4]:
-            is_vinculado = (user == obj.responsavel) or (user in obj.executores.all())
-            if not is_vinculado:
-                messages.warning(request, "Você não tem permissão para excluir esta ação.")
-                return redirect('acao_list')
-                
         return super().dispatch(request, *args, **kwargs)
 
 
@@ -720,7 +685,7 @@ def salvar_marcador_ajax(request, acao_id):
         })
     except Exception as e:
         import traceback
-        logger.error(f"Error saving marker: {traceback.format_exc()}")
+        print(traceback.format_exc())
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
 
 

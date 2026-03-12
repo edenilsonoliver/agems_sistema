@@ -299,13 +299,7 @@ def importar_obrigacoes_csv(request):
     if form.is_valid():
         arquivo = request.FILES['arquivo_csv']
         try:
-            # Tentar decodificar em UTF-8 com BOM, fallback para Latin-1 (comum em Windows/Excel)
-            file_data = arquivo.read()
-            try:
-                content = file_data.decode('utf-8-sig')
-            except UnicodeDecodeError:
-                content = file_data.decode('latin-1')
-            
+            content = arquivo.read().decode('utf-8-sig')
             decoded_file = content.splitlines()
             delimitador = ';' if ';' in decoded_file[0] else ','
             reader = csv.DictReader(decoded_file, delimiter=delimitador, quotechar='"')

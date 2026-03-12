@@ -14,8 +14,6 @@ from .mixins import (
     FiltrarPorDiretoriaMixin,
     VerificaSenhaTemporariaMixin
 )
-from core.views import ModernDeleteView
-from django.db.models.deletion import ProtectedError
 
 User = get_user_model()
 
@@ -160,28 +158,19 @@ class UsuarioUpdateView(VerificaSenhaTemporariaMixin, LoginRequiredMixin, Update
         return response
 
 
-class UsuarioDeleteView(VerificaSenhaTemporariaMixin, ModernDeleteView):
-    """Exclui usuário com controle de permissões e tratamento de dependências"""
+class UsuarioDeleteView(VerificaSenhaTemporariaMixin, LoginRequiredMixin, DeleteView):
+    """Exclui usuário com controle de permissões"""
     model = User
     template_name = 'components/confirm_delete.html'
     success_url = reverse_lazy('usuario_list')
-    icon = 'bi bi-trash'
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        
-        # Verificar dependências que impedem a exclusão direto no contexto para o template
-        # Acao.responsavel é PROTECT
-        acoes_vinc = self.object.acoes_responsavel.all()
-        has_dependencies = acoes_vinc.exists()
-        
         context.update({
             'title': 'Excluir Usuário',
             'subtitle': f'Confirme a exclusão de {self.object.get_full_name()}',
+            'icon': 'bi bi-trash',
             'list_url': reverse_lazy('usuario_list'),
-            'has_dependencies': has_dependencies,
-            'dependencies': acoes_vinc,
-            'module_name': 'Usuários',
         })
         return context
     
@@ -201,26 +190,9 @@ class UsuarioDeleteView(VerificaSenhaTemporariaMixin, ModernDeleteView):
         
         return super().dispatch(request, *args, **kwargs)
     
-    def post(self, request, *args, **kwargs):
-        """Sobrescreve post para capturar o ProtectedError com mensagem personalizada"""
-        try:
-            return super().post(request, *args, **kwargs)
-        except ProtectedError:
-            messages.error(
-                request, 
-                f'Não é possível excluir o usuário "{self.get_object().get_full_name()}" '
-                f'porque ele é responsável por ações registradas no sistema. '
-                f'Reatribua as ações para outro usuário antes de excluir.'
-            )
-            return redirect('usuario_list')
-
     def delete(self, request, *args, **kwargs):
-        """Mantém a mensagem de sucesso com o nome completo do usuário"""
         nome_usuario = self.get_object().get_full_name()
         response = super().delete(request, *args, **kwargs)
-        # O ModernDeleteView já adiciona uma mensagem genérica, mas aqui preferimos a personalizada
-        # Se houver duplicidade de mensagens, o sistema de mensagens do Django lida bem, 
-        # mas vamos limpar se necessário (aqui mantemos por segurança do legado)
         messages.success(request, f'Usuário "{nome_usuario}" excluído com sucesso!')
         return response
 

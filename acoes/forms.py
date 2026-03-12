@@ -98,10 +98,7 @@ class AcaoForm(forms.ModelForm):
         if inst and inst.diretoria:
             subunidades = inst.subunidades.all()
             if subunidades.exists():
-                # Regra: Inclui usuários da subunidade E Gestores (P1/P2) da Diretoria
-                usuarios = base_usuarios.filter(
-                    Q(subunidade__in=subunidades) | Q(perfil__in=[1, 2], diretoria=inst.diretoria)
-                )
+                usuarios = base_usuarios.filter(subunidade__in=subunidades)
             else:
                 usuarios = base_usuarios.filter(
                     Q(diretoria=inst.diretoria) | Q(subunidade__diretoria=inst.diretoria)
