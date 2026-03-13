@@ -9,14 +9,13 @@ from django.db.models import Q
 from .forms import UsuarioCreateForm, UsuarioUpdateForm
 from .mixins import (
     PodeCriarUsuarioMixin, 
-    FiltrarPorDiretoriaMixin,
-    VerificaSenhaTemporariaMixin
+    FiltrarPorDiretoriaMixin
 )
 
 User = get_user_model()
 
 
-class UsuarioListView(VerificaSenhaTemporariaMixin, LoginRequiredMixin, ListView):
+class UsuarioListView(LoginRequiredMixin, ListView):
     """Lista usuários com filtro baseado no perfil do usuário logado"""
     model = User
     template_name = 'usuarios/usuario_list.html'
@@ -79,7 +78,7 @@ class UsuarioListView(VerificaSenhaTemporariaMixin, LoginRequiredMixin, ListView
         return queryset.order_by('first_name', 'last_name')
 
 
-class UsuarioCreateView(VerificaSenhaTemporariaMixin, PodeCriarUsuarioMixin, CreateView):
+class UsuarioCreateView(PodeCriarUsuarioMixin, CreateView):
     """Cria novo usuário com formulário customizado"""
     model = User
     form_class = UsuarioCreateForm
@@ -112,7 +111,7 @@ class UsuarioCreateView(VerificaSenhaTemporariaMixin, PodeCriarUsuarioMixin, Cre
         return response
 
 
-class UsuarioUpdateView(VerificaSenhaTemporariaMixin, LoginRequiredMixin, UpdateView):
+class UsuarioUpdateView(LoginRequiredMixin, UpdateView):
     """Edita usuário existente com controle de permissões"""
     model = User
     form_class = UsuarioUpdateForm
@@ -156,7 +155,7 @@ class UsuarioUpdateView(VerificaSenhaTemporariaMixin, LoginRequiredMixin, Update
         return response
 
 
-class UsuarioDeleteView(VerificaSenhaTemporariaMixin, LoginRequiredMixin, DeleteView):
+class UsuarioDeleteView(LoginRequiredMixin, DeleteView):
     """Exclui usuário com controle de permissões"""
     model = User
     template_name = 'components/confirm_delete.html'
@@ -196,7 +195,7 @@ class UsuarioDeleteView(VerificaSenhaTemporariaMixin, LoginRequiredMixin, Delete
 
 
 # View adicional para gerenciar diretorias de visualização (apenas para perfil 5)
-class UsuarioVisualizadorView(VerificaSenhaTemporariaMixin, LoginRequiredMixin, UpdateView):
+class UsuarioVisualizadorView(LoginRequiredMixin, UpdateView):
     """View específica para configurar diretorias de visualização"""
     model = User
     fields = ['diretorias_visualizacao']

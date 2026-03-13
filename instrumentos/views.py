@@ -154,7 +154,18 @@ class InstrumentoUpdateView(PermissionRequiredMixin, ModernUpdateView):
         if form.is_valid() and formset.is_valid():
             self.object = form.save()
             formset.instance = self.object
-            formset.save()
+            from django.db.models.deletion import ProtectedError
+            try:
+                formset.save()
+            except ProtectedError as e:
+                protected_objects = e.protected_objects
+                acoes = [obj for obj in protected_objects if hasattr(obj, 'obrigacao')]
+                if acoes:
+                    messages.error(self.request, 'Não é possível excluir a obrigação(ões) pois existem ações vinculadas a elas.')
+                else:
+                    messages.error(self.request, 'Não é possível excluir: existem registros vinculados protegidos.')
+                return self.render_to_response(self.get_context_data(form=form, formset=formset))
+                
             messages.success(self.request, 'Instrumento atualizado com sucesso!')
             return redirect('instrumento_edit', pk=self.object.pk)
         else:
@@ -249,7 +260,12 @@ def importar_obrigacoes_csv(request):
     if form.is_valid():
         arquivo = request.FILES['arquivo_csv']
         try:
-            content = arquivo.read().decode('utf-8-sig')
+            # Tentar decodificar em UTF-8 com BOM, fallback para Latin-1 (comum em Windows/Excel)
+            file_data = arquivo.read()
+            try:
+                content = file_data.decode('utf-8-sig')
+            except UnicodeDecodeError:
+                content = file_data.decode('latin-1')
             decoded_file = content.splitlines()
             delimitador = ';' if ';' in decoded_file[0] else ','
             reader = csv.DictReader(decoded_file, delimiter=delimitador, quotechar='"')
