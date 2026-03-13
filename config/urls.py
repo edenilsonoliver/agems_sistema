@@ -7,6 +7,7 @@ from dashboards.views import dashboard_principal
 from acoes import views as acoes_views
 from core.config_views import configuracoes
 from usuarios import views as usuarios_views
+from usuarios.views import get_subunidades_por_diretoria
 from alertas import views as alertas_views
 
 # Import adicional no topo
@@ -58,6 +59,10 @@ urlpatterns = [
     # Autenticação moderna
     path('login/', auth_views.LoginView.as_view(template_name='registration/login.html'), name='login'),
     path('logout/', auth_views.LogoutView.as_view(next_page='login'), name='logout'),
+    
+    # Adicionado para suportar Correcao de Bug Latente no VerificaSenhaTemporariaMixin do usuario
+    path('password_change/', auth_views.PasswordChangeView.as_view(template_name='registration/password_change_form.html'), name='password_change'),
+    path('password_change/done/', auth_views.PasswordChangeDoneView.as_view(template_name='registration/password_change_done.html'), name='password_change_done'),
 
     # Dashboard
     path('', dashboard_principal, name='dashboard'),
@@ -74,6 +79,7 @@ urlpatterns = [
     path('api/instrumento/<int:instrumento_id>/arquivo/upload/', arquivo_upload, name='arquivo_upload'),
     path('api/arquivo/<int:arquivo_id>/excluir/', arquivo_delete, name='arquivo_delete'),
     path('api/obrigacoes/importar-csv/', importar_obrigacoes_csv, name='importar_obrigacoes_csv'),
+    path('api/subunidades/', get_subunidades_por_diretoria, name='get_subunidades'),
 
     # Entidades
     path('entidades/', EntidadeListView.as_view(), name='entidade_list'),

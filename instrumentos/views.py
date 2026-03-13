@@ -16,6 +16,7 @@ import io
 import json
 from .forms import InstrumentoForm, ObrigacaoForm, ImportacaoObrigacoesForm
 from django.contrib import messages
+from usuarios.mixins import get_diretoria_filter, verifica_acesso_diretoria
 
 logger = logging.getLogger(__name__)
 
@@ -46,7 +47,13 @@ class InstrumentoListView(PermissionRequiredMixin, ModernListView):
 
     def get_queryset(self):
         queryset = super().get_queryset()
-        return queryset.select_related('tipo_instrumento', 'diretoria').prefetch_related('entidades')
+        queryset = queryset.select_related('tipo_instrumento', 'diretoria').prefetch_related('entidades')
+        # RBAC: filtrar por diretoria do usuário logado
+        user = self.request.user
+        q_filter = get_diretoria_filter(user, prefix='')
+        if q_filter is not None:
+            queryset = queryset.filter(q_filter)
+        return queryset
 
 class InstrumentoCreateView(PermissionRequiredMixin, ModernCreateView):
 
@@ -90,11 +97,27 @@ class InstrumentoCreateView(PermissionRequiredMixin, ModernCreateView):
              messages.error(self.request, "Você não tem permissão para salvar alterações.")
              return self.render_to_response(self.get_context_data(form=form))
         
+        # RBAC: forçar diretoria do usuário para perfis não-Admin
+        user = self.request.user
+        if user.perfil != 0:
+            inst_diretoria = (
+                user.subunidade.diretoria
+                if getattr(user, 'subunidade', None) and user.subunidade.diretoria
+                else user.diretoria
+            )
+            if inst_diretoria:
+                form.instance.diretoria = inst_diretoria
+
         context = self.get_context_data()
         formset = context['formset']
 
         if form.is_valid() and formset.is_valid():
             self.object = form.save()
+            
+            # Adicionar a subunidade do usuário automaticamente se for perfil restrito
+            if user.perfil in [2, 3, 4] and getattr(user, 'subunidade', None):
+                self.object.subunidades.add(user.subunidade)
+                
             formset.instance = self.object
             formset.save()
             messages.success(self.request, 'Instrumento criado com sucesso!')
@@ -114,6 +137,14 @@ class InstrumentoUpdateView(PermissionRequiredMixin, ModernUpdateView):
     model = Instrumento
     form_class = InstrumentoForm
     template_name = 'instrumentos/instrumento_form.html'
+
+    def dispatch(self, request, *args, **kwargs):
+        obj = self.get_object()
+        from usuarios.mixins import verifica_acesso_unidade
+        if not verifica_acesso_unidade(request.user, obj):
+            messages.error(request, 'Você não tem permissão para acessar este instrumento.')
+            return redirect('instrumento_list')
+        return super().dispatch(request, *args, **kwargs)
 
     def get_readonly(self):
         return self.request.user.perfil not in [0, 1, 2]
@@ -182,7 +213,15 @@ class InstrumentoDeleteView(PermissionRequiredMixin, ModernDeleteView):
     permission_required = 'instrumentos.delete_instrumento'
     model = Instrumento
     success_url = reverse_lazy('instrumento_list')
-    
+
+    def dispatch(self, request, *args, **kwargs):
+        obj = self.get_object()
+        from usuarios.mixins import verifica_acesso_unidade
+        if not verifica_acesso_unidade(request.user, obj):
+            messages.error(request, 'Você não tem permissão para acessar este instrumento.')
+            return redirect('instrumento_list')
+        return super().dispatch(request, *args, **kwargs)
+
     def post(self, request, *args, **kwargs):
         from django.db.models.deletion import ProtectedError
         try:

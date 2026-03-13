@@ -309,5 +309,5 @@ MESSAGE_TAGS = {
     messages.ERROR: 'danger',
 }
 
-# Aumenta limite para forms enormes de Obrigacoes CSV
+# Aumenta limite para forms enormes de Obrigacoes CSV e updates grandes de Instrumentos
 DATA_UPLOAD_MAX_NUMBER_FIELDS = 10000

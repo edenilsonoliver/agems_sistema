@@ -16,6 +16,14 @@ Thumbs.db
 *.sqlite3
 db.sqlite3
 
+#Pasta de documentos e manuais em geral
+docs/*.md
+
+#Arquivos de testing e debuging
+debug_*
+test_*
+automated_*
+
 # Informações de DB
 agems_database_der.png
 ESTRUTURA_BANCO_DADOS.md

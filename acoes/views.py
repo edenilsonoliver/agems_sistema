@@ -14,6 +14,7 @@ from django.http import JsonResponse
 from core.models import TipoAcao
 from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_exempt
+from usuarios.mixins import get_diretoria_filter, verifica_acesso_diretoria
 
 
 # Ordem canônica dos tipos de ação conforme definido pelo cliente
@@ -68,18 +69,49 @@ def get_tipos_ordenados():
 def get_obrigacoes_por_instrumento(request):
     instrumento_id = request.GET.get('instrumento_id')
     if not instrumento_id:
-        return JsonResponse({'obrigacoes': [], 'entidades': []})
+        return JsonResponse({'obrigacoes': [], 'entidades': [], 'usuarios': []})
 
     obrigacoes = Obrigacao.objects.filter(instrumento_id=instrumento_id).values('id', 'titulo')
 
-    # Também retorna as entidades do instrumento para popular o select de Entidade
+    # Também retorna as entidades e usuarios do instrumento (baseado na diretoria)
     try:
         instrumento = Instrumento.objects.get(pk=instrumento_id)
         entidades = list(instrumento.entidades.values('id', 'razao_social'))
+        
+        # Filtra os usuários is_active=True que não sejam Admin (perfil!=0) e que pertençam direta (diretoria)
+        # ou indiretamente (subunidade__diretoria) à diretoria associada ao instrumento.
+        from usuarios.models import Usuario
+        from django.db.models import Q
+        
+        subunidades = instrumento.subunidades.all()
+        if subunidades.exists():
+            usuarios_qs = Usuario.objects.select_related('subunidade', 'subunidade__diretoria').filter(
+                is_active=True,
+                subunidade__in=subunidades
+            ).exclude(perfil=0).distinct().order_by('first_name')
+        else:
+            usuarios_qs = Usuario.objects.select_related('subunidade', 'subunidade__diretoria').filter(
+                is_active=True
+            ).exclude(perfil=0).filter(
+                Q(diretoria=instrumento.diretoria) | Q(subunidade__diretoria=instrumento.diretoria)
+            ).distinct().order_by('first_name')
+        
+        usuarios = []
+        for u in usuarios_qs:
+            nome = getattr(u, 'nome_completo', None) or f"{getattr(u, 'first_name', '')} {getattr(u, 'last_name', '')}".strip() or getattr(u, 'username', 'Sem nome')
+            sub = getattr(u.subunidade, 'nome', 'Sem subunidade') if hasattr(u, 'subunidade') and u.subunidade else 'Sem subunidade'
+            dir_sigla = getattr(u.subunidade.diretoria, 'sigla', 'Sem diretoria') if hasattr(u, 'subunidade') and u.subunidade and hasattr(u.subunidade, 'diretoria') and u.subunidade.diretoria else 'Sem diretoria'
+            if dir_sigla == 'Sem diretoria' and getattr(u, 'diretoria', None):
+                dir_sigla = u.diretoria.sigla
+            
+            label_text = f"{nome} | {sub} | {dir_sigla}"
+            usuarios.append({'id': u.id, 'label': label_text})
+            
     except Instrumento.DoesNotExist:
         entidades = []
+        usuarios = []
 
-    return JsonResponse({'obrigacoes': list(obrigacoes), 'entidades': entidades})
+    return JsonResponse({'obrigacoes': list(obrigacoes), 'entidades': entidades, 'usuarios': usuarios})
 
 
 class AcaoListView(PermissionRequiredMixin, ModernListView):
@@ -108,6 +140,12 @@ class AcaoListView(PermissionRequiredMixin, ModernListView):
 
         queryset = Acao.objects.select_related('responsavel', 'obrigacao', 'obrigacao__instrumento', 'tipo_acao')
 
+        # RBAC: Isolamento por Diretoria
+        q_diretoria = get_diretoria_filter(user, prefix='obrigacao__instrumento__')
+        if q_diretoria is not None:
+            queryset = queryset.filter(q_diretoria)
+
+        # Regra específica para perfis 3 e 4 (além do isolamento de diretoria)
         if user.perfil in [3, 4]:
             queryset = queryset.filter(Q(responsavel=user) | Q(executores=user)).distinct()
 
@@ -125,9 +163,23 @@ class AcaoListView(PermissionRequiredMixin, ModernListView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         instrumento_id = self.request.GET.get('instrumento')
+        user = self.request.user
 
-        context['instrumentos'] = Instrumento.objects.all()
-        context['obrigacoes'] = Obrigacao.objects.filter(instrumento_id=instrumento_id).only('id', 'titulo') if instrumento_id else Obrigacao.objects.all().only('id', 'titulo')
+        # Filtrar seletor de instrumentos por diretoria
+        inst_filter = get_diretoria_filter(user, prefix='')
+        if inst_filter is not None:
+            context['instrumentos'] = Instrumento.objects.filter(inst_filter)
+        else:
+            context['instrumentos'] = Instrumento.objects.all()
+
+        if instrumento_id:
+            context['obrigacoes'] = Obrigacao.objects.filter(instrumento_id=instrumento_id).only('id', 'titulo')
+        else:
+            # Se não há instrumento selecionado, as obrigações também devem respeitar o filtro de diretoria
+            if inst_filter is not None:
+                context['obrigacoes'] = Obrigacao.objects.filter(get_diretoria_filter(user, prefix='instrumento__')).only('id', 'titulo')
+            else:
+                context['obrigacoes'] = Obrigacao.objects.all().only('id', 'titulo')
         try:
             context['instrumento_selecionado'] = int(instrumento_id) if instrumento_id else None
         except (ValueError, TypeError):
@@ -205,6 +257,13 @@ class AcaoCreateView(PermissionRequiredMixin, ModernCreateView):
     success_url = reverse_lazy('acao_list')
     template_name = 'acoes/acao_form.html'
 
+    def dispatch(self, request, *args, **kwargs):
+        # Para CreateView, verificamos se o usuário tem perfil 5 (bloqueado em get_readonly)
+        if self.get_readonly():
+            messages.error(request, "Visualizadores não possuem permissão para criar ações.")
+            return redirect('acao_list')
+        return super().dispatch(request, *args, **kwargs)
+
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
         kwargs['user'] = self.request.user
@@ -232,7 +291,14 @@ class AcaoCreateView(PermissionRequiredMixin, ModernCreateView):
             nome__icontains='Fiscalização'
         ).values_list('id', flat=True))
 
-        context['instrumentos'] = Instrumento.objects.all()
+        # Filtrar instrumentos por diretoria do usuário
+        user = self.request.user
+        inst_filter = get_diretoria_filter(user, prefix='')
+        if inst_filter is not None:
+            context['instrumentos'] = Instrumento.objects.filter(inst_filter)
+        else:
+            context['instrumentos'] = Instrumento.objects.all()
+
         context['tipos_acao_ordenados'] = get_tipos_ordenados()
 
         return context
@@ -311,15 +377,7 @@ class AcaoUpdateView(PermissionRequiredMixin, ModernUpdateView):
         # Caso queira bloquear edição de Ação para visualizador (5):
         return self.request.user.perfil == 5
 
-    def get_form_kwargs(self):
-        kwargs = super().get_form_kwargs()
-        kwargs['readonly'] = self.get_readonly()
-        return kwargs
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['readonly'] = self.get_readonly()
-        return context
+    # Métodos redefinidos logo abaixo no final da classe
 
 
     def handle_no_permission(self):
@@ -334,13 +392,41 @@ class AcaoUpdateView(PermissionRequiredMixin, ModernUpdateView):
     success_url = reverse_lazy('acao_list')
     template_name = 'acoes/acao_form.html'
 
+    def dispatch(self, request, *args, **kwargs):
+        obj = self.get_object()
+        from usuarios.mixins import verifica_acesso_unidade
+        # Verificar se o objeto pertence à diretoria/subunidade do usuário
+        if not verifica_acesso_unidade(request.user, obj):
+            messages.error(request, "Você não tem permissão para acessar esta ação.")
+            return redirect('acao_list')
+        return super().dispatch(request, *args, **kwargs)
+
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
-        kwargs['user'] = self.request.user
+        obj = self.get_object()
+        user = self.request.user
+        
+        is_apenas_executor = False
+        if user != getattr(obj, 'responsavel', None) and user.perfil not in [0, 1, 2]:
+            if user in obj.executores.all():
+                is_apenas_executor = True
+                
+        kwargs['user'] = user
+        kwargs['readonly'] = self.get_readonly()
+        kwargs['executor_readonly'] = is_apenas_executor
         return kwargs
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        context['readonly'] = self.get_readonly()
+        
+        obj = self.get_object()
+        user = self.request.user
+        is_apenas_executor = False
+        if user != getattr(obj, 'responsavel', None) and user.perfil not in [0, 1, 2]:
+            if user in obj.executores.all():
+                is_apenas_executor = True
+        context['executor_readonly'] = is_apenas_executor
         if self.request.method == 'POST':
             context['checklist_formset'] = ChecklistItemFormSet(self.request.POST, instance=self.object, prefix='checklist_itens')
             context['docs_formset'] = AcaoDocumentoFormSet(self.request.POST, self.request.FILES, instance=self.object, prefix='docs')
@@ -354,7 +440,14 @@ class AcaoUpdateView(PermissionRequiredMixin, ModernUpdateView):
             nome__icontains='Fiscalização'
         ).values_list('id', flat=True))
 
-        context['instrumentos'] = Instrumento.objects.all()
+        # Filtrar instrumentos por diretoria do usuário
+        user = self.request.user
+        inst_filter = get_diretoria_filter(user, prefix='')
+        if inst_filter is not None:
+            context['instrumentos'] = Instrumento.objects.filter(inst_filter)
+        else:
+            context['instrumentos'] = Instrumento.objects.all()
+
         context['tipos_acao_ordenados'] = get_tipos_ordenados()
 
         # Entidades disponíveis filtradas pelo instrumento da obrigação desta ação
@@ -444,6 +537,14 @@ class AcaoDeleteView(PermissionRequiredMixin, ModernDeleteView):
     model = Acao
     success_url = reverse_lazy('acao_list')
 
+    def dispatch(self, request, *args, **kwargs):
+        obj = self.get_object()
+        from usuarios.mixins import verifica_acesso_unidade
+        if not verifica_acesso_unidade(request.user, obj):
+            messages.error(request, "Você não tem permissão para acessar esta ação.")
+            return redirect('acao_list')
+        return super().dispatch(request, *args, **kwargs)
+
 
 # Calendário de Ações
 class AcaoCalendarioView(PermissionRequiredMixin, TemplateView):
@@ -463,7 +564,12 @@ def acoes_json(request):
     """Retorna as ações em formato JSON para o FullCalendar"""
     user = request.user
 
-    queryset = Acao.objects.select_related('responsavel', 'obrigacao')
+    queryset = Acao.objects.select_related('responsavel', 'obrigacao', 'obrigacao__instrumento')
+
+    # RBAC: Isolamento por Diretoria
+    q_diretoria = get_diretoria_filter(user, prefix='obrigacao__instrumento__')
+    if q_diretoria is not None:
+        queryset = queryset.filter(q_diretoria)
 
     if user.perfil in [3, 4]:
         queryset = queryset.filter(Q(responsavel=user) | Q(executores=user)).distinct()

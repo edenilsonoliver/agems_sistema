@@ -9,6 +9,7 @@ from instrumentos.models import Instrumento, Obrigacao
 from indicadores.models import IndicadorContratual, ValorIndicador
 from entidades.models import Entidade
 from acoes.models import Acao
+from usuarios.mixins import get_diretoria_filter
 
 
 @login_required
@@ -20,11 +21,20 @@ def dashboard_principal(request):
     usuario = request.user
     hoje = timezone.now().date()
 
-    # Define se é um Técnico (perfil 3 ou 4) para aplicar filtros de visão
+    # RBAC: Filtros de Diretoria
+    # get_diretoria_filter retorna None para Admin (sem filtro)
+    f_instrumento = get_diretoria_filter(usuario, prefix='')
+    f_obrigacao = get_diretoria_filter(usuario, prefix='instrumento__')
+    f_acao = get_diretoria_filter(usuario, prefix='obrigacao__instrumento__')
+
+    # Define se é um Técnico (perfil 3 ou 4) para aplicar filtros de visão adicionais
     is_tecnico = (usuario.perfil in [3, 4])
 
     # Instrumentos vigentes
     queryset_instrumentos = Instrumento.objects.filter(status='vigente')
+    if f_instrumento:
+        queryset_instrumentos = queryset_instrumentos.filter(f_instrumento)
+        
     if is_tecnico:
         # Filtra instrumentos que têm obrigações com ações deste usuário (Responsável ou Executor)
         queryset_instrumentos = queryset_instrumentos.filter(
@@ -33,7 +43,7 @@ def dashboard_principal(request):
     
     total_instrumentos = queryset_instrumentos.count()
 
-    # Distribuição de Instrumentos por Tipo (Também deve ser filtrado)
+    # Distribuição de Instrumentos por Tipo
     instrumentos_por_tipo = list(
         queryset_instrumentos
         .values('tipo_instrumento__nome')
@@ -43,6 +53,9 @@ def dashboard_principal(request):
 
     # Total de obrigações do sistema
     queryset_all_obrigacoes = Obrigacao.objects.all()
+    if f_obrigacao:
+        queryset_all_obrigacoes = queryset_all_obrigacoes.filter(f_obrigacao)
+        
     if is_tecnico:
         queryset_all_obrigacoes = queryset_all_obrigacoes.filter(
             Q(acoes__responsavel=usuario) | Q(acoes__executores=usuario)
@@ -51,17 +64,17 @@ def dashboard_principal(request):
     total_obrigacoes = queryset_all_obrigacoes.count()
 
     # Ações (Executores veem apenas as suas)
-    # Se for Executor (Perfil 4), filtra. Se for Coordenador/Gestor/Admin, vê tudo.
+    acoes = Acao.objects.all()
+    if f_acao:
+        acoes = acoes.filter(f_acao)
     
     if is_tecnico:
         # Filtra ações onde o usuário é responsável OU está na lista de executores
-        acoes = Acao.objects.filter(
+        acoes = acoes.filter(
             Q(responsavel=usuario) | Q(executores=usuario)
         ).distinct()
-    else:
-        acoes = Acao.objects.all()
 
-    # Cards de Contagem (usando o queryset 'acoes' já filtrado)
+    # Cards de Contagem
     acoes_vencidas = acoes.filter(
         data_fim__lt=hoje, status__in=['a_iniciar', 'em_andamento', 'atrasado']
     ).count()
@@ -71,17 +84,19 @@ def dashboard_principal(request):
         status__in=['a_iniciar', 'em_andamento']
     ).count()
 
-    # Obrigações - Filtra se executor
+    # Obrigações recentes
     queryset_obrigacoes = Obrigacao.objects.select_related('instrumento', 'tipo_obrigacao').prefetch_related('acoes')
+    if f_obrigacao:
+        queryset_obrigacoes = queryset_obrigacoes.filter(f_obrigacao)
+        
     if is_tecnico:
-        # Mostra apenas obrigações que possuem alguma ação atribuída a este usuário
         queryset_obrigacoes = queryset_obrigacoes.filter(
             Q(acoes__responsavel=usuario) | Q(acoes__executores=usuario)
         ).distinct()
 
     obrigacoes_recentes = queryset_obrigacoes.order_by('-data_vencimento')[:10]
     
-    # Ações recentes de listagem (reaproveita logica de filtro de acoes)
+    # Ações recentes
     acoes_recentes = acoes.select_related(
         'obrigacao', 'tipo_acao', 'responsavel'
     ).order_by('-data_cadastro')[:10]
@@ -98,7 +113,7 @@ def dashboard_principal(request):
         'total_instrumentos': total_instrumentos,
         'total_obrigacoes': total_obrigacoes,
         'instrumentos_por_tipo': json.dumps(instrumentos_por_tipo),
-        'tarefas_por_status': json.dumps(acoes_por_status), # Mantendo nome p/ compatibilidade JS no dashboard
+        'tarefas_por_status': json.dumps(acoes_por_status),
         'tarefas_a_vencer': acoes_a_vencer,
         'tarefas_vencidas': acoes_vencidas,
         'obrigacoes_usuario': obrigacoes_recentes,

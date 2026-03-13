@@ -5,6 +5,8 @@ from django.views.generic import ListView, CreateView, UpdateView, DeleteView
 from django.contrib import messages
 from django.shortcuts import redirect
 from django.db.models import Q
+from django.http import JsonResponse
+from django.contrib.auth.decorators import login_required
 
 from .forms import UsuarioCreateForm, UsuarioUpdateForm
 from .mixins import (
@@ -82,7 +84,7 @@ class UsuarioCreateView(PodeCriarUsuarioMixin, CreateView):
     """Cria novo usuário com formulário customizado"""
     model = User
     form_class = UsuarioCreateForm
-    template_name = 'components/form_view.html'
+    template_name = 'usuarios/usuario_form.html'
     success_url = reverse_lazy('usuario_list')
     
     def get_context_data(self, **kwargs):
@@ -91,7 +93,7 @@ class UsuarioCreateView(PodeCriarUsuarioMixin, CreateView):
             'title': 'Novo Usuário',
             'subtitle': 'Preencha os dados abaixo para cadastrar um novo usuário',
             'icon': 'bi bi-person-plus',
-            'list_url': 'usuario_list',
+            'list_url': reverse_lazy('usuario_list'),
             'form_title': 'Novo Usuário',
             'module_name': 'Usuários',
         })
@@ -115,7 +117,7 @@ class UsuarioUpdateView(LoginRequiredMixin, UpdateView):
     """Edita usuário existente com controle de permissões"""
     model = User
     form_class = UsuarioUpdateForm
-    template_name = 'components/form_view.html'
+    template_name = 'usuarios/usuario_form.html'
     success_url = reverse_lazy('usuario_list')
     
     def get_context_data(self, **kwargs):
@@ -124,7 +126,7 @@ class UsuarioUpdateView(LoginRequiredMixin, UpdateView):
             'title': 'Editar Usuário',
             'subtitle': f'Atualize os dados de {self.object.get_full_name()}',
             'icon': 'bi bi-pencil-square',
-            'list_url': 'usuario_list',
+            'list_url': reverse_lazy('usuario_list'),
             'form_title': 'Editar Usuário',
             'module_name': 'Usuários',
         })
@@ -167,7 +169,7 @@ class UsuarioDeleteView(LoginRequiredMixin, DeleteView):
             'title': 'Excluir Usuário',
             'subtitle': f'Confirme a exclusão de {self.object.get_full_name()}',
             'icon': 'bi bi-trash',
-            'list_url': 'usuario_list',
+            'list_url': reverse_lazy('usuario_list'),
         })
         return context
     
@@ -186,6 +188,20 @@ class UsuarioDeleteView(LoginRequiredMixin, DeleteView):
             return redirect('usuario_list')
         
         return super().dispatch(request, *args, **kwargs)
+
+    def post(self, request, *args, **kwargs):
+        """Sobrescreve post para capturar o ProtectedError com mensagem personalizada"""
+        from django.db.models.deletion import ProtectedError
+        try:
+            return super().post(request, *args, **kwargs)
+        except ProtectedError:
+            messages.error(
+                request, 
+                f'Não é possível excluir o usuário "{self.get_object().get_full_name()}" '
+                f'porque ele é responsável por ações registradas no sistema. '
+                f'Reatribua as ações para outro usuário antes de excluir.'
+            )
+            return redirect('usuario_list')
     
     def delete(self, request, *args, **kwargs):
         nome_usuario = self.get_object().get_full_name()
@@ -221,7 +237,7 @@ class UsuarioVisualizadorView(LoginRequiredMixin, UpdateView):
             'title': 'Configurar Visualizador',
             'subtitle': f'Defina as diretorias que {self.object.get_full_name()} pode visualizar',
             'icon': 'bi bi-eye',
-            'list_url': 'usuario_list',
+            'list_url': reverse_lazy('usuario_list'),
         })
         return context
     
@@ -265,3 +281,24 @@ class UsuarioPerfilView(LoginRequiredMixin, UpdateView):
     def form_valid(self, form):
         messages.success(self.request, "Perfil atualizado com sucesso!")
         return super().form_valid(form)
+
+
+@login_required
+def get_subunidades_por_diretoria(request):
+    """API AJAX: retorna subunidades filtradas por diretoria_id."""
+    from core.models import Subunidade
+    diretoria_id = request.GET.get('diretoria_id')
+    if not diretoria_id:
+        return JsonResponse({'subunidades': []})
+    try:
+        diretoria_id = int(diretoria_id)
+    except (ValueError, TypeError):
+        return JsonResponse({'subunidades': []})
+    subunidades = (
+        Subunidade.objects
+        .filter(diretoria_id=diretoria_id, ativa=True)
+        .values('id', 'nome', 'sigla')
+        .order_by('nome')
+    )
+    data = [{'id': s['id'], 'nome': s['nome'], 'sigla': s['sigla']} for s in subunidades]
+    return JsonResponse({'subunidades': data})

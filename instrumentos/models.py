@@ -30,6 +30,12 @@ class Instrumento(models.Model):
         verbose_name='Diretoria Responsável',
         related_name='instrumentos'
     )
+    subunidades = models.ManyToManyField(
+        'core.Subunidade',
+        related_name='instrumentos_multi',
+        blank=True,
+        verbose_name='Subunidades Gestoras'
+    )
     entidades = models.ManyToManyField(
         Entidade,
         verbose_name='Entidades Vinculadas',
