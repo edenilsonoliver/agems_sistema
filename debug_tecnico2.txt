@@ -1,0 +1,6 @@
+User tecnico2: ID=20, Perfil=4, Subunidade=Câmara Técnica de Gás (DGE), Diretoria=DGE - Diretoria de Gás e Energia
+User tecnico1: ID=19, Perfil=4, Subunidade=Câmara Técnica de Gás (DGE), Diretoria=DGE - Diretoria de Gás e Energia
+Action: 'Ação Teste 1', ID=96, Instrumento ID=4
+Action Responsável: Tecnico 2 (Técnico (Executor))
+Action Executores: ['tecnico1']
+Instrumento Subunidades: ['Câmara Técnica de Gás']

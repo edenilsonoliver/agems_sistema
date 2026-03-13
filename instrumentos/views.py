@@ -305,7 +305,6 @@ def importar_obrigacoes_csv(request):
                 content = file_data.decode('utf-8-sig')
             except UnicodeDecodeError:
                 content = file_data.decode('latin-1')
-            
             decoded_file = content.splitlines()
             delimitador = ';' if ';' in decoded_file[0] else ','
             reader = csv.DictReader(decoded_file, delimiter=delimitador, quotechar='"')

@@ -309,5 +309,5 @@ MESSAGE_TAGS = {
     messages.ERROR: 'danger',
 }
 
-# Increase max number of GET/POST parameters to handle large formsets in Instrument updates
+# Aumenta limite para forms enormes de Obrigacoes CSV e updates grandes de Instrumentos
 DATA_UPLOAD_MAX_NUMBER_FIELDS = 10000

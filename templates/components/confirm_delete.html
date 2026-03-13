@@ -27,19 +27,6 @@
                         <p class="mb-0 mt-2"><small>Esta ação não pode ser desfeita.</small></p>
                     </div>
                 </div>
-
-                {% if has_dependencies %}
-                <div class="alert alert-warning mt-3 border-warning">
-                    <h6 class="alert-heading"><i class="bi bi-info-circle-fill me-2"></i>Atenção: Registros Vinculados</h6>
-                    <p class="small mb-2">Este registro possui os seguintes vínculos que podem impedir a exclusão direta:</p>
-                    <ul class="small mb-0">
-                        {% for dep in dependencies %}
-                        <li>{{ dep }}</li>
-                        {% endfor %}
-                    </ul>
-                    <p class="small mt-2 mb-0 text-muted"><em>Sugestão: Reatribua ou exclua estes registros antes de tentar remover este item.</em></p>
-                </div>
-                {% endif %}
                 
                 <form method="post" class="mt-4">
                     {% csrf_token %}

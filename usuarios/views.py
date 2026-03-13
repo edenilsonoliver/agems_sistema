@@ -11,16 +11,13 @@ from django.contrib.auth.decorators import login_required
 from .forms import UsuarioCreateForm, UsuarioUpdateForm
 from .mixins import (
     PodeCriarUsuarioMixin, 
-    FiltrarPorDiretoriaMixin,
-    VerificaSenhaTemporariaMixin
+    FiltrarPorDiretoriaMixin
 )
-from core.views import ModernDeleteView
-from django.db.models.deletion import ProtectedError
 
 User = get_user_model()
 
 
-class UsuarioListView(VerificaSenhaTemporariaMixin, LoginRequiredMixin, ListView):
+class UsuarioListView(LoginRequiredMixin, ListView):
     """Lista usuários com filtro baseado no perfil do usuário logado"""
     model = User
     template_name = 'usuarios/usuario_list.html'
@@ -83,7 +80,7 @@ class UsuarioListView(VerificaSenhaTemporariaMixin, LoginRequiredMixin, ListView
         return queryset.order_by('first_name', 'last_name')
 
 
-class UsuarioCreateView(VerificaSenhaTemporariaMixin, PodeCriarUsuarioMixin, CreateView):
+class UsuarioCreateView(PodeCriarUsuarioMixin, CreateView):
     """Cria novo usuário com formulário customizado"""
     model = User
     form_class = UsuarioCreateForm
@@ -116,7 +113,7 @@ class UsuarioCreateView(VerificaSenhaTemporariaMixin, PodeCriarUsuarioMixin, Cre
         return response
 
 
-class UsuarioUpdateView(VerificaSenhaTemporariaMixin, LoginRequiredMixin, UpdateView):
+class UsuarioUpdateView(LoginRequiredMixin, UpdateView):
     """Edita usuário existente com controle de permissões"""
     model = User
     form_class = UsuarioUpdateForm
@@ -160,28 +157,19 @@ class UsuarioUpdateView(VerificaSenhaTemporariaMixin, LoginRequiredMixin, Update
         return response
 
 
-class UsuarioDeleteView(VerificaSenhaTemporariaMixin, ModernDeleteView):
-    """Exclui usuário com controle de permissões e tratamento de dependências"""
+class UsuarioDeleteView(LoginRequiredMixin, DeleteView):
+    """Exclui usuário com controle de permissões"""
     model = User
     template_name = 'components/confirm_delete.html'
     success_url = reverse_lazy('usuario_list')
-    icon = 'bi bi-trash'
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        
-        # Verificar dependências que impedem a exclusão direto no contexto para o template
-        # Acao.responsavel é PROTECT
-        acoes_vinc = self.object.acoes_responsavel.all()
-        has_dependencies = acoes_vinc.exists()
-        
         context.update({
             'title': 'Excluir Usuário',
             'subtitle': f'Confirme a exclusão de {self.object.get_full_name()}',
+            'icon': 'bi bi-trash',
             'list_url': reverse_lazy('usuario_list'),
-            'has_dependencies': has_dependencies,
-            'dependencies': acoes_vinc,
-            'module_name': 'Usuários',
         })
         return context
     
@@ -200,9 +188,10 @@ class UsuarioDeleteView(VerificaSenhaTemporariaMixin, ModernDeleteView):
             return redirect('usuario_list')
         
         return super().dispatch(request, *args, **kwargs)
-    
+
     def post(self, request, *args, **kwargs):
         """Sobrescreve post para capturar o ProtectedError com mensagem personalizada"""
+        from django.db.models.deletion import ProtectedError
         try:
             return super().post(request, *args, **kwargs)
         except ProtectedError:
@@ -213,20 +202,16 @@ class UsuarioDeleteView(VerificaSenhaTemporariaMixin, ModernDeleteView):
                 f'Reatribua as ações para outro usuário antes de excluir.'
             )
             return redirect('usuario_list')
-
+    
     def delete(self, request, *args, **kwargs):
-        """Mantém a mensagem de sucesso com o nome completo do usuário"""
         nome_usuario = self.get_object().get_full_name()
         response = super().delete(request, *args, **kwargs)
-        # O ModernDeleteView já adiciona uma mensagem genérica, mas aqui preferimos a personalizada
-        # Se houver duplicidade de mensagens, o sistema de mensagens do Django lida bem, 
-        # mas vamos limpar se necessário (aqui mantemos por segurança do legado)
         messages.success(request, f'Usuário "{nome_usuario}" excluído com sucesso!')
         return response
 
 
 # View adicional para gerenciar diretorias de visualização (apenas para perfil 5)
-class UsuarioVisualizadorView(VerificaSenhaTemporariaMixin, LoginRequiredMixin, UpdateView):
+class UsuarioVisualizadorView(LoginRequiredMixin, UpdateView):
     """View específica para configurar diretorias de visualização"""
     model = User
     fields = ['diretorias_visualizacao']
