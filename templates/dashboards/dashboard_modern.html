@@ -95,89 +95,8 @@
         <div class="card border-0 shadow-sm">
             <div class="card-header bg-white border-0 py-3">
                 <h5 class="card-title mb-0">
-                    <i class="bi bi-list-check me-2"></i>
-                    Obrigações
-                </h5>
-            </div>
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table table-hover mb-0">
-                        <thead>
-                            <tr>
-                                <th style="width: 80px;">Inst.</th>
-                                <th style="min-width: 200px;">Ação</th>
-                                <th style="min-width: 200px;">Obrigação</th>
-                                <th>Vencimento</th>
-                                <th>Status</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for obrigacao in obrigacoes_usuario %}
-                            <tr>
-                                <td>
-                                    <small>{{obrigacao.instrumento.numero}}</small>
-                                </td>
-                                <td>
-                                    {% with acao=obrigacao.acoes.first %}
-                                    {% if acao %}
-                                    <div class="fw-semibold" style="white-space: normal; line-height: 1.2;">
-                                        {{acao.nome}}</div>
-                                    <small class="text-muted">{{acao.tipo_acao}}</small>
-                                    {% else %}
-                                    <small class="text-muted">-</small>
-                                    {% endif %}
-                                    {% endwith %}
-                                </td>
-                                <td>
-                                    <div class="fw-semibold" style="white-space: normal; line-height: 1.2;">
-                                        {{obrigacao.titulo}}</div>
-                                    <small class="text-muted">{{obrigacao.tipo_obrigacao}}</small>
-                                </td>
-                                <td>
-                                    {% if obrigacao.data_vencimento %}
-                                    <small class="text-muted">
-                                        <i class="bi bi-calendar me-1"></i>
-                                        {{obrigacao.data_vencimento|date:"d/m/Y"}}
-                                    </small>
-                                    {% else %}
-                                    <small class="text-muted">-</small>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    {% if obrigacao.status == 'pendente' %}
-                                    <span class="badge bg-warning">Pendente</span>
-                                    {% elif obrigacao.status == 'em_andamento' %}
-                                    <span class="badge bg-gold">Em Andamento</span>
-                                    {% elif obrigacao.status == 'cumprida' %}
-                                    <span class="badge bg-success">Cumprida</span>
-                                    {% elif obrigacao.status == 'vencida' %}
-                                    <span class="badge bg-danger">Vencida</span>
-                                    {% else %}
-                                    <span class="badge bg-secondary">{{obrigacao.get_status_display}}</span>
-                                    {% endif %}
-                                </td>
-                            </tr>
-                            {% empty %}
-                            <tr>
-                                <td colspan="5" class="text-center text-muted py-4">
-                                    <i class="bi bi-inbox fs-1 d-block mb-2"></i>
-                                    Nenhuma obrigação cadastrada
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-12">
-        <div class="card border-0 shadow-sm">
-            <div class="card-header bg-white border-0 py-3">
-                <h5 class="card-title mb-0">
                     <i class="bi bi-lightning me-2"></i>
-                    Ações Recentes
+                    Minhas Ações
                 </h5>
             </div>
             <div class="card-body p-0">
@@ -192,7 +111,7 @@
                             </tr>
                         </thead>
                         <tbody>
-                            {% for acao in acoes_recentes %}
+                            {% for acao in minhas_acoes %}
                             <tr>
                                 <td>
                                     <div class="fw-semibold" style="white-space: normal; line-height: 1.2;">

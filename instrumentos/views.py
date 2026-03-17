@@ -1,6 +1,7 @@
 from django import forms
 from django.db.models import Count
 import logging
+import os
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.contrib.auth.decorators import permission_required
@@ -90,6 +91,7 @@ class InstrumentoCreateView(PermissionRequiredMixin, ModernCreateView):
                     field.disabled = True
         
         context['arquivos'] = []
+        context['tipos_obrigacao'] = TipoObrigacao.objects.all().order_by('nome')
         return context
 
     def form_valid(self, form):
@@ -169,6 +171,7 @@ class InstrumentoUpdateView(PermissionRequiredMixin, ModernUpdateView):
                     field.disabled = True
                     
         context['arquivos'] = getattr(self.object, 'arquivos', []).all() if hasattr(self.object, 'arquivos') else []
+        context['tipos_obrigacao'] = TipoObrigacao.objects.all().order_by('nome')
         return context
 
     def post(self, request, *args, **kwargs):

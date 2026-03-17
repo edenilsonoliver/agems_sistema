@@ -256,70 +256,67 @@
                             <table class="table table-hover align-middle mb-0">
                                 <thead class="table-light">
                                     <tr>
-                                        <th style="min-width: 200px;" class="ps-4 text-uppercase small fw-bold">Título
-                                        </th>
-                                        <th style="min-width: 200px;" class="text-uppercase small fw-bold">Descrição
-                                        </th>
-                                        <th style="min-width: 100px;" class="text-uppercase small fw-bold">Cláusula</th>
-                                        <th style="min-width: 150px;" class="text-uppercase small fw-bold">Tipo</th>
-                                        <th style="min-width: 100px;" class="text-uppercase small fw-bold">Prazo (Dias)
-                                        </th>
-                                        <th style="min-width: 130px;" class="text-uppercase small fw-bold">Vencimento
-                                        </th>
-                                        <th style="min-width: 100px;" class="text-uppercase small fw-bold text-center">%
-                                            Atend.</th>
-                                        <th style="min-width: 130px;" class="text-uppercase small fw-bold">Status</th>
-                                        <th style="min-width: 200px;" class="text-uppercase small fw-bold">Observações
-                                        </th>
-                                        <th width="50px" class="text-center text-uppercase small fw-bold">Ações</th>
-                                        <th width="40px" class="text-center text-uppercase small fw-bold">Rec.</th>
-                                        <th width="60px" class="text-end pe-4 text-uppercase small fw-bold">Op.</th>
+                                        <th class="ps-4 text-uppercase small fw-bold">Título</th>
+                                        <th class="text-uppercase small fw-bold">Tipo</th>
+                                        <th class="text-center text-uppercase small fw-bold">Prazo</th>
+                                        <th class="text-uppercase small fw-bold">Vencimento</th>
+                                        <th class="text-uppercase small fw-bold">Status</th>
+                                        <th class="text-center text-uppercase small fw-bold">% Atend.</th>
+                                        <th width="120px" class="text-end pe-4 text-uppercase small fw-bold">Ações</th>
                                     </tr>
                                 </thead>
                                 <tbody id="obrigacoes-container">
                                     {% for form_obrig in formset %}
-                                    <tr class="obrigacao-form" data-form-idx="{{forloop.counter0}}">
+                                    <tr class="obrigacao-form" data-form-idx="{{forloop.counter0}}" id="row-obrigacao-{{forloop.counter0}}">
                                         <td class="ps-4">
                                             {{form_obrig.id}}
-                                            <div style="display: none;">{{form_obrig.DELETE}}</div>
-                                            {{form_obrig.titulo}}
-                                        </td>
-                                        <td>{{form_obrig.descricao}}</td>
-                                        <td>{{form_obrig.clausula_referencia}}</td>
-                                        <td>{{form_obrig.tipo_obrigacao}}</td>
-                                        <td>{{form_obrig.prazo_dias}}</td>
-                                        <td>{{form_obrig.data_vencimento}}</td>
-                                        <td class="text-center">
-                                            {{form_obrig.percentual_atendimento}}
-                                        </td>
-                                        <td>{{form_obrig.status}}</td>
-                                        <td>{{form_obrig.observacoes}}</td>
-                                        <td class="text-center">
-                                            {% if form_obrig.instance.pk %}
-                                            <a href="{% url 'acao_list' %}?obrigacao={{form_obrig.instance.pk}}"
-                                                class="badge {% if form_obrig.instance.acoes_count > 0 %}bg-primary{% else %}bg-secondary{% endif %} text-decoration-none shadow-sm"
-                                                title="Ver ações desta obrigação">
-                                                {{ form_obrig.instance.acoes_count|default:0 }}
-                                            </a>
-                                            {% else %}
-                                            <span class="badge bg-light text-muted border">0</span>
-                                            {% endif %}
-                                        </td>
-                                        <td class="text-center">
-                                            <div class="form-check d-inline-block">
+                                            <div style="display: none;">
+                                                {{form_obrig.DELETE}}
+                                                {{form_obrig.titulo}}
+                                                {{form_obrig.descricao}}
+                                                {{form_obrig.clausula_referencia}}
+                                                {{form_obrig.tipo_obrigacao}}
+                                                {{form_obrig.prazo_dias}}
+                                                {{form_obrig.data_vencimento}}
+                                                {{form_obrig.status}}
+                                                {{form_obrig.percentual_atendimento}}
                                                 {{form_obrig.recorrente}}
+                                                {{form_obrig.observacoes}}
                                             </div>
+                                            <span class="display-titulo fw-bold">{{form_obrig.instance.titulo|default:"Nova Obrigação"}}</span>
+                                        </td>
+                                        <td>
+                                            <span class="display-tipo small text-muted">{{form_obrig.instance.tipo_obrigacao.nome|default:"-"}}</span>
+                                        </td>
+                                        <td class="text-center">
+                                            <span class="display-prazo">{{form_obrig.instance.prazo_dias|default:"0"}}</span> d
+                                        </td>
+                                        <td>
+                                            <span class="display-vencimento">{{form_obrig.instance.data_vencimento|date:"d/m/Y"|default:"-"}}</span>
+                                        </td>
+                                        <td>
+                                            <span class="display-status badge bg-{% if form_obrig.instance.status == 'cumprida' %}success{% elif form_obrig.instance.status == 'vencida' %}danger{% elif form_obrig.instance.status == 'em_andamento' %}info{% else %}secondary{% endif %} shadow-sm">
+                                                {{form_obrig.instance.get_status_display|default:"Pendente"}}
+                                            </span>
+                                        </td>
+                                        <td class="text-center">
+                                            <span class="display-percentual fw-bold text-primary">{{form_obrig.instance.percentual_atendimento|default:"0"}}</span>%
                                         </td>
                                         <td class="text-end pe-4">
-                                            {% if not readonly %}<button type="button"
-                                                class="btn btn-sm btn-outline-danger shadow-sm"
-                                                onclick="removerObrigacao(this)" title="Remover Obrigação">
-                                                <i class="bi bi-trash"></i>
-                                            </button>{% endif %}
+                                            <div class="btn-group btn-group-sm shadow-sm">
+                                                <button type="button" class="btn btn-outline-primary" onclick="editarObrigacaoModal({{forloop.counter0}})" title="Mais Detalhes / Editar">
+                                                    <i class="bi bi-pencil-square"></i>
+                                                </button>
+                                                {% if not readonly %}
+                                                <button type="button" class="btn btn-outline-danger" onclick="removerObrigacao(this)" title="Remover">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                                {% endif %}
+                                            </div>
                                         </td>
                                     </tr>
                                     {% endfor %}
-                                </tbody>
+                                    </tbody>
                             </table>
                         </div>
 
@@ -372,10 +369,14 @@
                                                 {{ arquivo.nome_arquivo|default:arquivo.arquivo.name }}
                                             </td>
                                             <td>{{ arquivo.data_criacao|date:"d/m/Y H:i" }}</td>
-                                            <td>{% if arquivo.safe_size %}{{ arquivo.safe_size|filesizeformat }}{% else
-                                                %}<span class="text-danger small"
-                                                    title="Arquivo físico não encontrado no servidor"><i
-                                                        class="bi bi-exclamation-triangle"></i> Erro</span>{% endif %}
+                                            <td>
+                                                {% if arquivo.safe_size %}
+                                                    {{ arquivo.safe_size|filesizeformat }}
+                                                {% else %}
+                                                    <span class="text-danger small" title="Arquivo físico não encontrado no servidor">
+                                                        <i class="bi bi-exclamation-triangle"></i> Erro
+                                                    </span>
+                                                {% endif %}
                                             </td>
                                             <td class="text-end">
                                                 <a href="{{ arquivo.arquivo.url }}" target="_blank"
@@ -409,6 +410,28 @@
                 </div>
             </div>
         </div>
+
+        
+<!-- Modal de Obrigação -->
+<div class="modal fade" id="modalObrigacao" tabindex="-1" aria-labelledby="modalObrigacaoLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg border-0 shadow-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="modalObrigacaoLabel"><i class="bi bi-list-check me-2"></i>Detalhes da Obrigação</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                {% include 'instrumentos/partials/obrigacao_modal_body.html' %}
+            </div>
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary px-4" onclick="confirmarSalvarObrigacaoModal()">
+                    <i class="bi bi-check-lg me-1"></i> Confirmar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 
         <!-- Botões de Ação Finais -->
         <div class="d-flex justify-content-end gap-2 mt-4 mb-5">
@@ -625,37 +648,50 @@
 <!-- Template vazio para nova obrigação -->
 <table style="display: none;">
     <tbody id="empty-form-template">
-        <tr class="obrigacao-form" data-form-idx="__prefix__">
+        <tr class="obrigacao-form" data-form-idx="__prefix__" id="row-obrigacao-__prefix__">
             <td class="ps-4">
                 <input type="hidden" name="obrigacoes-__prefix__-id" id="id_obrigacoes-__prefix__-id">
                 <div style="display: none;">
                     <input type="checkbox" name="obrigacoes-__prefix__-DELETE" id="id_obrigacoes-__prefix__-DELETE">
-                </div>
-                {{ formset.empty_form.titulo }}
-            </td>
-            <td>{{ formset.empty_form.descricao }}</td>
-            <td>{{ formset.empty_form.clausula_referencia }}</td>
-            <td>{{ formset.empty_form.tipo_obrigacao }}</td>
-            <td>{{ formset.empty_form.prazo_dias }}</td>
-            <td>{{ formset.empty_form.data_vencimento }}</td>
-            <td class="text-center">
-                {{ formset.empty_form.percentual_atendimento }}
-            </td>
-            <td>{{ formset.empty_form.status }}</td>
-            <td>{{ formset.empty_form.observacoes }}</td>
-            <td class="text-center">
-                <span class="badge bg-light text-muted border">0</span>
-            </td>
-            <td class="text-center">
-                <div class="form-check d-inline-block">
+                    {{ formset.empty_form.titulo }}
+                    {{ formset.empty_form.descricao }}
+                    {{ formset.empty_form.clausula_referencia }}
+                    {{ formset.empty_form.tipo_obrigacao }}
+                    {{ formset.empty_form.prazo_dias }}
+                    {{ formset.empty_form.data_vencimento }}
+                    {{ formset.empty_form.status }}
+                    {{ formset.empty_form.percentual_atendimento }}
                     {{ formset.empty_form.recorrente }}
+                    {{ formset.empty_form.observacoes }}
                 </div>
+                <span class="display-titulo fw-bold">Nova Obrigação</span>
+            </td>
+            <td>
+                <span class="display-tipo small text-muted">-</span>
+            </td>
+            <td class="text-center">
+                <span class="display-prazo">0</span> d
+            </td>
+            <td>
+                <span class="display-vencimento">-</span>
+            </td>
+            <td>
+                <span class="display-status badge bg-secondary shadow-sm">Pendente</span>
+            </td>
+            <td class="text-center">
+                <span class="display-percentual fw-bold text-primary">0</span>%
             </td>
             <td class="text-end pe-4">
-                {% if not readonly %}<button type="button" class="btn btn-sm btn-outline-danger"
-                    onclick="removerObrigacao(this)">
-                    <i class="bi bi-trash"></i>
-                </button>{% endif %}
+                <div class="btn-group btn-group-sm shadow-sm">
+                    <button type="button" class="btn btn-outline-primary" onclick="editarObrigacaoModal('__prefix__')">
+                        <i class="bi bi-pencil-square"></i>
+                    </button>
+                    {% if not readonly %}
+                    <button type="button" class="btn btn-outline-danger" onclick="removerObrigacao(this)">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                    {% endif %}
+                </div>
             </td>
         </tr>
     </tbody>
@@ -663,6 +699,10 @@
 
 <script>
     const totalFormsInput = document.getElementById('id_obrigacoes-TOTAL_FORMS');
+
+    
+    // --- LÓGICA DE MODAL PARA OBRIGAÇÕES ---
+    let currentObrigacaoIdx = null;
 
     function atualizarContadorVisual() {
         const count = document.querySelectorAll('#obrigacoes-container .obrigacao-form:not([style*="display: none"])').length;
@@ -674,17 +714,124 @@
     }
 
     function adicionarObrigacao() {
-        if (!totalFormsInput) return;
+        currentObrigacaoIdx = null;
+        limparModalObrigacao();
+        const modalEl = document.getElementById('modalObrigacao');
+        const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+        document.getElementById('modalObrigacaoLabel').innerHTML = '<i class="bi bi-plus-circle me-2"></i>Adicionar Nova Obrigação';
+        modal.show();
+    }
+
+    function editarObrigacaoModal(idx) {
+        currentObrigacaoIdx = idx;
+        const modalEl = document.getElementById('modalObrigacao');
+        const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+        document.getElementById('modalObrigacaoLabel').innerHTML = '<i class="bi bi-pencil-square me-2"></i>Editar Detalhes da Obrigação';
+        
+        // Mapeamento dos campos hidden para o modal
+        document.getElementById('modal-obrigacao-titulo').value = document.getElementById(`id_obrigacoes-${idx}-titulo`).value;
+        document.getElementById('modal-obrigacao-descricao').value = document.getElementById(`id_obrigacoes-${idx}-descricao`).value;
+        document.getElementById('modal-obrigacao-tipo').value = document.getElementById(`id_obrigacoes-${idx}-tipo_obrigacao`).value;
+        document.getElementById('modal-obrigacao-clausula').value = document.getElementById(`id_obrigacoes-${idx}-clausula_referencia`).value;
+        document.getElementById('modal-obrigacao-prazo').value = document.getElementById(`id_obrigacoes-${idx}-prazo_dias`).value;
+        document.getElementById('modal-obrigacao-vencimento').value = document.getElementById(`id_obrigacoes-${idx}-data_vencimento`).value;
+        document.getElementById('modal-obrigacao-status').value = document.getElementById(`id_obrigacoes-${idx}-status`).value;
+        document.getElementById('modal-obrigacao-percentual').value = document.getElementById(`id_obrigacoes-${idx}-percentual_atendimento`).value;
+        
+        const recInput = document.getElementById(`id_obrigacoes-${idx}-recorrente`);
+        document.getElementById('modal-obrigacao-recorrente').checked = (recInput.checked || recInput.value === 'on');
+        
+        document.getElementById('modal-obrigacao-observacoes').value = document.getElementById(`id_obrigacoes-${idx}-observacoes`).value;
+        
+        modal.show();
+    }
+
+    function limparModalObrigacao() {
+        document.getElementById('modal-obrigacao-titulo').value = '';
+        document.getElementById('modal-obrigacao-descricao').value = '';
+        document.getElementById('modal-obrigacao-tipo').value = '';
+        document.getElementById('modal-obrigacao-clausula').value = '';
+        document.getElementById('modal-obrigacao-prazo').value = '0';
+        document.getElementById('modal-obrigacao-vencimento').value = '';
+        document.getElementById('modal-obrigacao-status').value = 'pendente';
+        document.getElementById('modal-obrigacao-percentual').value = '0';
+        document.getElementById('modal-obrigacao-recorrente').checked = false;
+        document.getElementById('modal-obrigacao-observacoes').value = '';
+    }
+
+    function confirmarSalvarObrigacaoModal() {
+        const titulo = document.getElementById('modal-obrigacao-titulo').value;
+        if (!titulo) {
+            alert('O título da obrigação é obrigatório!');
+            return;
+        }
+
+        let idx = currentObrigacaoIdx;
+        if (idx === null) {
+            const row = criarNovaLinhaVazia();
+            idx = row.getAttribute('data-form-idx');
+        }
+
+        // Salvar nos campos hidden
+        document.getElementById(`id_obrigacoes-${idx}-titulo`).value = titulo;
+        document.getElementById(`id_obrigacoes-${idx}-descricao`).value = document.getElementById('modal-obrigacao-descricao').value;
+        document.getElementById(`id_obrigacoes-${idx}-tipo_obrigacao`).value = document.getElementById('modal-obrigacao-tipo').value;
+        document.getElementById(`id_obrigacoes-${idx}-clausula_referencia`).value = document.getElementById('modal-obrigacao-clausula').value;
+        document.getElementById(`id_obrigacoes-${idx}-prazo_dias`).value = document.getElementById('modal-obrigacao-prazo').value;
+        document.getElementById(`id_obrigacoes-${idx}-data_vencimento`).value = document.getElementById('modal-obrigacao-vencimento').value;
+        document.getElementById(`id_obrigacoes-${idx}-status`).value = document.getElementById('modal-obrigacao-status').value;
+        document.getElementById(`id_obrigacoes-${idx}-percentual_atendimento`).value = document.getElementById('modal-obrigacao-percentual').value;
+        document.getElementById(`id_obrigacoes-${idx}-recorrente`).checked = document.getElementById('modal-obrigacao-recorrente').checked;
+        document.getElementById(`id_obrigacoes-${idx}-observacoes`).value = document.getElementById('modal-obrigacao-observacoes').value;
+
+        // Atualizar display
+        const row = document.getElementById(`row-obrigacao-${idx}`);
+        row.querySelector('.display-titulo').innerText = titulo;
+        
+        const tipoSelect = document.getElementById('modal-obrigacao-tipo');
+        row.querySelector('.display-tipo').innerText = tipoSelect.selectedIndex >= 0 ? tipoSelect.options[tipoSelect.selectedIndex].text : '-';
+        row.querySelector('.display-prazo').innerText = document.getElementById('modal-obrigacao-prazo').value;
+        
+        const venc = document.getElementById('modal-obrigacao-vencimento').value;
+        if (venc) {
+            const date = new Date(venc + 'T00:00:00');
+            row.querySelector('.display-vencimento').innerText = date.toLocaleDateString('pt-BR');
+        } else {
+            row.querySelector('.display-vencimento').innerText = '-';
+        }
+        
+        row.querySelector('.display-percentual').innerText = document.getElementById('modal-obrigacao-percentual').value;
+        
+        const statusSelect = document.getElementById('modal-obrigacao-status');
+        const statusBadge = row.querySelector('.display-status');
+        statusBadge.innerText = statusSelect.options[statusSelect.selectedIndex].text;
+        statusBadge.className = 'display-status badge shadow-sm ' + getBadgeClassForStatus(statusSelect.value);
+
+        row.classList.add('table-primary');
+        setTimeout(() => row.classList.remove('table-primary'), 1500);
+
+        bootstrap.Modal.getInstance(document.getElementById('modalObrigacao')).hide();
+        atualizarContadorVisual();
+    }
+
+    function getBadgeClassForStatus(status) {
+        if (status === 'cumprida') return 'bg-success';
+        if (status === 'vencida') return 'bg-danger';
+        if (status === 'em_andamento') return 'bg-info';
+        return 'bg-secondary';
+    }
+
+    function criarNovaLinhaVazia() {
+        const totalFormsInput = document.getElementById('id_obrigacoes-TOTAL_FORMS');
         const currentCount = parseInt(totalFormsInput.value);
         const template = document.getElementById('empty-form-template').innerHTML;
         const newRowHTML = template.replace(/__prefix__/g, currentCount);
         const container = document.getElementById('obrigacoes-container');
         container.insertAdjacentHTML('beforeend', newRowHTML);
         totalFormsInput.value = currentCount + 1;
-        atualizarContadorVisual();
         return container.lastElementChild;
     }
-
+    
     function removerObrigacao(btn) {
         const row = btn.closest('.obrigacao-form');
         const deleteInput = row.querySelector('input[name$="-DELETE"]');
@@ -698,19 +845,31 @@
             }
         } else {
             row.remove();
-            // Nao mexemos no TOTAL_FORMS para manter integridade dos indices
         }
         atualizarContadorVisual();
     }
 
     function adicionarObrigacaoComDados(data) {
-        const newRow = adicionarObrigacao();
-        if (!newRow) return;
-        newRow.querySelector('input[name$="-titulo"]').value = data.titulo || '';
-        newRow.querySelector('textarea[name$="-descricao"]').value = data.descricao || '';
-        newRow.querySelector('input[name$="-clausula_referencia"]').value = data.clausula_referencia || '';
-        const tipoSelect = newRow.querySelector('select[name$="-tipo_obrigacao"]');
-        if (tipoSelect && data.tipo_obrigacao) tipoSelect.value = data.tipo_obrigacao;
+        const row = criarNovaLinhaVazia();
+        const idx = row.getAttribute('data-form-idx');
+        
+        document.getElementById(`id_obrigacoes-${idx}-titulo`).value = data.titulo || '';
+        document.getElementById(`id_obrigacoes-${idx}-descricao`).value = data.descricao || '';
+        document.getElementById(`id_obrigacoes-${idx}-clausula_referencia`).value = data.clausula_referencia || '';
+        
+        const tipoSelectHidden = document.getElementById(`id_obrigacoes-${idx}-tipo_obrigacao`);
+        if (tipoSelectHidden && data.tipo_obrigacao) {
+            tipoSelectHidden.value = data.tipo_obrigacao;
+        }
+
+        row.querySelector('.display-titulo').innerText = data.titulo || 'Nova Obrigação';
+        
+        const modalTipoSelect = document.getElementById('modal-obrigacao-tipo');
+        if (modalTipoSelect && data.tipo_obrigacao) {
+            const opt = Array.from(modalTipoSelect.options).find(o => o.value == data.tipo_obrigacao);
+            if (opt) row.querySelector('.display-tipo').innerText = opt.text;
+        }
+        atualizarContadorVisual();
     }
 
     document.addEventListener('DOMContentLoaded', function () {
@@ -739,5 +898,70 @@
             btn.addEventListener('shown.bs.tab', e => sessionStorage.setItem('activeInstrumentoTab', e.target.id));
         });
     });
+
+    function executarUpload() {
+        const fileInput = document.getElementById('arquivo');
+        const nomeInput = document.getElementById('nomeArquivo');
+        const btn = document.getElementById('btnUpload');
+        const btnText = document.getElementById('btnUploadText');
+
+        if (!fileInput.files || fileInput.files.length === 0) {
+            alert('Por favor, selecione um arquivo.');
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('arquivo', fileInput.files[0]);
+        formData.append('nome_arquivo', nomeInput.value);
+        formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+
+        btn.disabled = true;
+        btnText.innerText = 'Enviando...';
+
+        fetch('{% if object %}{% url "arquivo_upload" object.pk %}{% endif %}', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Erro: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Erro ao enviar arquivo.');
+        })
+        .finally(() => {
+            btn.disabled = false;
+            btnText.innerText = 'Upload';
+        });
+    }
+
+    function excluirArquivo(id) {
+        if (!confirm('Deseja realmente excluir este arquivo?')) return;
+
+        const formData = new FormData();
+        formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+
+        fetch(`/api/arquivo/${id}/excluir/`, {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Erro ao excluir arquivo.');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Erro de comunicação com o servidor.');
+        });
+    }
 </script>
 {% endblock %}

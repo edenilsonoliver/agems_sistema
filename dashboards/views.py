@@ -84,24 +84,14 @@ def dashboard_principal(request):
         status__in=['a_iniciar', 'em_andamento']
     ).count()
 
-    # Obrigações recentes
-    queryset_obrigacoes = Obrigacao.objects.select_related('instrumento', 'tipo_obrigacao').prefetch_related('acoes')
-    if f_obrigacao:
-        queryset_obrigacoes = queryset_obrigacoes.filter(f_obrigacao)
-        
-    if is_tecnico:
-        queryset_obrigacoes = queryset_obrigacoes.filter(
-            Q(acoes__responsavel=usuario) | Q(acoes__executores=usuario)
-        ).distinct()
-
-    obrigacoes_recentes = queryset_obrigacoes.order_by('-data_vencimento')[:10]
-    
-    # Ações recentes
-    acoes_recentes = acoes.select_related(
+    # Minhas Ações (Onde o usuário é Responsável ou Executor)
+    minhas_acoes = Acao.objects.filter(
+        Q(responsavel=usuario) | Q(executores=usuario)
+    ).select_related(
         'obrigacao', 'tipo_acao', 'responsavel'
-    ).order_by('-data_cadastro')[:10]
+    ).distinct().order_by('-data_cadastro')
 
-    # Distribuição de Ações por status
+    # Distribuição de Ações por status (Mantém estatística global/diretoria)
     acoes_por_status = list(
         acoes.values('status')
         .annotate(total=Count('id'))
@@ -116,8 +106,7 @@ def dashboard_principal(request):
         'tarefas_por_status': json.dumps(acoes_por_status),
         'tarefas_a_vencer': acoes_a_vencer,
         'tarefas_vencidas': acoes_vencidas,
-        'obrigacoes_usuario': obrigacoes_recentes,
-        'acoes_recentes': acoes_recentes,
+        'minhas_acoes': minhas_acoes,
     }
 
     return render(request, 'dashboards/dashboard_modern.html', context)
