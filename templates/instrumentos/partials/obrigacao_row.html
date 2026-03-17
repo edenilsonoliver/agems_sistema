@@ -1,0 +1,52 @@
+{% load static %}
+<tr class="obrigacao-form" data-form-idx="{{ index }}">
+    <td class="ps-4">
+        <input type="hidden" name="obrigacoes-{{ index }}-id" id="id_obrigacoes-{{ index }}-id" value="{{ object.id|default:'' }}">
+        <div style="display: none;">
+            <input type="checkbox" name="obrigacoes-{{ index }}-DELETE" id="id_obrigacoes-{{ index }}-DELETE">
+        </div>
+        
+        <!-- Campos Hidden para o Formset -->
+        <input type="hidden" name="obrigacoes-{{ index }}-titulo" id="id_obrigacoes-{{ index }}-titulo" value="{{ object.titulo|default:'' }}">
+        <input type="hidden" name="obrigacoes-{{ index }}-descricao" id="id_obrigacoes-{{ index }}-descricao" value="{{ object.descricao|default:'' }}">
+        <input type="hidden" name="obrigacoes-{{ index }}-clausula_referencia" id="id_obrigacoes-{{ index }}-clausula_referencia" value="{{ object.clausula_referencia|default:'' }}">
+        <input type="hidden" name="obrigacoes-{{ index }}-tipo_obrigacao" id="id_obrigacoes-{{ index }}-tipo_obrigacao" value="{{ object.tipo_obrigacao.id|default:'' }}">
+        <input type="hidden" name="obrigacoes-{{ index }}-prazo_dias" id="id_obrigacoes-{{ index }}-prazo_dias" value="{{ object.prazo_dias|default:'0' }}">
+        <input type="hidden" name="obrigacoes-{{ index }}-data_vencimento" id="id_obrigacoes-{{ index }}-data_vencimento" value="{{ object.data_vencimento|date:'Y-m-d'|default:'' }}">
+        <input type="hidden" name="obrigacoes-{{ index }}-percentual_atendimento" id="id_obrigacoes-{{ index }}-percentual_atendimento" value="{{ object.percentual_atendimento|default:'0' }}">
+        <input type="hidden" name="obrigacoes-{{ index }}-status" id="id_obrigacoes-{{ index }}-status" value="{{ object.status|default:'pendente' }}">
+        <input type="hidden" name="obrigacoes-{{ index }}-observacoes" id="id_obrigacoes-{{ index }}-observacoes" value="{{ object.observacoes|default:'' }}">
+        <input type="hidden" name="obrigacoes-{{ index }}-recorrente" id="id_obrigacoes-{{ index }}-recorrente" value="{% if object.recorrente %}on{% endif %}">
+
+        <span class="display-titulo fw-bold">{{ object.titulo|default:'Nova Obrigação' }}</span>
+    </td>
+    <td class="small">
+        <span class="display-tipo">{{ object.tipo_obrigacao.nome|default:'-' }}</span>
+    </td>
+    <td class="text-center">
+        <span class="display-prazo">{{ object.prazo_dias|default:'0' }}</span> d
+    </td>
+    <td>
+        <span class="display-vencimento">{{ object.data_vencimento|date:'d/m/Y'|default:'-' }}</span>
+    </td>
+    <td>
+        <span class="display-status badge bg-{% if object.status == 'cumprida' %}success{% elif object.status == 'vencida' %}danger{% elif object.status == 'em_andamento' %}info{% else %}secondary{% endif %}">
+            {{ object.get_status_display|default:'Pendente' }}
+        </span>
+    </td>
+    <td class="text-center">
+        <span class="display-percentual">{{ object.percentual_atendimento|default:'0' }}</span>%
+    </td>
+    <td class="text-end pe-4">
+        <div class="btn-group btn-group-sm">
+            <button type="button" class="btn btn-outline-primary" onclick="editarObrigacaoModal({{ index }})" title="Editar Detalhes">
+                <i class="bi bi-pencil"></i>
+            </button>
+            {% if not readonly %}
+            <button type="button" class="btn btn-outline-danger" onclick="removerObrigacao(this)" title="Remover">
+                <i class="bi bi-trash"></i>
+            </button>
+            {% endif %}
+        </div>
+    </td>
+</tr>
