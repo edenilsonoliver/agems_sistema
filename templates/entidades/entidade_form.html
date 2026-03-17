@@ -1,4 +1,5 @@
 ﻿{% extends 'base_modern.html' %}
+{% load static %}
 {% load crispy_forms_tags %}
 
 {% block content %}
@@ -102,7 +103,7 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="https://unpkg.com/imask"></script>
+<script src="{% static 'vendor/imask/imask.js' %}"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         // Máscara para CNPJ

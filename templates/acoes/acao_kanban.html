@@ -1,4 +1,5 @@
 ﻿{% extends 'base_modern.html' %}
+{% load static %}
 
 {% block title %}Ações - Kanban - AGEMS{% endblock %}
 
@@ -288,7 +289,7 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+<script src="{% static 'vendor/sortablejs/Sortable.min.js' %}"></script>
 <script>
     const acoesData = {{tarefas_json| safe}};
     const csrfToken = '{{csrf_token}}';

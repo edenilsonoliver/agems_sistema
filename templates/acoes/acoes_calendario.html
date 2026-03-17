@@ -4,7 +4,7 @@
 {% block title %}Calendário de Ações - AGEMS{% endblock %}
 
 {% block extra_css %}
-<link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.css" rel="stylesheet">
+
 <style>
     #calendar {
         max-width: 100%;
@@ -50,8 +50,8 @@
 
 {% block extra_js %}
 <!-- FullCalendar Core e Locale -->
-<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/locales/pt-br.global.min.js"></script>
+<script src="{% static 'vendor/fullcalendar/index.global.min.js' %}"></script>
+<script src="{% static 'vendor/fullcalendar/locales/pt-br.global.min.js' %}"></script>
 
 <script>
     document.addEventListener('DOMContentLoaded', function () {
