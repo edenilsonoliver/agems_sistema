@@ -1,0 +1,55 @@
+<div class="row">
+    <div class="col-12 mb-3">
+        <label for="modal-obrigacao-titulo" class="form-label fw-bold">Título da Obrigação *</label>
+        <input type="text" id="modal-obrigacao-titulo" class="form-control" placeholder="Descreva o título da obrigação">
+    </div>
+    <div class="col-12 mb-3">
+        <label for="modal-obrigacao-descricao" class="form-label">Descrição</label>
+        <textarea id="modal-obrigacao-descricao" class="form-control" rows="3"></textarea>
+    </div>
+    <div class="col-md-6 mb-3">
+        <label for="modal-obrigacao-tipo" class="form-label">Tipo de Obrigação</label>
+        <select id="modal-obrigacao-tipo" class="form-select">
+            <option value="">---------</option>
+            {% for tipo in tipos_obrigacao %}
+            <option value="{{ tipo.id }}">{{ tipo.nome }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="col-md-6 mb-3">
+        <label for="modal-obrigacao-clausula" class="form-label">Cláusula de Referência</label>
+        <input type="text" id="modal-obrigacao-clausula" class="form-control" placeholder="Ex: Cláusula 5.2">
+    </div>
+    <div class="col-md-4 mb-3">
+        <label for="modal-obrigacao-prazo" class="form-label">Prazo (Dias)</label>
+        <input type="number" id="modal-obrigacao-prazo" class="form-control" value="0">
+    </div>
+    <div class="col-md-4 mb-3">
+        <label for="modal-obrigacao-vencimento" class="form-label">Data de Vencimento</label>
+        <input type="date" id="modal-obrigacao-vencimento" class="form-control">
+    </div>
+    <div class="col-md-4 mb-3">
+        <label for="modal-obrigacao-status" class="form-label">Status</label>
+        <select id="modal-obrigacao-status" class="form-select">
+            <option value="pendente">Pendente</option>
+            <option value="em_andamento">Em Andamento</option>
+            <option value="cumprida">Cumprida</option>
+            <option value="vencida">Vencida</option>
+        </select>
+    </div>
+    <div class="col-md-6 mb-3">
+        <label for="modal-obrigacao-percentual" class="form-label">% Atendimento</label>
+        <input type="number" id="modal-obrigacao-percentual" class="form-control" min="0" max="100" value="0">
+    </div>
+    <div class="col-md-6 mb-3 d-flex align-items-end">
+        <div class="form-check mb-2">
+            <input type="checkbox" id="modal-obrigacao-recorrente" class="form-check-input">
+            <label for="modal-obrigacao-recorrente" class="form-check-label">Obrigação Recorrente</label>
+        </div>
+    </div>
+    <div class="col-12 mb-3">
+        <label for="modal-obrigacao-observacoes" class="form-label">Observações</label>
+        <textarea id="modal-obrigacao-observacoes" class="form-control" rows="2"></textarea>
+    </div>
+</div>
+<input type="hidden" id="modal-obrigacao-index" value="">
