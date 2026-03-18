@@ -256,7 +256,8 @@
                             <table class="table table-hover align-middle mb-0">
                                 <thead class="table-light">
                                     <tr>
-                                        <th class="ps-4 text-uppercase small fw-bold">Título</th>
+                                        <th class="ps-4 text-uppercase small fw-bold" style="width: 150px;">Cláusula</th>
+                                        <th class="text-uppercase small fw-bold">Título</th>
                                         <th class="text-uppercase small fw-bold">Tipo</th>
                                         <th class="text-center text-uppercase small fw-bold">Prazo</th>
                                         <th class="text-uppercase small fw-bold">Vencimento</th>
@@ -283,6 +284,9 @@
                                                 {{form_obrig.recorrente}}
                                                 {{form_obrig.observacoes}}
                                             </div>
+                                            <span class="display-clausula text-muted small fw-bold">{{form_obrig.instance.clausula_referencia|default:"-"}}</span>
+                                        </td>
+                                        <td>
                                             <span class="display-titulo fw-bold">{{form_obrig.instance.titulo|default:"Nova Obrigação"}}</span>
                                         </td>
                                         <td>
@@ -664,6 +668,9 @@
                     {{ formset.empty_form.recorrente }}
                     {{ formset.empty_form.observacoes }}
                 </div>
+                <span class="display-clausula text-muted small fw-bold">-</span>
+            </td>
+            <td>
                 <span class="display-titulo fw-bold">Nova Obrigação</span>
             </td>
             <td>
@@ -787,6 +794,9 @@
         // Atualizar display
         const row = document.getElementById(`row-obrigacao-${idx}`);
         row.querySelector('.display-titulo').innerText = titulo;
+        if (row.querySelector('.display-clausula')) {
+            row.querySelector('.display-clausula').innerText = document.getElementById('modal-obrigacao-clausula').value || '-';
+        }
         
         const tipoSelect = document.getElementById('modal-obrigacao-tipo');
         row.querySelector('.display-tipo').innerText = tipoSelect.selectedIndex >= 0 ? tipoSelect.options[tipoSelect.selectedIndex].text : '-';
@@ -863,6 +873,9 @@
         }
 
         row.querySelector('.display-titulo').innerText = data.titulo || 'Nova Obrigação';
+        if (row.querySelector('.display-clausula')) {
+            row.querySelector('.display-clausula').innerText = data.clausula_referencia || '-';
+        }
         
         const modalTipoSelect = document.getElementById('modal-obrigacao-tipo');
         if (modalTipoSelect && data.tipo_obrigacao) {
