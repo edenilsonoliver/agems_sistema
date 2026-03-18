@@ -1,10 +1,11 @@
-﻿{% extends 'components/list_view.html' %}
+{% extends 'components/list_view.html' %}
 
 {% block table_headers %}
 <th>Nome do Instrumento</th>
 <th>Tipo</th>
 <th>Diretoria</th>
 <th>Entidades</th>
+<th>Obrigações</th>
 <th>Vigência</th>
 <th>Status</th>
 {% endblock %}
@@ -22,6 +23,9 @@
     <td>{{instrumento.diretoria.sigla}}</td>
     <td>
         <small>{{instrumento.entidades.count}} entidade(s)</small>
+    </td>
+    <td>
+        <small>{{instrumento.obrigacoes.count}} obrigação(ões)</small>
     </td>
     <td>
         <small>{{instrumento.data_inicio|date:"d/m/Y"}} - {{instrumento.data_fim|date:"d/m/Y"}}</small>

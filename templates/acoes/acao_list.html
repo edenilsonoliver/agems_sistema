@@ -1,4 +1,4 @@
-﻿{% extends 'components/list_view.html' %}
+{% extends 'components/list_view.html' %}
 
 {% block header_actions %}
 <a href="{% url 'acao_calendario' %}" class="btn btn-outline-primary me-2"><i class="bi bi-calendar3"></i> Ver
@@ -100,17 +100,13 @@
             {{acao.data_fim|date:"d/m/Y"}}</small></td>
     <td>
         {% if acao.resultado == 'atendido' %}
-        <span class="rounded-circle d-inline-block" style="width:18px;height:18px;background:#2E7D32;cursor:help;"
-            data-bs-toggle="tooltip" title="Atendido"></span>
+        <span class="badge" style="background-color: #2E7D32;">Atendido</span>
         {% elif acao.resultado == 'parcialmente_atendido' %}
-        <span class="rounded-circle d-inline-block" style="width:18px;height:18px;background:#E65100;cursor:help;"
-            data-bs-toggle="tooltip" title="Parcialmente Atendido"></span>
+        <span class="badge" style="background-color: #E65100;">Parcialmente Atendido</span>
         {% elif acao.resultado == 'nao_atendido' %}
-        <span class="rounded-circle d-inline-block" style="width:18px;height:18px;background:#C62828;cursor:help;"
-            data-bs-toggle="tooltip" title="Não Atendido"></span>
+        <span class="badge" style="background-color: #C62828;">Não Atendido</span>
         {% else %}
-        <span class="rounded-circle d-inline-block" style="width:18px;height:18px;background:#B0BEC5;cursor:help;"
-            data-bs-toggle="tooltip" title="Pendente de análise"></span>
+        <span class="badge" style="background-color: #B0BEC5;">Não avaliado</span>
         {% endif %}
     </td>
     <td>

@@ -319,10 +319,22 @@
                                         <td class="text-end pe-4">
                                             <div class="btn-group btn-group-sm shadow-sm">
                                                 {% if form_obrig.instance.pk %}
-                                                <a href="{% url 'acao_create' %}?obrigacao={{form_obrig.instance.pk}}&instrumento={{object.pk}}" 
-                                                   class="btn btn-outline-info" title="Adicionar Ações para esta Obrigação">
-                                                    <i class="bi bi-lightning-charge"></i>
+                                                {# CONTADOR DE AÇÕES #}
+                                                {% with total_acoes=form_obrig.instance.acoes.count %}
+                                                {% if total_acoes > 0 %}
+                                                <a href="{% url 'acao_list' %}?instrumento={{object.pk}}&obrigacao={{form_obrig.instance.pk}}" 
+                                                   class="btn btn-primary text-white" title="Ver {{total_acoes}} Ações desta Obrigação">
+                                                    {{total_acoes}}
                                                 </a>
+                                                {% endif %}
+                                                {% endwith %}
+
+                                                {# BOTÃO DE RAIO (ABRE O MODAL AGORA) #}
+                                                <button type="button" class="btn btn-outline-info" 
+                                                        onclick="abrirModalTipo('{{object.pk}}', '{{form_obrig.instance.pk}}')" 
+                                                        title="Adicionar Ações para esta Obrigação">
+                                                    <i class="bi bi-lightning-charge"></i>
+                                                </button>
                                                 {% endif %}
                                                 <button type="button" class="btn btn-outline-primary" onclick="editarObrigacaoModal({{forloop.counter0}})" title="Mais Detalhes / Editar">
                                                     <i class="bi bi-pencil-square"></i>
@@ -1036,6 +1048,60 @@
             console.error('Error:', error);
             alert('Erro de comunicação com o servidor.');
         });
+    }
+
+    function abrirModalTipo(instrumento_id, obrigacao_id) {
+        let modal = document.getElementById('modalTipoAcao');
+        if (!modal) {
+            modal = document.createElement('div');
+            modal.id = 'modalTipoAcao';
+            modal.className = 'modal fade';
+            modal.setAttribute('tabindex', '-1');
+            modal.innerHTML = `
+                <div class="modal-dialog modal-xl modal-dialog-centered">
+                    <div class="modal-content border-0 shadow-lg">
+                        <div class="modal-header border-0 pb-0">
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div id="modalTipoBody">
+                            <div class="text-center py-5">
+                                <div class="spinner-border text-primary" role="status"></div>
+                                <p class="mt-3 text-muted">Carregando tipos de ação...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
+            document.body.appendChild(modal);
+        }
+
+        let bsModal = bootstrap.Modal.getInstance(modal) || new bootstrap.Modal(modal);
+        bsModal.show();
+
+        let url = '{% url "acao_tipo_selector" %}';
+        const params = new URLSearchParams();
+        if (instrumento_id) params.append('instrumento_id', instrumento_id);
+        if (obrigacao_id) params.append('obrigacao_id', obrigacao_id);
+        if (params.toString()) url += '?' + params.toString();
+
+        fetch(url)
+            .then(r => r.text())
+            .then(html => {
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                const body = doc.querySelector('.modal-body') || doc.body;
+                document.getElementById('modalTipoBody').innerHTML = body ? body.outerHTML : html;
+                
+                document.querySelectorAll('#modalTipoBody [data-bs-toggle="tooltip"]').forEach(el => {
+                    new bootstrap.Tooltip(el);
+                });
+            })
+            .catch(err => {
+                document.getElementById('modalTipoBody').innerHTML = `
+                    <div class="p-4 text-center text-danger">
+                        <i class="bi bi-exclamation-triangle fs-3 d-block mb-3"></i>
+                        Erro ao carregar tipos de ação.
+                    </div>`;
+            });
     }
 </script>
 {% endblock %}

@@ -3,7 +3,7 @@ from django import forms
 from .models import Acao, ChecklistItem
 from usuarios.models import Usuario
 from django.forms import inlineformset_factory
-from instrumentos.models import Instrumento
+from instrumentos.models import Instrumento, Obrigacao
 from entidades.models import Entidade
 import os
 import logging
@@ -99,8 +99,12 @@ class AcaoForm(forms.ModelForm):
             except:
                 pass
                 
-        # 3. Filtrar pelas Subunidades do Instrumento (se houver), senão cair pro legado da Diretoria
-        if inst and inst.diretoria:
+        # 3. Filtragem de Usuários Dinâmica
+        # Regra de Ouro: Admin do Sistema (Perfil 0) SEMPRE vê todos os usuários (exceto outros admins).
+        if self.user and self.user.is_authenticated and self.user.perfil == 0:
+            usuarios = base_usuarios
+        # Se existe um Instrumento selecionado, filtra pela Diretoria dele (para usuários comuns)
+        elif inst and inst.diretoria:
             subunidades = inst.subunidades.all()
             if subunidades.exists():
                 usuarios = base_usuarios.filter(subunidade__in=subunidades)
@@ -109,11 +113,17 @@ class AcaoForm(forms.ModelForm):
                     Q(diretoria=inst.diretoria) | Q(subunidade__diretoria=inst.diretoria)
                 )
         else:
-            # Caso não haja instrumento selecionado (Formulário Limpo / Nova Ação)
-            # Retorna queryset vazia para forçar o usuário a escolher o Instrumento primeiro.
-            # E se por acaso já existirem na base legada dados fora disso, o queryset vazio no create garante que 
-            # a listagem inicie limpa até o AJAX preencher visualmente, e no post o self.data resolve.
-            usuarios = base_usuarios.none()
+            # Fallback para o Fluxo do Modal (onde o Instrumento ainda não foi escolhido no carregamento inicial)
+            if self.user and self.user.is_authenticated and self.user.perfil == 0:
+                # O Admin vê todos os usuários (exceto outros admins) por padrão
+                usuarios = base_usuarios
+            elif self.user and self.user.is_authenticated and getattr(self.user, 'diretoria', None):
+                # Outros perfis vêem usuários da sua própria diretoria como fallback
+                usuarios = base_usuarios.filter(
+                    Q(diretoria=self.user.diretoria) | Q(subunidade__diretoria=self.user.diretoria)
+                )
+            else:
+                usuarios = base_usuarios.none()
 
         # Configurar campos de usuários
         self.fields['responsavel'].queryset = usuarios

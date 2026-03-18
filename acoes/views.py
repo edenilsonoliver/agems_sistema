@@ -81,23 +81,28 @@ def get_obrigacoes_por_instrumento(request):
         instrumento = Instrumento.objects.get(pk=instrumento_id)
         entidades = list(instrumento.entidades.values('id', 'razao_social'))
         
-        # Filtra os usuários is_active=True que não sejam Admin (perfil!=0) e que pertençam direta (diretoria)
-        # ou indiretamente (subunidade__diretoria) à diretoria associada ao instrumento.
         from usuarios.models import Usuario
         from django.db.models import Q
-        
-        subunidades = instrumento.subunidades.all()
-        if subunidades.exists():
-            usuarios_qs = Usuario.objects.select_related('subunidade', 'subunidade__diretoria').filter(
-                is_active=True,
-                subunidade__in=subunidades
-            ).exclude(perfil=0).distinct().order_by('first_name')
+
+        # 2. Resolução do Queryset de Usuários
+        usuarios_base = Usuario.objects.select_related('subunidade', 'subunidade__diretoria').filter(
+            is_active=True
+        ).exclude(perfil=0)
+
+        # Regra de Ouro: Admin do Sistema (Perfil 0) vê todos os usuários da base.
+        if request.user.perfil == 0:
+            usuarios_qs = usuarios_base.order_by('first_name')
         else:
-            usuarios_qs = Usuario.objects.select_related('subunidade', 'subunidade__diretoria').filter(
-                is_active=True
-            ).exclude(perfil=0).filter(
-                Q(diretoria=instrumento.diretoria) | Q(subunidade__diretoria=instrumento.diretoria)
-            ).distinct().order_by('first_name')
+            # Demais usuários: FILTRO DE DIRETORIA E SUBUNIDADES
+            subunidades = instrumento.subunidades.all()
+            if subunidades.exists():
+                usuarios_qs = usuarios_base.filter(
+                    subunidade__in=subunidades
+                ).distinct().order_by('first_name')
+            else:
+                usuarios_qs = usuarios_base.filter(
+                    Q(diretoria=instrumento.diretoria) | Q(subunidade__diretoria=instrumento.diretoria)
+                ).distinct().order_by('first_name')
         
         usuarios = []
         for u in usuarios_qs:
@@ -227,6 +232,8 @@ def acao_tipo_selector(request):
 
     return render(request, 'acoes/acao_tipo_selector.html', {
         'tipos': tipos_enriquecidos,
+        'instrumento_id': request.GET.get('instrumento_id'),
+        'obrigacao_id': request.GET.get('obrigacao_id'),
     })
 
 

@@ -22,7 +22,7 @@
         <div class="row g-3">
             {% for tipo in tipos %}
             <div class="col-md-6 col-lg-3">
-                <a href="{% url 'acao_create' %}?tipo_acao={{ tipo.id }}"
+                <a href="{% url 'acao_create' %}?tipo_acao={{ tipo.id }}{% if instrumento_id %}&instrumento={{ instrumento_id }}{% endif %}{% if obrigacao_id %}&obrigacao={{ obrigacao_id }}{% endif %}"
                     class="tipo-acao-btn text-decoration-none d-block" data-bs-toggle="tooltip" data-bs-placement="top"
                     data-bs-trigger="hover" title="{{ tipo.descricao }}" style="--tipo-color: {{ tipo.cor }};">
                     <div class="card border-0 shadow-sm h-100 tipo-card"
