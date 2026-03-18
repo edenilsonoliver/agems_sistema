@@ -156,6 +156,9 @@ def get_diretoria_filter(user, prefix=''):
     Retorna None para Admin (sem restrição) ou queryset vazio (sem diretoria configurada).
     """
     from django.db.models import Q
+    
+    if not user or not user.is_authenticated:
+        return Q(pk__in=[])
 
     if user.perfil == 0:
         # Admin: sem restrição — retorna None para indicar "não filtrar"
@@ -192,6 +195,9 @@ def verifica_acesso_unidade(user, obj):
     Verifica se o usuário tem acesso a um objeto específico (Instrumento ou Ação).
     Considera Diretoria e Subunidade (múltiplas) conforme o perfil.
     """
+    if not user or not user.is_authenticated:
+        return False
+
     if user.perfil == 0:  # Admin
         return True
     
@@ -240,6 +246,9 @@ def verifica_acesso_unidade(user, obj):
 
 def verifica_acesso_diretoria(user, obj_diretoria):
     """MANTIDO POR COMPATIBILIDADE MAS RECOMENDA-SE verifica_acesso_unidade"""
+    if not user or not user.is_authenticated:
+        return False
+        
     if user.perfil == 0:
         return True
     if user.perfil == 1:
