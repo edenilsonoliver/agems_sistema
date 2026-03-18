@@ -93,6 +93,11 @@ class AcaoForm(forms.ModelForm):
                 inst = Instrumento.objects.get(pk=self.data.get('instrumento'))
             except:
                 pass
+        elif self.initial and self.initial.get('instrumento'):
+            try:
+                inst = Instrumento.objects.get(pk=self.initial.get('instrumento'))
+            except:
+                pass
                 
         # 3. Filtrar pelas Subunidades do Instrumento (se houver), senão cair pro legado da Diretoria
         if inst and inst.diretoria:
@@ -125,27 +130,22 @@ class AcaoForm(forms.ModelForm):
         self.fields['entidade'].required = False
         self.fields['justificativa_resultado'].required = False
 
-        # Se estamos editando uma ação existente, pré-preencher instrumento e filtrar entidades
-        if self.instance and self.instance.pk and getattr(self.instance, 'obrigacao_id', None):
-            try:
-                instrumento = self.instance.obrigacao.instrumento
-                self.fields['instrumento'].initial = instrumento
-                # Filtrar entidades apenas do instrumento desta ação
-                self.fields['entidade'].queryset = instrumento.entidades.all()
-            except Exception:
-                self.fields['entidade'].queryset = Entidade.objects.none()
-        elif self.data and self.data.get('instrumento'):
-            # Nova Ação via POST: instrumento já vem no request.POST (self.data)
-            try:
-                instrumento_id = self.data.get('instrumento')
-                instrumento = Instrumento.objects.get(pk=instrumento_id)
-                self.fields['entidade'].queryset = instrumento.entidades.all()
-            except Exception:
-                self.fields['entidade'].queryset = Entidade.objects.none()
+        # Se estamos editando uma ação existente ou vindo de um link com instrumento pré-definido
+        current_instrumento = inst # inst foi resolvido acima
+        
+        if current_instrumento:
+            self.fields['instrumento'].initial = current_instrumento
+            self.fields['entidade'].queryset = current_instrumento.entidades.all()
+            # NOVO: Filtrar obrigações para mostrar apenas as deste instrumento
+            self.fields['obrigacao'].queryset = current_instrumento.obrigacoes.all()
         else:
-            # Nova ação form vazio: para evitar erro de inicialização se JS manipular antes, abrimos fallback
-            # Mas o recomendado para forms vazios antes do usuário mexer é deixar o queryset vazio
             self.fields['entidade'].queryset = Entidade.objects.none()
+            self.fields['obrigacao'].queryset = Obrigacao.objects.none()
+
+        # Fallback de segurança para querysets de entidade se não houver instrumento resolvido
+        if not current_instrumento:
+            self.fields['entidade'].queryset = Entidade.objects.none()
+            self.fields['obrigacao'].queryset = Obrigacao.objects.none()
 
     def clean(self):
         cleaned_data = super().clean()

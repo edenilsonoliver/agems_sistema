@@ -277,6 +277,16 @@ class AcaoCreateView(PermissionRequiredMixin, ModernCreateView):
         tipo_id = self.request.GET.get('tipo_acao')
         if tipo_id:
             initial['tipo_acao'] = tipo_id
+        
+        # Injeção via URL para quando vem de Instrumentos/Obrigações
+        instrumento_id = self.request.GET.get('instrumento')
+        if instrumento_id:
+            initial['instrumento'] = instrumento_id
+            
+        obrigacao_id = self.request.GET.get('obrigacao')
+        if obrigacao_id:
+            initial['obrigacao'] = obrigacao_id
+            
         return initial
 
     def get_context_data(self, **kwargs):

@@ -252,6 +252,16 @@
                     </div>
                     <div class="card-body p-0">
                         {{formset.management_form}}
+                        <!-- Filtro de Busca nas Obrigações -->
+                        <div class="px-4 py-3 border-bottom bg-light shadow-sm mb-0">
+                            <div class="input-group">
+                                <span class="input-group-text bg-white border-end-0">
+                                    <i class="bi bi-search text-muted"></i>
+                                </span>
+                                <input type="text" id="filtroObrigacoes" class="form-control border-start-0 ps-0" 
+                                       placeholder="Filtrar por título ou cláusula..." onkeyup="filtrarObrigacoes()">
+                            </div>
+                        </div>
                         <div class="table-responsive">
                             <table class="table table-hover align-middle mb-0">
                                 <thead class="table-light">
@@ -308,6 +318,12 @@
                                         </td>
                                         <td class="text-end pe-4">
                                             <div class="btn-group btn-group-sm shadow-sm">
+                                                {% if form_obrig.instance.pk %}
+                                                <a href="{% url 'acao_create' %}?obrigacao={{form_obrig.instance.pk}}&instrumento={{object.pk}}" 
+                                                   class="btn btn-outline-info" title="Adicionar Ações para esta Obrigação">
+                                                    <i class="bi bi-lightning-charge"></i>
+                                                </a>
+                                                {% endif %}
                                                 <button type="button" class="btn btn-outline-primary" onclick="editarObrigacaoModal({{forloop.counter0}})" title="Mais Detalhes / Editar">
                                                     <i class="bi bi-pencil-square"></i>
                                                 </button>
@@ -690,6 +706,7 @@
             </td>
             <td class="text-end pe-4">
                 <div class="btn-group btn-group-sm shadow-sm">
+                    <!-- Botão de Ação rápida aparece apenas após salvar -->
                     <button type="button" class="btn btn-outline-primary" onclick="editarObrigacaoModal('__prefix__')">
                         <i class="bi bi-pencil-square"></i>
                     </button>
@@ -705,19 +722,63 @@
 </table>
 
 <script>
-    const totalFormsInput = document.getElementById('id_obrigacoes-TOTAL_FORMS');
 
     
     // --- LÓGICA DE MODAL PARA OBRIGAÇÕES ---
     let currentObrigacaoIdx = null;
 
-    function atualizarContadorVisual() {
-        const count = document.querySelectorAll('#obrigacoes-container .obrigacao-form:not([style*="display: none"])').length;
-        const badge = document.getElementById('countObrigacoes');
-        if (badge) badge.textContent = count;
+    window.filtrarObrigacoes = function() {
+        var input = document.getElementById('filtroObrigacoes');
+        if (!input) return;
+        var filter = input.value.toLowerCase().trim();
+        var tbody = document.getElementById('obrigacoes-container');
+        if (!tbody) return;
+        var rows = tbody.querySelectorAll('.obrigacao-form');
 
-        const empty = document.getElementById('empty-obrigacoes');
-        if (empty) empty.style.display = count === 0 ? 'block' : 'none';
+        for (var i = 0; i < rows.length; i++) {
+            var row = rows[i];
+            var deleteInput = row.querySelector('input[name$="-DELETE"]');
+            // IMPORTANTE: Só é considerado deletado se o checkbox estiver MARCADO (checked)
+            var isReallyDeleted = deleteInput && deleteInput.checked;
+            
+            if (isReallyDeleted) {
+                row.style.display = 'none';
+                continue;
+            }
+
+            var text = (row.textContent || row.innerText).toLowerCase();
+            if (filter === "" || text.indexOf(filter) > -1) {
+                row.style.display = "";
+            } else {
+                row.style.display = "none";
+            }
+        }
+        window.atualizarContadorVisual();
+    }
+
+    window.atualizarContadorVisual = function() {
+        var tbody = document.getElementById('obrigacoes-container');
+        if (!tbody) return;
+        var rows = tbody.querySelectorAll('.obrigacao-form');
+        var count = 0;
+        
+        for (var i = 0; i < rows.length; i++) {
+            var row = rows[i];
+            var deleteInput = row.querySelector('input[name$="-DELETE"]');
+            var isReallyDeleted = deleteInput && deleteInput.checked;
+            
+            if (!isReallyDeleted && row.style.display !== 'none') {
+                count++;
+            }
+        }
+        
+        var badge = document.getElementById('countObrigacoes');
+        if (badge) badge.textContent = count;
+        
+        var emptyMsg = document.getElementById('empty-obrigacoes');
+        if (emptyMsg) {
+            emptyMsg.style.display = count === 0 ? 'block' : 'none';
+        }
     }
 
     function adicionarObrigacao() {
