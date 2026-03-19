@@ -3,8 +3,7 @@
 {% load crispy_forms_tags %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'vendor/leaflet/leaflet.css' %}"
-    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+<link rel="stylesheet" href="{% static 'vendor/leaflet/leaflet.css' %}" />
 <style>
     #mapa-fiscalizacao {
         height: 500px;
@@ -61,11 +60,11 @@
 {% block extra_js %}
 <script src="{% static 'vendor/sortablejs/Sortable.min.js' %}"></script>
 <script src="{% static 'vendor/exif-js/exif.js' %}"></script>
-<script src="{% static 'vendor/leaflet/leaflet.js' %}"
-    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script src="{% static 'vendor/leaflet/leaflet.js' %}"></script>
 {% endblock %}
 
 {% block content %}
+{{ fiscalizacao_ids|json_script:"fiscalizacao-ids-data" }}
 <div class="page-header">
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
@@ -803,12 +802,14 @@
         });
 
         // --- 5. Visibilidade inicial da tab Mapa (só para Fiscalização) ---
-        const fiscIds = {{ fiscalizacao_ids| safe }};
-    const tabMapa = document.getElementById('mapa-tab');
+        // --- 5. Visibilidade inicial da tab Mapa (só para Fiscalização) ---
+        const elFisc = document.getElementById('fiscalizacao-ids-data');
+        const fIds = elFisc ? JSON.parse(elFisc.textContent) : [];
+        const tabMapa = document.getElementById('mapa-tab');
     const tabMapaPane = document.getElementById('mapa');
 
     function toggleMapaTab(tipoId) {
-        const isFiscalizacao = fiscIds.includes(parseInt(tipoId));
+        const isFiscalizacao = (fIds || []).includes(parseInt(tipoId));
         if (tabMapa) tabMapa.style.display = isFiscalizacao ? '' : 'none';
         if (tabMapaPane && !isFiscalizacao && tabMapaPane.classList.contains('show')) {
             const dadosTab = document.getElementById('dados-tab');
@@ -897,7 +898,6 @@
     });
 </script>
 
-{{ fiscalizacao_ids|json_script:"fiscalizacao-ids-data" }}
 
 <script>
     // ===== FASE 5: Interface Condicional para Fiscalização =====
@@ -936,12 +936,22 @@
                 }
             }
 
-            // Inicializar mapa se a aba for visível
-            if (isFiscalizacao && typeof initMapa === 'function') {
-                // Timeout para garantir que o container está pronto se a aba for aberta
-                document.getElementById('mapa-tab').addEventListener('shown.bs.tab', function () {
-                    initMapa();
-                }, { once: true });
+            // Inicializar mapa se for um tipo de fiscalização
+            const tipoAcaoVal = tipoAcaoSelect ? tipoAcaoSelect.value : '';
+            const isFisc = (fiscalizacaoIds || []).includes(parseInt(tipoAcaoVal));
+
+            if (isFisc && typeof initMapa === 'function') {
+                const mapTabBtn = document.getElementById('mapa-tab');
+                if (mapTabBtn) {
+                    mapTabBtn.addEventListener('shown.bs.tab', function () {
+                        initMapa();
+                    }, { once: true });
+                    
+                    // Se a aba já estiver ativa por algum motivo no load
+                    if (mapTabBtn.classList.contains('active')) {
+                        initMapa();
+                    }
+                }
             }
         }
 
@@ -962,13 +972,21 @@
 
     function initMapa() {
         if (leafletMap) {
-            leafletMap.invalidateSize();
+            // Pequeno delay para garantir que a animação da aba acabou
+            setTimeout(() => leafletMap.invalidateSize(), 200);
             return;
         }
 
         if (!document.getElementById('mapa-fiscalizacao')) return;
 
-        // Centralizar em MS por padrão se não houver marcadores
+        // Corrigir erro 404 de ícones padrão do Leaflet
+        delete L.Icon.Default.prototype._getIconUrl;
+        L.Icon.Default.mergeOptions({
+            iconRetinaUrl: '{% static "vendor/leaflet/images/marker-icon-2x.png" %}',
+            iconUrl: '{% static "vendor/leaflet/images/marker-icon.png" %}',
+            shadowUrl: '{% static "vendor/leaflet/images/marker-shadow.png" %}',
+        });
+
         const defaultLat = -20.4697;
         const defaultLng = -54.6201;
 
