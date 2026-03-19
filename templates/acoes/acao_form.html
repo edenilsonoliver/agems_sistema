@@ -971,13 +971,13 @@
     const acaoId = "{{ object.id|default:'' }}";
 
     function initMapa() {
+        const container = document.getElementById('mapa-fiscalizacao');
+        if (!container) return;
+
         if (leafletMap) {
-            // Pequeno delay para garantir que a animação da aba acabou
-            setTimeout(() => leafletMap.invalidateSize(), 200);
+            leafletMap.invalidateSize();
             return;
         }
-
-        if (!document.getElementById('mapa-fiscalizacao')) return;
 
         // Corrigir erro 404 de ícones padrão do Leaflet
         delete L.Icon.Default.prototype._getIconUrl;
@@ -995,6 +995,14 @@
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '&copy; OpenStreetMap contributors'
         }).addTo(leafletMap);
+
+        // 🛡️ NOVO ESTRUTURA: ResizeObserver - O vigia automático do tamanho do mapa
+        const resizeObserver = new ResizeObserver(() => {
+            if (leafletMap) {
+                leafletMap.invalidateSize();
+            }
+        });
+        resizeObserver.observe(container);
 
         // Inicializar camadas de referência
         carregarCamadasDisponiveis();
