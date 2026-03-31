@@ -220,6 +220,13 @@ class Obrigacao(models.Model):
     def __str__(self):
         return f"{self.titulo} - {self.instrumento.numero}"
     
+    @property
+    def label_exibicao(self):
+        """Retorna o título precedido pela cláusula ou por um traço se for vazia/'S/C'."""
+        if self.clausula_referencia and self.clausula_referencia.strip() and self.clausula_referencia.upper() != 'S/C':
+            return f"{self.clausula_referencia} - {self.titulo}"
+        return f"- {self.titulo}"
+    
     def atualizar_status_por_acoes(self):
         """
         Verifica e atualiza o STATUS da Obrigação com base nas regras automáticas.

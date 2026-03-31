@@ -146,8 +146,9 @@ class AcaoForm(forms.ModelForm):
         if current_instrumento:
             self.fields['instrumento'].initial = current_instrumento
             self.fields['entidade'].queryset = current_instrumento.entidades.all()
-            # NOVO: Filtrar obrigações para mostrar apenas as deste instrumento
-            self.fields['obrigacao'].queryset = current_instrumento.obrigacoes.all()
+            # NOVO: Filtrar obrigações para mostrar apenas as deste instrumento (com ordenação por cláusula)
+            self.fields['obrigacao'].queryset = current_instrumento.obrigacoes.all().order_by('clausula_referencia', 'titulo')
+            self.fields['obrigacao'].label_from_instance = lambda obj: obj.label_exibicao
         else:
             self.fields['entidade'].queryset = Entidade.objects.none()
             self.fields['obrigacao'].queryset = Obrigacao.objects.none()

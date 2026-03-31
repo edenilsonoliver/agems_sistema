@@ -722,7 +722,7 @@
                         (data.obrigacoes || []).forEach(o => {
                             const opt = document.createElement('option');
                             opt.value = o.id;
-                            opt.textContent = o.titulo;
+                            opt.textContent = o.label || o.titulo;
                             obrigacaoSel.appendChild(opt);
                         });
                     }

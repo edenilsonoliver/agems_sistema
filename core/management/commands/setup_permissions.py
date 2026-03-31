@@ -24,6 +24,8 @@ class Command(BaseCommand):
             'acoes': ['add_acao', 'change_acao', 'delete_acao', 'view_acao', 
                       'add_checklistitem', 'change_checklistitem', 'delete_checklistitem', 'view_checklistitem'],
             'usuarios': ['add_usuario', 'change_usuario', 'view_usuario'], # Pode gerenciar usuários básicos
+            'georeferencias': ['add_camadareferencia', 'change_camadareferencia', 'delete_camadareferencia', 'view_camadareferencia',
+                               'add_pontoreferencia', 'change_pontoreferencia', 'delete_pontoreferencia', 'view_pontoreferencia'],
         }
 
         # 2. GRUPO TÉCNICOS
@@ -33,6 +35,7 @@ class Command(BaseCommand):
             'instrumentos': ['view_instrumento', 'view_obrigacao'],
             'acoes': ['add_acao', 'change_acao', 'view_acao', # Sem delete_acao
                       'add_checklistitem', 'change_checklistitem', 'view_checklistitem'],
+            'georeferencias': ['view_camadareferencia', 'view_pontoreferencia'],
         }
 
         # 3. GRUPO VISUALIZADORES
@@ -42,6 +45,7 @@ class Command(BaseCommand):
             'instrumentos': ['view_instrumento', 'view_obrigacao'],
             'acoes': ['view_acao', 'view_checklistitem'],
             'usuarios': ['view_usuario'],
+            'georeferencias': ['view_camadareferencia', 'view_pontoreferencia'],
         }
 
         grupos_config = {

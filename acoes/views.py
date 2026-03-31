@@ -74,7 +74,8 @@ def get_obrigacoes_por_instrumento(request):
     if not instrumento_id:
         return JsonResponse({'obrigacoes': [], 'entidades': [], 'usuarios': []})
 
-    obrigacoes = Obrigacao.objects.filter(instrumento_id=instrumento_id).values('id', 'titulo')
+    obrigacoes_qs = Obrigacao.objects.filter(instrumento_id=instrumento_id).order_by('clausula_referencia', 'titulo')
+    obrigacoes = [{'id': o.id, 'titulo': o.titulo, 'label': o.label_exibicao} for o in obrigacoes_qs]
 
     # Também retorna as entidades e usuarios do instrumento (baseado na diretoria)
     try:
@@ -244,15 +245,6 @@ class AcaoCreateView(PermissionRequiredMixin, ModernCreateView):
         # Caso queira bloquear edição de Ação para visualizador (5):
         return self.request.user.perfil == 5
 
-    def get_form_kwargs(self):
-        kwargs = super().get_form_kwargs()
-        kwargs['readonly'] = self.get_readonly()
-        return kwargs
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['readonly'] = self.get_readonly()
-        return context
 
 
     def handle_no_permission(self):
