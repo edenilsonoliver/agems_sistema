@@ -761,6 +761,27 @@
                 }
             });
         });
+
+        // Resolve globalmente o problema de Modais fantasmas ao usar history.back() (BF-cache)
+        window.addEventListener('pageshow', function (event) {
+            if (event.persisted) {
+                document.querySelectorAll('.modal.show').forEach(modalEl => {
+                    // OBRIGATÓRIO: Destruir a instância do Bootstrap para resetar o estado interno dele.
+                    // Sem isso, o Bootstrap acha que o modal ainda está aberto e ignora novos cliques.
+                    const bsModal = bootstrap.Modal.getInstance(modalEl);
+                    if (bsModal) {
+                        bsModal.dispose(); 
+                    }
+                    // Agora sim removemos a sujeira visual na marra
+                    modalEl.classList.remove('show');
+                    modalEl.style.display = 'none';
+                });
+                document.querySelectorAll('.modal-backdrop').forEach(b => b.remove());
+                document.body.classList.remove('modal-open');
+                document.body.style.overflow = '';
+                document.body.style.paddingRight = '';
+            }
+        });
     </script>
 
     {% include 'alertas_script_v2.html' %}

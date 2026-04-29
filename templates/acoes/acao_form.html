@@ -389,12 +389,7 @@
                                         <div class="col-md-6">
                                             <label for="id_entidade"
                                                 class="form-label fw-semibold small">Entidade</label>
-                                            <select name="entidade" id="id_entidade" class="form-control">
-                                                <option value="">---------</option>
-                                                {% for ent in entidades_disponiveis %}
- <option value="{{ ent.id }}" {% if form.entidade.value|stringformat:'s' == ent.id|stringformat:'s' %}selected{% endif %}>{{ ent.razao_social }}</option>
-                                                {% endfor %}
-                                            </select>
+                                            {{ form.entidade }}
                                             <small class="text-muted">Selecione o instrumento e a obrigação para ver as
                                                 entidades disponíveis.</small>
                                         </div>
