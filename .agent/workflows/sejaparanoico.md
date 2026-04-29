@@ -2,15 +2,14 @@
 description: Como modificar código com segurança (Protocolo de Sobrevivência)
 ---
 
-# 🛑 Protocolo Obrigatório - MODO PARANOICO
+# 🛑 Protocolo Obrigatório - MODO PARANOICO (ATUALIZADO)
 
-1. **PARE.** Leia e siga fielmente as Global Rules.
-2. **CRIE BACKUPS (.bak).** Sempre, sem exceção, antes de qualquer alteração.
-3. **PRECISÃO CIRÚRGICA.** Faça a modificação com acurácia, evite quebrar códigos adjacentes.
-4. **PROVA DE CONCEITO (MANDATÓRIO).** NUNCA entregue uma tarefa como "pronta" ou "corrigida" sem antes:
-    - Verificar fisicamente se o arquivo foi gravado no disco (`view_file`).
-    - Validar a sintaxe (`python manage.py check` ou equivalente).
-    - Simular a execução ou verificar logs de erro para garantir que a causa raiz foi eliminada.
-5. **SCRIPTS DE PATCH.** Não use o editor para modificações complexas. Use scripts Python para garantir que a lógica, indentação (Django `==`, `endif`) e parsing estejam perfeitos.
-6. **ATUE COMO DEV SENIOR.** Não aceite falhas bobas. Se o código estava funcionando e parou, você é o responsável por rastrear a regressão e restaurá-la integralmente.
-7. **TRANSPARÊNCIA TOTAL.** Se algo falhar, admita, restaure o backup e tente uma abordagem mais segura.
+1.  **PROIBIÇÃO DE REESTRUTURAÇÃO (RefatBan)**: Ao corrigir um bug (ex: filtro), é **TERMINANTEMENTE PROIBIDO** mover blocos de lugar, unificar scripts ou "limpar" o código adjacente. A correção deve ser um remendo cirúrgico **NO LOCAL ORIGINAL**.
+2.  **INVENTÁRIO DE ESCOPO**: Antes de editar qualquer arquivo que contenha lógica (`.js`, `.py`, `.html`), o agente deve listar mentalmente (ou via log) todas as funções afetadas e garantir que 100% delas permaneçam funcionais após o edit.
+3.  **BACKUPS COMPULSÓRIOS (.bak)**: Crie uma cópia de segurança antes de encostar no arquivo. Restaure-a IMEDIATAMENTE se notar regressão em botões que antes funcionavam.
+4.  **DJANGO TAG INTEGRITY**: Nunca use `replace()` ou regex em strings que contenham tags Django sem testar se o balanceamento de `{% endblock %}` ou `{% endif %}` foi preservado.
+5.  **AUDITORIA PÓS-GRAVAÇÃO**: NUNCA declare vitória sem usar `view_file` para ver o resultado final no disco. A mensagem de "Sucesso" da ferramenta de escrita não é prova de funcionamento.
+6.  **ZERO ALUCINAÇÃO DE ESCOPO**: Se você não vê a função no seu `view_file` atual, não presuma que ela "já existe". Releia o arquivo inteiro se necessário.
+7.  **TRANSPARÊNCIA TOTAL NO FRACASSO**: Se o usuário reclamar de regressão ("Você fudeu o botão X"), PARE. Admita o erro, restaure o backup e comece do zero com abordagem cirúrgica.
+
+> 🔴 **Regra de Ouro:** Estabilidade e previsibilidade valem mais que organização de código.

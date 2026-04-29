@@ -1,0 +1,133 @@
+<!-- Logout Modal (Inatividade) -->
+<div class="modal fade" id="autoLogoutModal" tabindex="-1" aria-labelledby="autoLogoutModalLabel" aria-hidden="true"
+    data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-dark border-0">
+                <h5 class="modal-title" id="autoLogoutModalLabel">
+                    <i class="bi bi-clock-history me-2"></i>Sessão Expirando
+                </h5>
+            </div>
+            <div class="modal-body">
+                <p>Por inatividade, sua sessão será encerrada em <strong id="logoutCountdown"
+                        class="text-danger">60</strong> segundos.</p>
+                <p class="mb-0">Deseja continuar conectado ao sistema?</p>
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-outline-secondary" onclick="executeLogout()">Sair do Sistema</button>
+                <button type="button" class="btn btn-primary" onclick="keepSessionAlive()">Continuar Logado</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function () {
+        // Configuracoes de Timeout (Em Segundos)
+        const maxInactivitySeconds = 9 * 60; // 9 minutos para o JS ligar o aviso
+        const countdownSeconds = 60; // 1 minuto de countdown na tela (total 10 min)
+
+        let countdownInterval = null;
+        let isModalOpen = false;
+
+        // Memória compartilhada entre Abas do navegador
+        const LSK_LAST_ACT = 'agems_last_activity';
+
+        // Segregação 100% segura do Parser Django vs JS: Resolve o erro passado
+        const safeLogoutUrl = "{% url 'logout' %}";
+        const safeLoginUrl = "{% url 'login' %}";
+
+        // Define Atividade (Grava sempre que usuário mexe)
+        function setActivity() {
+            if (!isModalOpen) {
+                localStorage.setItem(LSK_LAST_ACT, Date.now().toString());
+            }
+        }
+
+        // Eventos leves que resetam inatividade 
+        ['mousedown', 'keydown', 'scroll', 'touchstart'].forEach(evt => {
+            document.addEventListener(evt, setActivity, { passive: true });
+        });
+
+        setActivity(); // Inicializa start
+
+        // Logout Seguro Injetando POST programático (resolve falhas de busca no DOM e Django 5 POST strict)
+        window.executeLogout = function () {
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = safeLogoutUrl;
+            
+            const csrfInput = document.createElement('input');
+            csrfInput.type = 'hidden';
+            csrfInput.name = 'csrfmiddlewaretoken';
+            csrfInput.value = '{{ csrf_token }}';
+            
+            form.appendChild(csrfInput);
+            document.body.appendChild(form);
+            form.submit();
+        };
+
+        window.keepSessionAlive = function () {
+            fetch('/ping/')
+                .then(r => r.json())
+                .then(data => {
+                    setActivity(); // Reseta relógio
+                    isModalOpen = false;
+                    clearInterval(countdownInterval); // Para a regressiva
+                    const modalEl = document.getElementById('autoLogoutModal');
+                    const modalObj = bootstrap.Modal.getInstance(modalEl);
+                    if (modalObj) modalObj.hide();
+                })
+                .catch(err => {
+                    executeLogout(); // Ping falhou = backend ja derroubou sessão, logout instantaneo
+                });
+        };
+
+        // Timer principal acorda o site a cada 10 segundos
+        setInterval(() => {
+            // Outro ponto fatal resolvido: nada de tag inline if return. Varremos para constante!
+            const isAuthenticatedStr = "{{ user.is_authenticated|yesno:'true,false' }}";
+            if (isAuthenticatedStr !== "true") return;
+
+            const lastActStr = localStorage.getItem(LSK_LAST_ACT);
+            if (!lastActStr) return;
+
+            const lastAct = parseInt(lastActStr, 10);
+            const diffSeconds = Math.floor((Date.now() - lastAct) / 1000);
+
+            // Se bateu 9 minutos e modal ta fechado
+            if (diffSeconds >= maxInactivitySeconds && !isModalOpen) {
+                isModalOpen = true;
+                const modalEl = document.getElementById('autoLogoutModal');
+                const modalObj = new bootstrap.Modal(modalEl);
+                modalObj.show();
+
+                let timeLeft = countdownSeconds;
+                const counterEl = document.getElementById('logoutCountdown');
+                if (counterEl) counterEl.innerText = timeLeft;
+
+                // Rotina regressiva na tela
+                countdownInterval = setInterval(() => {
+                    // Update check - resolve o conflito de TABs abertas simultaneas
+                    const actStrCheck = localStorage.getItem(LSK_LAST_ACT);
+                    const actCheck = actStrCheck ? parseInt(actStrCheck, 10) : 0;
+                    if (actCheck > lastAct) {
+                        // Alguem moveu e renovou noutra aba! Cancela logout desta aba
+                        clearInterval(countdownInterval);
+                        isModalOpen = false;
+                        modalObj.hide();
+                        return;
+                    }
+
+                    timeLeft--;
+                    if (counterEl) counterEl.innerText = timeLeft;
+
+                    if (timeLeft <= 0) {
+                        clearInterval(countdownInterval);
+                        executeLogout(); // Game Over
+                    }
+                }, 1000);
+            }
+        }, 5000);
+    })();
+</script>

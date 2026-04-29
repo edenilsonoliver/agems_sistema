@@ -766,6 +766,10 @@
     {% include 'alertas_script_v2.html' %}
     {% block extra_js %}{% endblock %}
 
+    {% if user.is_authenticated %}
+    {% include 'auto_logout.html' %}
+    {% endif %}
+
 </body>
 
 </html>

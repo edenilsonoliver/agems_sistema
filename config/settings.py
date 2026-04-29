@@ -311,3 +311,10 @@ MESSAGE_TAGS = {
 
 # Aumenta limite para forms enormes de Obrigacoes CSV e updates grandes de Instrumentos
 DATA_UPLOAD_MAX_NUMBER_FIELDS = 10000
+
+# =========================================================================
+# LOGOUT AUTOMÁTICO (PARANOIA PROTOCOL)
+# =========================================================================
+SESSION_COOKIE_AGE = 600  # 10 minutos (em segundos)
+SESSION_SAVE_EVERY_REQUEST = True  # Renova o tempo a cada clique no site
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True  # Derruba a sessão se fechar o navegador

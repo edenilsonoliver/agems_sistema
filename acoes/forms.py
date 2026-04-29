@@ -140,6 +140,13 @@ class AcaoForm(forms.ModelForm):
         self.fields['entidade'].required = False
         self.fields['justificativa_resultado'].required = False
 
+        # RBAC RIGOROSO: Filtrar o Dropdown de Instrumentos
+        from usuarios.mixins import get_diretoria_filter
+        q_filter_inst = get_diretoria_filter(self.user, prefix='')
+        if q_filter_inst is not None:
+            self.fields['instrumento'].queryset = Instrumento.objects.filter(q_filter_inst)
+
+
         # Se estamos editando uma ação existente ou vindo de um link com instrumento pré-definido
         current_instrumento = inst # inst foi resolvido acima
         
