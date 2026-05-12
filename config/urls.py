@@ -3,7 +3,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib.auth import views as auth_views
 from django.shortcuts import redirect
-from dashboards.views import dashboard_principal
+from dashboards.views import dashboard_principal, dashboard_por_contrato, lista_instrumentos_json
 from acoes import views as acoes_views
 from core.config_views import configuracoes
 from usuarios import views as usuarios_views
@@ -66,6 +66,8 @@ urlpatterns = [
 
     # Dashboard
     path('', dashboard_principal, name='dashboard'),
+    path('dashboard/contrato/<int:instrumento_id>/', dashboard_por_contrato, name='dashboard_contrato'),
+    path('api/instrumentos/lista-json/', lista_instrumentos_json, name='lista_instrumentos_json'),
 
     # Instrumentos
     path('instrumentos/', InstrumentoListView.as_view(), name='instrumento_list'),

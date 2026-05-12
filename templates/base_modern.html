@@ -506,6 +506,40 @@
             font-weight: 500;
             box-shadow: 0 0.25rem 0.5rem rgba(220, 53, 69, 0.15);
         }
+
+        /* --- Submenus na Sidebar --- */
+        .sidebar-nav-link.has-submenu::after {
+            content: '\F282'; /* bi-chevron-down */
+            font-family: "bootstrap-icons";
+            margin-left: auto;
+            transition: transform 0.3s ease;
+            font-size: 0.8rem;
+        }
+        .sidebar-nav-link:not(.collapsed).has-submenu::after {
+            transform: rotate(180deg);
+        }
+        .submenu {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            background: rgba(0, 0, 0, 0.1);
+            border-radius: 0.5rem;
+            margin-top: 2px;
+        }
+        .submenu .sidebar-nav-link {
+            padding-left: 2.5rem;
+            font-size: 0.85rem;
+            opacity: 0.85;
+        }
+        .submenu .sidebar-nav-link:hover {
+            opacity: 1;
+            background: rgba(255, 255, 255, 0.1);
+        }
+        .submenu .sidebar-nav-link i {
+            font-size: 0.5rem;
+            margin-right: 10px;
+            width: auto;
+        }
     </style>
 
 
@@ -517,10 +551,30 @@
     <aside class="sidebar" id="sidebar">
         <ul class="sidebar-nav">
             <li class="sidebar-nav-item">
-                <a href="/" class="sidebar-nav-link {% if request.path == '/' %}active{% endif %}">
+                <a class="sidebar-nav-link has-submenu {% if request.path == '/' or '/dashboard/contrato/' in request.path %}active{% else %}collapsed{% endif %}" 
+                   data-bs-toggle="collapse" href="#dashboardSubmenu" role="button" 
+                   aria-expanded="{% if request.path == '/' or '/dashboard/contrato/' in request.path %}true{% else %}false{% endif %}" 
+                   aria-controls="dashboardSubmenu">
                     <i class="bi bi-speedometer2"></i>
                     <span>Painel de Acompanhamento</span>
                 </a>
+                <div class="collapse {% if request.path == '/' or '/dashboard/contrato/' in request.path %}show{% endif %}" id="dashboardSubmenu">
+                    <ul class="submenu">
+                        <li class="nav-item">
+                            <a href="/" class="sidebar-nav-link {% if request.path == '/' %}active{% endif %}">
+                                <i class="bi bi-circle-fill"></i>
+                                <span>Acompanhamento Geral</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="javascript:void(0)" class="sidebar-nav-link {% if '/dashboard/contrato/' in request.path %}active{% endif %}" 
+                               onclick="abrirModalSelecaoContrato()">
+                                <i class="bi bi-circle-fill"></i>
+                                <span>Status por Contrato</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
             </li>
 
             {% if perms.entidades.view_entidade %}
@@ -789,6 +843,74 @@
 
     {% if user.is_authenticated %}
     {% include 'auto_logout.html' %}
+
+    <!-- Modal de Seleção de Contrato -->
+    <div class="modal fade" id="modalSelectContrato" tabindex="-1" aria-labelledby="modalSelectContratoLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg" style="border-radius: 1rem;">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title fw-bold" id="modalSelectContratoLabel">Selecionar Contrato</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body py-4">
+                    <p class="text-muted mb-4">Selecione o instrumento para visualizar o dashboard gerencial.</p>
+                    <div id="listaContratos" class="list-group list-group-flush" style="max-height: 400px; overflow-y: auto;">
+                        <div class="text-center py-3">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Carregando...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function abrirModalSelecaoContrato() {
+            const modal = new bootstrap.Modal(document.getElementById('modalSelectContrato'));
+            const lista = document.getElementById('listaContratos');
+            
+            // Mostrar spinner
+            lista.innerHTML = `
+                <div class="text-center py-3">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Carregando...</span>
+                    </div>
+                </div>
+            `;
+            
+            modal.show();
+
+            // Carregar contratos via AJAX
+            fetch('{% url "lista_instrumentos_json" %}')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.instrumentos.length > 0) {
+                        lista.innerHTML = '';
+                        data.instrumentos.forEach(inst => {
+                            const item = document.createElement('a');
+                            item.href = `/dashboard/contrato/${inst.id}/`;
+                            item.className = 'list-group-item list-group-item-action border-0 py-3 mb-2 rounded shadow-sm d-flex justify-content-between align-items-center';
+                            item.innerHTML = `
+                                <div>
+                                    <div class="fw-bold">${inst.numero}</div>
+                                    <small class="text-muted">${inst.tipo}</small>
+                                </div>
+                                <i class="bi bi-chevron-right text-primary"></i>
+                            `;
+                            lista.appendChild(item);
+                        });
+                    } else {
+                        lista.innerHTML = '<div class="alert alert-info">Nenhum instrumento vigente encontrado.</div>';
+                    }
+                })
+                .catch(error => {
+                    console.error('Erro ao carregar instrumentos:', error);
+                    lista.innerHTML = '<div class="alert alert-danger">Erro ao carregar lista de instrumentos.</div>';
+                });
+        }
+    </script>
     {% endif %}
 
 </body>

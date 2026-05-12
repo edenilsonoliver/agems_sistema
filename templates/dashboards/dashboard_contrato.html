@@ -1,0 +1,398 @@
+{% extends 'base_modern.html' %}
+
+{% block title %}Status por Contrato - {{instrumento.numero}}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .progress-circle {
+        width: 150px;
+        height: 150px;
+        background: radial-gradient(closest-side, white 79%, transparent 80% 100%),
+                    conic-gradient(var(--primary-color) {{percentual_atendimento_contrato}}%, #f0f0f0 0);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto;
+        position: relative;
+    }
+    .progress-circle::before {
+        content: "{{percentual_atendimento_contrato}}%";
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--primary-color);
+    }
+    .compliance-card {
+        background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+        border-radius: 1rem;
+        padding: 2rem;
+        text-align: center;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-center">
+    <div>
+        <h1 class="page-title">
+            <i class="bi bi-file-earmark-bar-graph me-2"></i>
+            {{instrumento.numero}}
+        </h1>
+        <p class="page-subtitle">Dashboard Gerencial por Contrato | {{instrumento.tipo_instrumento.nome}}</p>
+    </div>
+    <button class="btn btn-outline-primary" onclick="abrirModalSelecaoContrato()">
+        <i class="bi bi-arrow-left-right me-2"></i>Alterar Contrato
+    </button>
+</div>
+
+<!-- Stats Cards -->
+<div class="row g-4 mb-4">
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="stat-card">
+            <div class="stat-icon primary">
+                <i class="bi bi-journal-text"></i>
+            </div>
+            <div class="stat-value">{{total_obrigacoes}}</div>
+            <div class="stat-label">Total de Obrigações</div>
+        </div>
+    </div>
+
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="stat-card">
+            <div class="stat-icon success">
+                <i class="bi bi-check2-circle"></i>
+            </div>
+            <div class="stat-value">{{obrigacoes_finalizadas}}</div>
+            <div class="stat-label">Obrigações Finalizadas</div>
+        </div>
+    </div>
+
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="stat-card">
+            <div class="stat-icon warning">
+                <i class="bi bi-play-circle"></i>
+            </div>
+            <div class="stat-value">{{obrigacoes_em_andamento}}</div>
+            <div class="stat-label">Obrigações em Andamento</div>
+        </div>
+    </div>
+
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="stat-card">
+            <div class="stat-icon danger">
+                <i class="bi bi-exclamation-triangle"></i>
+            </div>
+            <div class="stat-value">{{obrigacoes_atrasadas}}</div>
+            <div class="stat-label">Obrigações Atrasadas</div>
+        </div>
+    </div>
+</div>
+
+<!-- Pie Chart and Actions per User -->
+<div class="row g-4 mb-4">
+    <div class="col-12 col-lg-5">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white border-0 py-3">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-pie-chart me-2"></i>
+                    Status das Obrigações
+                </h5>
+            </div>
+            <div class="card-body">
+                <div style="height: 300px;">
+                    <canvas id="obrigacoesStatusChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-lg-7">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white border-0 py-3">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-people me-2"></i>
+                    Ações por Usuário
+                </h5>
+            </div>
+            <div class="card-body">
+                <div style="height: 300px;">
+                    <canvas id="acoesUsuarioChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Contract Compliance -->
+<div class="row g-4 mb-4">
+    <div class="col-12 col-lg-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white border-0 py-3">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-shield-check me-2"></i>
+                    Atendimento do Contrato
+                </h5>
+            </div>
+            <div class="card-body d-flex flex-column justify-content-center">
+                <div class="compliance-card">
+                    <div class="progress-circle mb-3"></div>
+                    <p class="text-muted small mb-0">Percentual médio de atendimento das obrigações</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-lg-8">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white border-0 py-3">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-bar-chart-steps me-2"></i>
+                    Percentual por Obrigação
+                </h5>
+            </div>
+            <div class="card-body">
+                <div style="height: 300px;">
+                    <canvas id="percentualObrigacaoChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Fulfilled Actions per Obligation -->
+<div class="row g-4 mb-4">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white border-0 py-3">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-check-all me-2"></i>
+                    Percentual de Ações Cumpridas por Obrigação
+                </h5>
+            </div>
+            <div class="card-body">
+                <div style="height: 350px;">
+                    <canvas id="acoesCumpridasChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- My Actions Table -->
+<div class="row g-4">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white border-0 py-3">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-lightning me-2"></i>
+                    Minhas Ações neste Contrato
+                </h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th style="min-width: 200px;">Ação</th>
+                                <th>Obrigação</th>
+                                <th>Progresso</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for acao in minhas_acoes %}
+                            <tr>
+                                <td>
+                                    <div class="fw-semibold" style="white-space: normal; line-height: 1.2;">
+                                        {{acao.nome}}</div>
+                                    <small class="text-muted">{{acao.tipo_acao}}</small>
+                                </td>
+                                <td>
+                                    <small class="text-muted d-block text-truncate" style="max-width: 250px;">
+                                        {{acao.obrigacao.titulo}}
+                                    </small>
+                                </td>
+                                <td>
+                                    <div class="progress mb-1"
+                                        style="height: 8px; border-radius: 4px; background-color: #e9ecef;">
+                                        <div class="progress-bar" role="progressbar"
+                                            style="width: {{acao.percentual_cumprido}}%; background: linear-gradient(90deg, #0066B3 0%, #004A8F 100%);"
+                                            aria-valuenow="{{acao.percentual_cumprido}}" aria-valuemin="0"
+                                            aria-valuemax="100"></div>
+                                    </div>
+                                    <small class="text-muted fw-medium">{{acao.percentual_cumprido}}%</small>
+                                </td>
+                                <td>
+                                    {% if acao.status == 'finalizado' %}
+                                    <span class="badge bg-success">Finalizado</span>
+                                    {% elif acao.status == 'em_andamento' %}
+                                    <span class="badge bg-gold">Em Andamento</span>
+                                    {% elif acao.status == 'atrasado' %}
+                                    <span class="badge bg-danger">Atrasado</span>
+                                    {% else %}
+                                    <span class="badge bg-secondary">{{acao.get_status_display}}</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="4" class="text-center text-muted py-4">
+                                    <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                                    Nenhuma ação sua vinculada a este contrato
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // --- Gráfico de Status das Obrigações ---
+    try {
+        const data = JSON.parse('{{obrigacoes_por_status|safe|escapejs}}');
+        const ctx = document.getElementById('obrigacoesStatusChart');
+        
+        const labelMap = {
+            'pendente': 'Pendente',
+            'em_andamento': 'Em Andamento',
+            'cumprida': 'Cumprida',
+            'vencida': 'Vencida'
+        };
+        
+        const colorMap = {
+            'pendente': 'rgba(108, 117, 125, 0.8)',
+            'em_andamento': 'rgba(255, 195, 0, 0.8)',
+            'cumprida': 'rgba(25, 135, 84, 0.8)',
+            'vencida': 'rgba(220, 53, 69, 0.8)'
+        };
+
+        if (ctx && data.length > 0) {
+            new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: data.map(d => labelMap[d.status] || d.status),
+                    datasets: [{
+                        data: data.map(d => d.total),
+                        backgroundColor: data.map(d => colorMap[d.status] || '#ccc'),
+                        borderWidth: 2,
+                        borderColor: '#fff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom' }
+                    }
+                }
+            });
+        }
+    } catch (e) { console.error(e); }
+
+    // --- Gráfico de Ações por Usuário ---
+    try {
+        const data = JSON.parse('{{acoes_por_usuario|safe|escapejs}}');
+        const ctx = document.getElementById('acoesUsuarioChart');
+
+        if (ctx && data.length > 0) {
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: data.map(d => d.usuario),
+                    datasets: [{
+                        label: 'Quantidade de Ações',
+                        data: data.map(d => d.total),
+                        backgroundColor: 'rgba(13, 110, 253, 0.8)',
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: true, ticks: { stepSize: 1 } },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+        }
+    } catch (e) { console.error(e); }
+
+    // --- Gráfico de Percentual por Obrigação ---
+    try {
+        const data = JSON.parse('{{dados_percentual_obrigacoes|safe|escapejs}}');
+        const ctx = document.getElementById('percentualObrigacaoChart');
+
+        if (ctx && data.length > 0) {
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: data.map(d => d.titulo.length > 30 ? d.titulo.substring(0, 30) + '...' : d.titulo),
+                    datasets: [{
+                        label: 'Percentual de Atendimento (%)',
+                        data: data.map(d => d.percentual_atendimento),
+                        backgroundColor: 'rgba(25, 135, 84, 0.8)',
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { 
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `Atendimento: ${context.raw}%`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: { beginAtZero: true, max: 100 },
+                        y: { grid: { display: false } }
+                    }
+                }
+            });
+        }
+    } catch (e) { console.error(e); }
+
+    // --- Gráfico de Ações Cumpridas por Obrigação ---
+    try {
+        const data = JSON.parse('{{dados_acoes_cumpridas_obrigacao|safe|escapejs}}');
+        const ctx = document.getElementById('acoesCumpridasChart');
+
+        if (ctx && data.length > 0) {
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: data.map(d => d.titulo.length > 40 ? d.titulo.substring(0, 40) + '...' : d.titulo),
+                    datasets: [{
+                        label: '% de Ações Finalizadas',
+                        data: data.map(d => d.percentual),
+                        backgroundColor: 'rgba(118, 75, 162, 0.8)',
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: true, max: 100 },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+        }
+    } catch (e) { console.error(e); }
+</script>
+{% endblock %}
