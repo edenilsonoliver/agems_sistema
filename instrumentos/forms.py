@@ -57,7 +57,7 @@ class ObrigacaoForm(forms.ModelForm):
             'titulo': forms.TextInput(attrs={'class': 'form-control', 'maxlength': '200'}),
             'descricao': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
             'tipo_obrigacao': forms.Select(attrs={'class': 'form-select'}),
-            'clausula_referencia': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: Cláusula 5.2'}),
+            'clausula_referencia': forms.TextInput(attrs={'class': 'form-control', 'maxlength': '200', 'placeholder': 'Ex: Cláusula 5.2'}),
             'prazo_dias': forms.NumberInput(attrs={'class': 'form-control'}),
             'data_vencimento': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}, format='%Y-%m-%d'),
             'status': forms.Select(attrs={'class': 'form-select'}),

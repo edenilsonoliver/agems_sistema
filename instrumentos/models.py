@@ -148,7 +148,7 @@ class Obrigacao(models.Model):
     descricao = models.TextField('Descrição')
     clausula_referencia = models.CharField(
         'Cláusula de Referência',
-        max_length=50,
+        max_length=200,
         blank=True,
         help_text='Ex: Cláusula 5.2, Item 3.4, etc'
     )
