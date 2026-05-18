@@ -54,7 +54,7 @@ class ObrigacaoForm(forms.ModelForm):
                   'prazo_dias', 'data_vencimento', 'status', 'percentual_atendimento', 
                   'recorrente', 'observacoes']
         widgets = {
-            'titulo': forms.TextInput(attrs={'class': 'form-control'}),
+            'titulo': forms.TextInput(attrs={'class': 'form-control', 'maxlength': '200'}),
             'descricao': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
             'tipo_obrigacao': forms.Select(attrs={'class': 'form-select'}),
             'clausula_referencia': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: Cláusula 5.2'}),
