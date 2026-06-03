@@ -1,0 +1,63 @@
+{% extends 'base_modern.html' %}
+{% load static %}
+
+{% block title %}Dashboards Regulatórios - AGEMS{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12 d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="h3 mb-0 text-gray-800">
+                    <i class="bi bi-graph-up text-primary me-2"></i>Dashboards de Dados (DGE)
+                </h1>
+                <p class="text-muted mt-1">Central de Inteligência de Dados Regulatórios</p>
+            </div>
+            {% if request.user.is_dataset_manager or request.user.perfil == 0 %}
+            <div class="dropdown">
+                <button class="btn btn-primary dropdown-toggle" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="bi bi-plus-lg me-1"></i> Nova Integração
+                </button>
+                <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+                    <li><a class="dropdown-item" href="{% url 'integracao_dados:dashboard_create' %}">Criar Dashboard</a></li>
+                    <li><a class="dropdown-item" href="{% url 'integracao_dados:dataset_create' %}">Criar Dataset (JSON/CSV)</a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item" href="{% url 'integracao_dados:fontedados_list' %}">Gerenciar Fontes de Dados</a></li>
+                </ul>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="row">
+        {% for dashboard in dashboards %}
+        <div class="col-md-4 mb-4">
+            <div class="card h-100 shadow-sm border-left-primary">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <h5 class="card-title font-weight-bold text-primary mb-1">{{ dashboard.nome }}</h5>
+                        <span class="badge bg-info text-white">{{ dashboard.diretoria_proprietaria.sigla|default:"AGEMS" }}</span>
+                    </div>
+                    <p class="card-text text-muted small mb-3">
+                        Criado por: {{ dashboard.criador.get_full_name|default:dashboard.criador.username }}
+                    </p>
+                    <p class="card-text">{{ dashboard.descricao|truncatechars:100 }}</p>
+                </div>
+                <div class="card-footer bg-white border-top-0 pt-0">
+                    <a href="{% url 'integracao_dados:dashboard_detail' dashboard.id %}" class="btn btn-outline-primary btn-sm w-100">
+                        <i class="bi bi-eye me-1"></i> Acessar Painel
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12">
+            <div class="alert alert-info text-center py-5">
+                <i class="bi bi-info-circle display-4 d-block mb-3"></i>
+                Nenhum dashboard analítico disponível para o seu acesso no momento.
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

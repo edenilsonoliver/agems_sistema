@@ -1,0 +1,19 @@
+{% extends 'components/form_view.html' %}
+{% load crispy_forms_tags %}
+
+{% block form_content %}
+    {{ form|crispy }}
+{% endblock %}
+
+{% block sidebar_info %}
+<div class="alert alert-info">
+    <h6><i class="bi bi-server me-2"></i>Gestão de Datasets</h6>
+    <hr>
+    <small>
+        <strong>O que é um Dataset?</strong><br>
+        É uma base de dados limpa e padronizada que servirá para construir gráficos e indicadores.
+        <br><br>
+        Você pode fazer upload de um arquivo JSON/CSV estruturado para preenchimento rápido (Mock/Beta).
+    </small>
+</div>
+{% endblock %}

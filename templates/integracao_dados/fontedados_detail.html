@@ -1,0 +1,256 @@
+{% extends 'base_modern.html' %}
+
+{% block content %}
+
+{# ══════════════════════════════════════════════════════════════
+   CABEÇALHO + BREADCRUMB
+   ══════════════════════════════════════════════════════════════ #}
+<div class="d-flex justify-content-between align-items-start mb-4">
+    <div>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'integracao_dados:fontedados_list' %}">Fontes de Dados</a></li>
+                <li class="breadcrumb-item active">{{ fonte.nome }}</li>
+            </ol>
+        </nav>
+        <h1 class="page-title">
+            <i class="bi bi-hdd-network me-2"></i> {{ fonte.nome }}
+        </h1>
+        <p class="text-muted mb-0">
+            {{ fonte.get_tipo_display }}
+            {% if fonte.url_base %}
+                · <code class="small">{{ fonte.url_base }}</code>
+            {% else %}
+                · <span class="text-warning">URL Base não configurada</span>
+            {% endif %}
+        </p>
+    </div>
+    <div class="d-flex gap-2 mt-2">
+        <a href="{% url 'integracao_dados:fontedados_update' fonte.pk %}" class="btn btn-outline-secondary">
+            <i class="bi bi-pencil me-1"></i> Editar Fonte
+        </a>
+        <a href="{% url 'integracao_dados:fontedados_list' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i> Voltar
+        </a>
+    </div>
+</div>
+
+{# ══════════════════════════════════════════════════════════════
+   CARDS DE RESUMO RÁPIDO
+   ══════════════════════════════════════════════════════════════ #}
+<div class="row g-3 mb-4">
+    <div class="col-sm-3">
+        <div class="card border-0 shadow-sm text-center py-3">
+            <div class="display-6 fw-bold text-primary">{{ endpoints|length }}</div>
+            <div class="small text-muted mt-1"><i class="bi bi-diagram-3 me-1"></i>Endpoints</div>
+        </div>
+    </div>
+    <div class="col-sm-3">
+        <div class="card border-0 shadow-sm text-center py-3">
+            {% if fonte.status_integracao %}
+                <div class="display-6 fw-bold text-success"><i class="bi bi-check-circle-fill"></i></div>
+                <div class="small text-muted mt-1">Integração Ativa</div>
+            {% else %}
+                <div class="display-6 fw-bold text-secondary"><i class="bi bi-pause-circle-fill"></i></div>
+                <div class="small text-muted mt-1">Integração Inativa</div>
+            {% endif %}
+        </div>
+    </div>
+    <div class="col-sm-3">
+        <div class="card border-0 shadow-sm text-center py-3">
+            {% if tem_token %}
+                <div class="display-6 fw-bold text-success"><i class="bi bi-key-fill"></i></div>
+                <div class="small text-muted mt-1">Token Ativo</div>
+            {% else %}
+                <div class="display-6 fw-bold text-warning"><i class="bi bi-key"></i></div>
+                <div class="small text-muted mt-1">Sem Token</div>
+            {% endif %}
+        </div>
+    </div>
+    <div class="col-sm-3">
+        <div class="card border-0 shadow-sm text-center py-3">
+            <div class="display-6 fw-bold text-info">
+                <i class="bi bi-shield-check"></i>
+            </div>
+            <div class="small text-muted mt-1">{{ fonte.get_metodo_autenticacao_display }}</div>
+        </div>
+    </div>
+</div>
+
+{# ══════════════════════════════════════════════════════════════
+   CORPO PRINCIPAL: AUTH (esq) + ENDPOINTS (dir)
+   ══════════════════════════════════════════════════════════════ #}
+<div class="row g-4">
+
+    {# ── COLUNA ESQUERDA: Autenticação e Credenciais ── #}
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white border-0 pt-3">
+                <h6 class="fw-semibold mb-0"><i class="bi bi-shield-check me-2 text-primary"></i>Autenticação e Credenciais</h6>
+            </div>
+            <div class="card-body">
+
+                {# Status das credenciais #}
+                <div class="small text-muted mb-2">Credenciais Configuradas</div>
+                <ul class="list-unstyled small mb-3">
+                    <li class="mb-1">
+                        <i class="bi {% if tem_usuario %}bi-check-circle-fill text-success{% else %}bi-x-circle text-danger{% endif %} me-1"></i>
+                        Usuário / Client ID
+                    </li>
+                    <li class="mb-1">
+                        <i class="bi {% if tem_senha %}bi-check-circle-fill text-success{% else %}bi-x-circle text-danger{% endif %} me-1"></i>
+                        Senha / Client Secret
+                    </li>
+                    <li class="mb-1">
+                        <i class="bi {% if tem_token %}bi-check-circle-fill text-success{% else %}bi-x-circle text-warning{% endif %} me-1"></i>
+                        Token Ativo
+                        {% if credencial and credencial.ultima_renovacao %}
+                            <span class="text-muted ms-1">({{ credencial.ultima_renovacao|date:"d/m H:i" }})</span>
+                        {% endif %}
+                    </li>
+                </ul>
+
+                {# Botão gerenciar credenciais #}
+                <a href="{% url 'integracao_dados:credencial_editar' fonte.pk %}" class="btn btn-sm btn-outline-primary w-100 mb-2">
+                    <i class="bi bi-key me-1"></i>
+                    {% if tem_usuario or tem_senha %}Atualizar Credenciais{% else %}Configurar Credenciais{% endif %}
+                </a>
+
+                {# Botão Renovar Token — só aparece uma vez, apenas para estratégias com auth flow #}
+                {% if fonte.metodo_autenticacao == 'jwt' or fonte.metodo_autenticacao == 'oauth2' or fonte.metodo_autenticacao == 'basic' %}
+                <form method="post" action="{% url 'integracao_dados:renovar_token' fonte.pk %}" class="mt-1">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-sm btn-success w-100">
+                        <i class="bi bi-arrow-repeat me-1"></i> Renovar Token Agora
+                    </button>
+                </form>
+                {% endif %}
+
+                <hr>
+
+                {# Configuração de Auth Flow #}
+                <div class="small text-muted mb-2">Configuração do Auth Flow</div>
+                {% if fonte.auth_url_relativa %}
+                    <div class="p-2 bg-light rounded small mb-2">
+                        <div class="text-muted mb-1">Endpoint de Login:</div>
+                        <code class="text-break">{{ fonte.auth_metodo }} {{ fonte.auth_url_completa }}</code>
+                    </div>
+                    <div class="p-2 bg-light rounded small mb-2">
+                        <div class="text-muted mb-1">Chave do Token na Resposta:</div>
+                        <code>{{ fonte.auth_token_key|default:"access_token" }}</code>
+                    </div>
+                    <div class="alert alert-success py-2 px-3 mb-0">
+                        <small><i class="bi bi-magic me-1"></i><strong>Auto-auth ativo:</strong> ao salvar credenciais, o sistema conecta automaticamente e captura o token.</small>
+                    </div>
+                {% else %}
+                    <div class="alert alert-warning py-2 px-3 mb-0">
+                        <small>
+                            <i class="bi bi-exclamation-triangle me-1"></i>
+                            <strong>Auth Flow não configurado.</strong><br>
+                            <a href="{% url 'integracao_dados:fontedados_update' fonte.pk %}" class="alert-link">Edite a Fonte</a> e preencha a URL de Login para ativar a obtenção automática de token.
+                        </small>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    {# ── COLUNA DIREITA: Tabela de Endpoints ── #}
+    <div class="col-md-8">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white border-0 pt-3 d-flex justify-content-between align-items-center">
+                <h6 class="fw-semibold mb-0"><i class="bi bi-diagram-3 me-2 text-primary"></i>Endpoints ({{ endpoints|length }})</h6>
+                <a href="{% url 'integracao_dados:endpoint_criar' fonte.pk %}" class="btn btn-sm btn-primary">
+                    <i class="bi bi-plus me-1"></i> Novo Endpoint
+                </a>
+            </div>
+            <div class="card-body p-0">
+                {% if endpoints %}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Nome</th>
+                                <th>Método</th>
+                                <th>URL Relativa</th>
+                                <th>Status</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for ep in endpoints %}
+                            <tr>
+                                <td class="fw-medium">{{ ep.nome }}</td>
+                                <td>
+                                    <span class="badge {% if ep.metodo_http == 'GET' %}bg-info text-dark{% elif ep.metodo_http == 'POST' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">
+                                        {{ ep.metodo_http }}
+                                    </span>
+                                </td>
+                                <td class="font-monospace small text-muted">{{ ep.url_relativa }}</td>
+                                <td>
+                                    {% if ep.ativo %}
+                                        <span class="badge bg-success">Ativo</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">Inativo</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <a href="{% url 'integracao_dados:endpoint_editar' ep.pk %}" class="btn btn-sm btn-outline-secondary" title="Editar Endpoint">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-5 text-muted">
+                    <i class="bi bi-diagram-3 display-5 mb-3 d-block"></i>
+                    <p class="mb-3">Nenhum endpoint configurado ainda.</p>
+                    <a href="{% url 'integracao_dados:endpoint_criar' fonte.pk %}" class="btn btn-sm btn-primary">
+                        <i class="bi bi-plus me-1"></i> Adicionar Primeiro Endpoint
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        {# ── INFO TÉCNICA DA FONTE ── #}
+        <div class="card border-0 shadow-sm mt-4">
+            <div class="card-header bg-white border-0 pt-3">
+                <h6 class="fw-semibold mb-0"><i class="bi bi-info-circle me-2 text-secondary"></i>Configurações da Fonte</h6>
+            </div>
+            <div class="card-body">
+                <div class="row g-3 small">
+                    <div class="col-sm-6">
+                        <div class="text-muted">Tipo</div>
+                        <div class="fw-medium">{{ fonte.get_tipo_display }}</div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="text-muted">Frequência de Sync</div>
+                        <div class="fw-medium">{{ fonte.frequencia_minutos }} min</div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="text-muted">Timeout</div>
+                        <div class="fw-medium">{{ fonte.timeout_segundos }}s</div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="text-muted">Responsável Técnico</div>
+                        <div class="fw-medium">{{ fonte.responsavel_tecnico|default:"—" }}</div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="text-muted">Cadastrado em</div>
+                        <div class="fw-medium">{{ fonte.data_cadastro|date:"d/m/Y" }}</div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="text-muted">Última Atualização</div>
+                        <div class="fw-medium">{{ fonte.data_atualizacao|date:"d/m/Y H:i" }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

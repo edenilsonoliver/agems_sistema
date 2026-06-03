@@ -1,0 +1,91 @@
+{% extends 'components/form_view.html' %}
+{% load crispy_forms_tags %}
+
+{% block form_content %}
+
+{# Banner de segurança para edição #}
+{% if tem_usuario or tem_senha or tem_token %}
+<div class="alert alert-info d-flex gap-2 mb-3">
+    <i class="bi bi-lock-fill flex-shrink-0 mt-1"></i>
+    <div>
+        <strong>Segurança:</strong> Campos sensíveis estão criptografados no banco. Os valores atuais
+        <strong>nunca</strong> são exibidos. Preencha apenas o que deseja alterar — campos em branco mantêm o valor existente.
+    </div>
+</div>
+{% endif %}
+
+{# Banner explicativo do fluxo automático #}
+{# Banner de conexão automática — aparece quando a Fonte suporta auto-auth #}
+{% if fonte.auth_url_relativa and fonte.metodo_autenticacao == 'jwt' or fonte.auth_url_relativa and fonte.metodo_autenticacao == 'oauth2' or fonte.auth_url_relativa and fonte.metodo_autenticacao == 'basic' %}
+<div class="alert alert-success d-flex gap-2 mb-3">
+    <i class="bi bi-magic flex-shrink-0 mt-1"></i>
+    <div>
+        <strong>Conexão Automática Ativada:</strong>
+        Ao salvar Usuário e Senha, o sistema vai conectar automaticamente em
+        <code>{{ fonte.auth_metodo }} {{ fonte.url_base }}{{ fonte.auth_url_relativa }}</code>
+        e capturar o token — igual ao que o Postman faz na aba AUTH.
+        <strong>Você não precisa copiar o token manualmente.</strong>
+    </div>
+</div>
+{% else %}
+<div class="alert alert-warning d-flex gap-2 mb-3">
+    <i class="bi bi-exclamation-triangle flex-shrink-0 mt-1"></i>
+    <div>
+        <strong>Configure o Auth Flow para conexão automática:</strong>
+        A Fonte está como <strong>{{ fonte.get_metodo_autenticacao_display }}</strong>.
+        Para o sistema obter o token sozinho (como o Postman), vá em
+        <a href="{% url 'integracao_dados:fontedados_update' fonte.pk %}" class="alert-link">
+            <i class="bi bi-pencil me-1"></i>Editar Fonte
+        </a>
+        e configure:
+        <ul class="mb-0 mt-1">
+            <li>Estratégia: <strong>Token JWT (Auto-renovação)</strong></li>
+            <li>URL de Login: Ex: <code>/api/auth/login</code></li>
+            <li>Método HTTP do Login: <strong>POST</strong></li>
+            <li>Chave do Token na Resposta: Ex: <code>access_token</code></li>
+        </ul>
+        <hr class="my-2">
+        Se for Bearer Token <strong>estático</strong> (não expira), cole-o diretamente no campo abaixo.
+    </div>
+</div>
+{% endif %}
+
+{{ form|crispy }}
+{% endblock %}
+
+{% block sidebar_info %}
+<div class="card border-0 bg-light mb-3">
+    <div class="card-body p-3">
+        <h6 class="fw-semibold"><i class="bi bi-magic me-2 text-success"></i>Como funciona</h6>
+        <hr class="my-2">
+        <small>
+            <strong>Com URL de Login configurada (JWT/OAuth2):</strong><br>
+            Preencha Usuário e Senha → clique Salvar → o sistema conecta automaticamente e captura o token. <br><br>
+            <strong>Bearer Token Estático:</strong><br>
+            Cole o token diretamente no campo "Token Estático". O sistema vai injetá-lo em todas as requisições.<br><br>
+            <strong>Campos em branco = sem alteração.</strong>
+        </small>
+    </div>
+</div>
+<div class="card border-0 bg-light mb-3">
+    <div class="card-body p-3">
+        <h6 class="fw-semibold"><i class="bi bi-shield-lock me-2 text-warning"></i>Segurança</h6>
+        <hr class="my-2">
+        <small>
+            Usuário, Senha e Token são gravados com criptografia AES-256.<br>
+            Nunca aparecem no HTML, nos logs ou no banco em texto puro.
+        </small>
+    </div>
+</div>
+<div class="card border-0 bg-light">
+    <div class="card-body p-3">
+        <h6 class="fw-semibold"><i class="bi bi-hdd-network me-2 text-primary"></i>Fonte</h6>
+        <hr class="my-2">
+        <small>
+            <strong>{{ fonte.nome }}</strong><br>
+            <code>{{ fonte.url_base|default:"URL não configurada" }}</code><br>
+            Estratégia: <strong>{{ fonte.get_metodo_autenticacao_display }}</strong>
+        </small>
+    </div>
+</div>
+{% endblock %}

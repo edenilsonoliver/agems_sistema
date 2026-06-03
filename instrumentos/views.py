@@ -172,6 +172,13 @@ class InstrumentoUpdateView(PermissionRequiredMixin, ModernUpdateView):
                     
         context['arquivos'] = getattr(self.object, 'arquivos', []).all() if hasattr(self.object, 'arquivos') else []
         context['tipos_obrigacao'] = TipoObrigacao.objects.all().order_by('nome')
+        
+        # Vínculos Regulatórios (Inteligência de Dados)
+        from integracao_dados.models import VinculoObrigacao
+        context['vinculos_analiticos'] = VinculoObrigacao.objects.filter(
+            obrigacao__instrumento=self.object
+        ).select_related('dashboard', 'dataset', 'obrigacao')
+        
         return context
 
     def post(self, request, *args, **kwargs):

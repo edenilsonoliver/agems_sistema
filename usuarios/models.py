@@ -73,6 +73,11 @@ class Usuario(AbstractUser):
     )
     
     # Controle de status
+    is_dataset_manager = models.BooleanField(
+        default=False,
+        verbose_name='Dataset Manager',
+        help_text='Concede acesso total ao módulo de Inteligência de Dados'
+    )
     ativo = models.BooleanField(default=True, verbose_name='Usuário Ativo')
     data_criacao = models.DateTimeField(auto_now_add=True, verbose_name='Data de Criação')
     data_atualizacao = models.DateTimeField(auto_now=True, verbose_name='Última Atualização')
@@ -183,4 +188,3 @@ class Usuario(AbstractUser):
     def pode_editar_indicador(self):
         """Verifica se pode criar/editar indicadores"""
         return self.perfil in [0, 1, 2, 3]  # Todos exceto Usuário Comum e Visualizador
-

@@ -41,33 +41,35 @@ Siga o guia detalhado em: **`INSTALACAO_MANUAL.md`**
 
 ## 🎯 Módulos Implementados
 
-### **10 Módulos Completos**
+### **12 Módulos Completos**
 
 | # | Módulo | Descrição |
 |---|--------|-----------|
-| 1 | **Usuários** | Gestão com 5 perfis hierárquicos de acesso |
-| 2 | **Entidades** | Concessionárias, Permissionárias e Entidades Reguladas |
-| 3 | **Instrumentos** | Contratos, Convênios, Acordos com NUP (E-MS) |
-| 4 | **Obrigações** | Vinculadas aos instrumentos (gerenciadas inline) |
-| 5 | **Ações** | Fiscalizações, análises, projetos, averiguações |
-| 6 | **Indicadores** | Metas, valores ideais e conformidade contratual |
-| 7 | **Mapas/Geo** | Camadas KML, mapa de fiscalização por ocorrência |
-| 8 | **Documentos** | Upload múltiplo com validação MIME |
-| 9 | **Fotos** | Registro fotográfico de campo com GPS |
-| 10 | **Painel** | Painel de Acompanhamento com gráficos e estatísticas |
+| 1 | **Usuários** | Gestão com 6 perfis hierárquicos de acesso (0-5) e auditoria de acesso |
+| 2 | **Entidades** | Reguladas, concessionárias, permissionárias, etc., sob a AGEMS |
+| 3 | **Instrumentos** | Contratos de Concessão, Convênios, Acordos e aditivos com controle de vigência |
+| 4 | **Obrigações** | Cláusulas regulatórias vinculadas aos instrumentos com controle de prazos e percentual de atendimento |
+| 5 | **Ações** | Fiscalizações de campo, vistorias e análises, com checklists, prioridades e predecessoras |
+| 6 | **Indicadores** | Acompanhamento de conformidade contratual com histórico de coletas e importação via CSV |
+| 7 | **Alertas & Notificações** | Sistema de avisos internos e por e-mail para prazos de ações e obrigações com central de preferências |
+| 8 | **Documentos** | Anexos e arquivos de apoio a instrumentos e ações com validação do tipo MIME |
+| 9 | **Fotos/Evidências** | Registro fotográfico com extração de coordenadas GPS (EXIF) para vistorias de campo |
+| 10 | **Mapas/Georreferenciamento** | Visualização geográfica de ocorrências e concessionárias com suporte a camadas KML e polígonos |
+| 11 | **Painéis/Dashboards** | Visualização gráfica global de status e dashboards analíticos dedicados por instrumento |
+| 12 | **Inteligência e Integração** | Integração com APIs externas e bancos SQL, processamento de Datasets, widgets dinâmicos e controle de compartilhamento |
 
 ---
 
 ## 🔐 Controle de Acesso por Perfil
 
-O sistema implementa **Controle de Acesso Baseado em Funções (RBAC)** com 4 perfis mapeados para Grupos de Permissão do Django. Para detalhes completos, consulte [PERFIS_ACESSO.md](./PERFIS_ACESSO.md).
+O sistema implementa **Controle de Acesso Baseado em Funções (RBAC)** com 6 perfis mapeados para Grupos de Permissão do Django. Para detalhes completos, consulte [PERFIS_ACESSO.md](./PERFIS_ACESSO.md).
 
 | Perfil | Grupo | Foco | Permissões Chave |
 |--------|-------|------|-----------------|
-| **Administrador** | *Superuser* | Sistema/TI | Acesso total e irrestrito (inclui `/admin` e configurações globais) |
-| **Gestor** (Perfil 1-2) | `Gestores` | Gerência | CRUD completo de Entidades, Instrumentos, Obrigações e Ações. Gerencia Usuários |
-| **Técnico** (Perfil 3-4) | `Tecnicos` | Execução | Pode criar e editar Ações. **Não pode excluir**. Vê apenas suas próprias tarefas (filtrado por Responsável/Executor). Somente leitura em Entidades e Instrumentos |
-| **Visualizador** (Perfil 5) | `Visualizadores` | Auditoria | Somente leitura em todo o sistema. Sem botões de Criar/Editar/Excluir |
+| **Admin do Sistema** (0) | *Superuser* | Sistema/TI | Acesso total e irrestrito (inclui `/admin` e configurações globais) |
+| **Gestor (Diretor/Assessor)** (1-2) | `Gestores` | Gerência | CRUD completo de Entidades, Instrumentos, Obrigações e Ações. Gerencia Usuários |
+| **Técnico (Coordenador/Executor)** (3-4) | `Tecnicos` | Execução | Pode criar e editar Ações. **Não pode excluir**. Vê apenas suas próprias tarefas (filtrado por Responsável/Executor). Somente leitura em Entidades e Instrumentos |
+| **Visualizador (Auditor)** (5) | `Visualizadores` | Auditoria | Somente leitura em todo o sistema. Sem botões de Criar/Editar/Excluir |
 
 ### **Comportamento para Acesso Restrito**
 - Usuários sem permissão de edição veem formulários em **Modo de Visualização** (banner azul, campos desabilitados)
@@ -77,6 +79,7 @@ O sistema implementa **Controle de Acesso Baseado em Funções (RBAC)** com 4 pe
 ### **Mapeamento Técnico**
 
 ```
+perfil 0       →  Superusuário Django (Acesso total)
 perfil 1 ou 2  →  Grupo 'Gestores'   (add/change/delete/view nos modelos principais)
 perfil 3 ou 4  →  Grupo 'Tecnicos'   (add/change/view em Acao; view em Entidade/Instrumento/Obrigacao)
 perfil 5       →  Grupo 'Visualizadores' (view em todos os modelos)

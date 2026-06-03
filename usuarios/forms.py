@@ -49,6 +49,7 @@ class UsuarioCreateForm(forms.ModelForm):
             'cargo',
             'telefone',
             'is_active',
+            'is_dataset_manager',
         ]
         widgets = {
             'username': forms.TextInput(attrs={
@@ -90,6 +91,9 @@ class UsuarioCreateForm(forms.ModelForm):
             'is_active': forms.CheckboxInput(attrs={
                 'class': 'form-check-input'
             }),
+            'is_dataset_manager': forms.CheckboxInput(attrs={
+                'class': 'form-check-input'
+            }),
         }
         labels = {
             'username': 'Nome de Usuário (Login)',
@@ -102,6 +106,7 @@ class UsuarioCreateForm(forms.ModelForm):
             'cargo': 'Cargo',
             'telefone': 'Telefone',
             'is_active': 'Usuário Ativo',
+            'is_dataset_manager': 'Gerente de Dados (DGE)',
         }
         help_texts = {
             'username': 'Nome único para login no sistema',
@@ -109,6 +114,7 @@ class UsuarioCreateForm(forms.ModelForm):
             'perfil': 'Define o nível de acesso e permissões',
             'diretoria': 'Obrigatório para perfis 1-5',
             'subunidade': 'Obrigatório para perfis 2, 3 e 4',
+            'is_dataset_manager': 'Permite ao usuário gerenciar e criar dashboards de dados analíticos.',
         }
     
     def __init__(self, *args, **kwargs):
@@ -283,6 +289,7 @@ class UsuarioUpdateForm(forms.ModelForm):
             'cargo',
             'telefone',
             'is_active',
+            'is_dataset_manager',
         ]
         widgets = {
             'username': forms.TextInput(attrs={
@@ -298,6 +305,7 @@ class UsuarioUpdateForm(forms.ModelForm):
             'cargo': forms.TextInput(attrs={'class': 'form-control'}),
             'telefone': forms.TextInput(attrs={'class': 'form-control'}),
             'is_active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'is_dataset_manager': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
         labels = {
             'username': 'Nome de Usuário (Login)',
@@ -310,6 +318,7 @@ class UsuarioUpdateForm(forms.ModelForm):
             'cargo': 'Cargo',
             'telefone': 'Telefone',
             'is_active': 'Usuário Ativo',
+            'is_dataset_manager': 'Gerente de Dados (DGE)',
         }
     
     def __init__(self, *args, **kwargs):

@@ -1,0 +1,16 @@
+{% extends 'components/form_view.html' %}
+{% load crispy_forms_tags %}
+
+{% block form_content %}
+    {{ form|crispy }}
+{% endblock %}
+
+{% block sidebar_info %}
+<div class="alert alert-info">
+    <h6><i class="bi bi-cloud-arrow-down me-2"></i>Fontes de Dados</h6>
+    <hr>
+    <small>
+        Configure as pontes de integração (APIs, Bancos) com os sistemas das concessionárias (ex: MSGás) para ingestão automatizada de dados operacionais e financeiros.
+    </small>
+</div>
+{% endblock %}

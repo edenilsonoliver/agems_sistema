@@ -1,0 +1,389 @@
+{% extends 'base_modern.html' %}
+{% load crispy_forms_tags %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-start mb-4">
+    <div>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'integracao_dados:fontedados_list' %}">Fontes de Dados</a></li>
+                <li class="breadcrumb-item active">{{ fonte.nome }}</li>
+            </ol>
+        </nav>
+        <h1 class="page-title">
+            <i class="bi bi-hdd-network me-2"></i> {{ fonte.nome }}
+        </h1>
+        <p class="text-muted mb-0">
+            {{ fonte.get_tipo_display }}
+            {% if fonte.url_base %}
+                · <code class="small">{{ fonte.url_base }}</code>
+            {% else %}
+                · <span class="text-warning">URL Base não configurada</span>
+            {% endif %}
+        </p>
+    </div>
+    <div class="d-flex gap-2 mt-2">
+        <a href="{% url 'integracao_dados:fontedados_list' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i> Voltar
+        </a>
+    </div>
+</div>
+
+{# CARDS DE STATUS DA API #}
+<div class="row g-3 mb-4">
+    <div class="col-sm-3">
+        <div class="card border-0 shadow-sm text-center py-3">
+            <div class="display-6 fw-bold text-primary">{{ endpoints|length }}</div>
+            <div class="small text-muted mt-1"><i class="bi bi-diagram-3 me-1"></i>Endpoints</div>
+        </div>
+    </div>
+    <div class="col-sm-3">
+        <div class="card border-0 shadow-sm text-center py-3" id="card-api-status">
+            {% if fonte.ultimo_status_http %}
+                {% if fonte.ultimo_status_http >= 200 and fonte.ultimo_status_http < 300 %}
+                    <div class="display-6 fw-bold text-success"><i class="bi bi-check-circle-fill"></i></div>
+                    <div class="small text-muted mt-1">API Online ({{ fonte.ultimo_status_http }})</div>
+                {% else %}
+                    <div class="display-6 fw-bold text-danger"><i class="bi bi-x-circle-fill"></i></div>
+                    <div class="small text-muted mt-1">Falha na API ({{ fonte.ultimo_status_http }})</div>
+                {% endif %}
+            {% else %}
+                <div class="display-6 fw-bold text-secondary"><i class="bi bi-question-circle-fill"></i></div>
+                <div class="small text-muted mt-1">Não testada</div>
+            {% endif %}
+        </div>
+    </div>
+    <div class="col-sm-3">
+        <div class="card border-0 shadow-sm text-center py-3">
+            {% if tem_token %}
+                <div class="display-6 fw-bold text-success"><i class="bi bi-key-fill"></i></div>
+                <div class="small text-muted mt-1">Token Ativo</div>
+            {% else %}
+                <div class="display-6 fw-bold text-warning"><i class="bi bi-key"></i></div>
+                <div class="small text-muted mt-1">Sem Token</div>
+            {% endif %}
+        </div>
+    </div>
+    <div class="col-sm-3">
+        <div class="card border-0 shadow-sm text-center py-3">
+            <div class="display-6 fw-bold text-info">
+                <i class="bi bi-shield-check"></i>
+            </div>
+            <div class="small text-muted mt-1">{{ fonte.get_metodo_autenticacao_display }}</div>
+        </div>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm">
+    <div class="card-header bg-white border-bottom-0 pt-3 pb-0">
+        <ul class="nav nav-tabs" id="manageTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link {% if not active_tab or active_tab == 'config' %}active{% endif %}" id="config-tab" data-bs-toggle="tab" data-bs-target="#config" type="button" role="tab" aria-controls="config" aria-selected="true">
+                    <i class="bi bi-gear me-1"></i> Configuração da Fonte
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link {% if active_tab == 'auth' %}active{% endif %}" id="auth-tab" data-bs-toggle="tab" data-bs-target="#auth" type="button" role="tab" aria-controls="auth" aria-selected="false">
+                    <i class="bi bi-shield-lock me-1"></i> Acesso e Credenciais
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link {% if active_tab == 'endpoints' %}active{% endif %}" id="endpoints-tab" data-bs-toggle="tab" data-bs-target="#endpoints" type="button" role="tab" aria-controls="endpoints" aria-selected="false">
+                    <i class="bi bi-diagram-3 me-1"></i> Endpoints ({{ endpoints|length }})
+                </button>
+            </li>
+        </ul>
+    </div>
+    <div class="card-body">
+        <div class="tab-content" id="manageTabsContent">
+            
+            {# ========================================================================= #}
+            {# ABA 1: CONFIGURAÇÃO DA FONTE                                              #}
+            {# ========================================================================= #}
+            <div class="tab-pane fade {% if not active_tab or active_tab == 'config' %}show active{% endif %}" id="config" role="tabpanel" aria-labelledby="config-tab">
+                <form method="post" action="{% url 'integracao_dados:fontedados_manage' fonte.pk %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="save_config">
+                    <div class="row">
+                        <div class="col-md-6 border-end pe-4">
+                            <h6 class="mb-3 text-primary">Dados Básicos</h6>
+                            {{ form_fonte.nome|as_crispy_field }}
+                            {{ form_fonte.tipo|as_crispy_field }}
+                            {{ form_fonte.diretoria|as_crispy_field }}
+                            {{ form_fonte.url_base|as_crispy_field }}
+                            
+                            <hr>
+                            <h6 class="mb-3 text-primary">Execução</h6>
+                            <div class="row">
+                                <div class="col-6">{{ form_fonte.frequencia_minutos|as_crispy_field }}</div>
+                                <div class="col-6">{{ form_fonte.timeout_segundos|as_crispy_field }}</div>
+                            </div>
+                            {{ form_fonte.responsavel_tecnico|as_crispy_field }}
+                            {{ form_fonte.status_integracao|as_crispy_field }}
+                        </div>
+                        <div class="col-md-6 ps-4">
+                            <h6 class="mb-3 text-primary">Estratégia de Autenticação</h6>
+                            {{ form_fonte.metodo_autenticacao|as_crispy_field }}
+                            
+                            <div class="alert alert-light border mt-3">
+                                <h6><i class="bi bi-magic me-2 text-warning"></i>Configuração de Login Automático</h6>
+                                <small class="text-muted mb-3 d-block">
+                                    Preencha os campos abaixo para que o sistema consiga se conectar e pegar o token sozinho (igual no Postman).
+                                </small>
+                                {{ form_fonte.auth_url_relativa|as_crispy_field }}
+                                <div class="row">
+                                    <div class="col-6">{{ form_fonte.auth_metodo|as_crispy_field }}</div>
+                                    <div class="col-6">{{ form_fonte.auth_content_type|as_crispy_field }}</div>
+                                </div>
+                                {{ form_fonte.auth_token_key|as_crispy_field }}
+                                {{ form_fonte.auth_payload_extra|as_crispy_field }}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-4 text-end border-top pt-3">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-save me-1"></i> Salvar Configuração
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            {# ========================================================================= #}
+            {# ABA 2: ACESSO E CREDENCIAIS                                               #}
+            {# ========================================================================= #}
+            <div class="tab-pane fade {% if active_tab == 'auth' %}show active{% endif %}" id="auth" role="tabpanel" aria-labelledby="auth-tab">
+                <div class="row">
+                    <div class="col-md-6 border-end pe-4">
+                        <h6 class="mb-3 text-primary">Segurança</h6>
+                        <div class="alert alert-info">
+                            <i class="bi bi-shield-lock-fill me-2"></i> Campos em branco mantêm o valor existente seguro.
+                        </div>
+                        
+                        <form method="post" action="{% url 'integracao_dados:fontedados_manage' fonte.pk %}">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="save_auth">
+                            
+                            {{ form_cred.usuario_api|as_crispy_field }}
+                            {{ form_cred.senha_api|as_crispy_field }}
+                            {{ form_cred.api_key_header|as_crispy_field }}
+                            {{ form_cred.headers_customizados|as_crispy_field }}
+                            {{ form_cred.token_manual|as_crispy_field }}
+                            
+                            <div class="mt-4 pt-3 border-top">
+                                <button type="submit" class="btn btn-success w-100">
+                                    <i class="bi bi-plug-fill me-1"></i> Salvar e Conectar
+                                </button>
+                                <small class="text-muted d-block mt-2 text-center">
+                                    O sistema tentará validar a conexão e obter o token imediatamente.
+                                </small>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="col-md-6 ps-4">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h6 class="text-primary mb-0">Status da Conexão</h6>
+                            <button id="btn-testar-api" class="btn btn-sm btn-outline-primary" data-url="{% url 'integracao_dados:testar_conexao' fonte.pk %}">
+                                <i class="bi bi-activity"></i> Testar API Agora
+                            </button>
+                        </div>
+                        
+                        <div id="test-result-container" class="alert {% if fonte.ultimo_status_http and fonte.ultimo_status_http < 300 %}alert-success{% elif fonte.ultimo_status_http %}alert-danger{% else %}alert-secondary{% endif %}">
+                            {% if fonte.ultimo_teste %}
+                                <div class="fw-bold mb-1">
+                                    Último teste: {{ fonte.ultimo_teste|date:"d/m/Y H:i:s" }}
+                                </div>
+                                <div>HTTP Status: <span class="badge bg-dark">{{ fonte.ultimo_status_http }}</span></div>
+                                <div class="small mt-2 font-monospace">{{ fonte.mensagem_ultimo_teste }}</div>
+                            {% else %}
+                                <i class="bi bi-info-circle me-1"></i> Nenhum teste de conexão realizado.
+                            {% endif %}
+                        </div>
+
+                        <h6 class="mb-3 text-primary mt-4">Token Resultante</h6>
+                        <div class="card bg-light border-0">
+                            <div class="card-body">
+                                {% if tem_token %}
+                                    <div class="d-flex align-items-center text-success mb-2">
+                                        <i class="bi bi-check-circle-fill me-2"></i> <strong>Token válido obtido</strong>
+                                    </div>
+                                    <code class="d-block text-break bg-dark text-white p-2 rounded" style="max-height: 100px; overflow-y: auto;">
+                                        {{ credencial.token_atual|truncatechars:100 }}
+                                    </code>
+                                    {% if credencial.ultima_renovacao %}
+                                    <div class="small text-muted mt-2">
+                                        Última renovação: {{ credencial.ultima_renovacao|date:"d/m/Y H:i" }}
+                                    </div>
+                                    {% endif %}
+                                {% else %}
+                                    <div class="text-muted text-center py-3">
+                                        <i class="bi bi-key display-6 d-block mb-2 text-warning"></i>
+                                        Nenhum token disponível.
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {# ========================================================================= #}
+            {# ABA 3: ENDPOINTS                                                          #}
+            {# ========================================================================= #}
+            <div class="tab-pane fade {% if active_tab == 'endpoints' %}show active{% endif %}" id="endpoints" role="tabpanel" aria-labelledby="endpoints-tab">
+                
+                <div class="mb-4">
+                    <button class="btn btn-outline-primary" type="button" data-bs-toggle="collapse" data-bs-target="#collapseNovoEndpoint" aria-expanded="false" aria-controls="collapseNovoEndpoint">
+                        <i class="bi bi-plus me-1"></i> Adicionar Novo Endpoint
+                    </button>
+                </div>
+                
+                <div class="collapse mb-4 {% if active_tab == 'endpoints' and has_endpoint_errors %}show{% endif %}" id="collapseNovoEndpoint">
+                    <div class="card card-body bg-light border-primary border-opacity-25">
+                        <h6 class="text-primary mb-3">Novo Endpoint</h6>
+                        <form method="post" action="{% url 'integracao_dados:fontedados_manage' fonte.pk %}">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="save_endpoint">
+                            <div class="row">
+                                <div class="col-md-4">{{ form_endpoint.nome|as_crispy_field }}</div>
+                                <div class="col-md-6">{{ form_endpoint.url_relativa|as_crispy_field }}</div>
+                                <div class="col-md-2">{{ form_endpoint.metodo_http|as_crispy_field }}</div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">{{ form_endpoint.parametros_default|as_crispy_field }}</div>
+                                <div class="col-md-6">{{ form_endpoint.headers_override|as_crispy_field }}</div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-10">{{ form_endpoint.descricao|as_crispy_field }}</div>
+                                <div class="col-md-2 mt-4 pt-2">{{ form_endpoint.ativo|as_crispy_field }}</div>
+                            </div>
+                            <div class="text-end mt-2">
+                                <button type="submit" class="btn btn-primary">Adicionar Endpoint</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                {% if endpoints %}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Nome</th>
+                                <th>Método</th>
+                                <th>URL Relativa</th>
+                                <th>Status</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for ep in endpoints %}
+                            <tr>
+                                <td class="fw-medium">{{ ep.nome }}</td>
+                                <td>
+                                    <span class="badge {% if ep.metodo_http == 'GET' %}bg-info text-dark{% elif ep.metodo_http == 'POST' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">
+                                        {{ ep.metodo_http }}
+                                    </span>
+                                </td>
+                                <td class="font-monospace small text-muted">{{ ep.url_relativa }}</td>
+                                <td>
+                                    {% if ep.ativo %}
+                                        <span class="badge bg-success">Ativo</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">Inativo</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <a href="{% url 'integracao_dados:endpoint_editar' ep.pk %}" class="btn btn-sm btn-outline-secondary" title="Editar Endpoint">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-5 text-muted">
+                    <i class="bi bi-diagram-3 display-5 mb-3 d-block"></i>
+                    <p class="mb-3">Nenhum endpoint configurado ainda.</p>
+                </div>
+                {% endif %}
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Restaurar a aba ativa pelo hash da URL se não houver active_tab vindo do backend
+    const hash = window.location.hash;
+    if (hash && !'{{ active_tab }}') {
+        const triggerEl = document.querySelector(`button[data-bs-target="${hash}"]`);
+        if (triggerEl) {
+            const tab = new bootstrap.Tab(triggerEl);
+            tab.show();
+        }
+    }
+    
+    // Atualizar o hash ao mudar de aba
+    const tabs = document.querySelectorAll('button[data-bs-toggle="tab"]');
+    tabs.forEach(tab => {
+        tab.addEventListener('shown.bs.tab', event => {
+            window.location.hash = event.target.dataset.bsTarget;
+        });
+    });
+
+    // Testar API via AJAX
+    const btnTestar = document.getElementById('btn-testar-api');
+    if (btnTestar) {
+        btnTestar.addEventListener('click', function() {
+            const url = this.getAttribute('data-url');
+            const resultContainer = document.getElementById('test-result-container');
+            const cardApiStatus = document.getElementById('card-api-status');
+            
+            this.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Testando...';
+            this.disabled = true;
+            
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}',
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                btnTestar.innerHTML = '<i class="bi bi-activity"></i> Testar API Agora';
+                btnTestar.disabled = false;
+                
+                // Atualizar Container de Resultado
+                resultContainer.className = `alert alert-${data.conectado ? 'success' : 'danger'}`;
+                resultContainer.innerHTML = `
+                    <div class="fw-bold mb-1">Último teste: Agora mesmo</div>
+                    <div>HTTP Status: <span class="badge bg-dark">${data.status_code}</span></div>
+                    <div class="small mt-2 font-monospace">${data.mensagem}</div>
+                `;
+                
+                // Atualizar Card Superior
+                if(cardApiStatus) {
+                    cardApiStatus.innerHTML = `
+                        <div class="display-6 fw-bold text-${data.conectado ? 'success' : 'danger'}">
+                            <i class="bi bi-${data.conectado ? 'check-circle-fill' : 'x-circle-fill'}"></i>
+                        </div>
+                        <div class="small text-muted mt-1">${data.conectado ? 'API Online' : 'Falha na API'} (${data.status_code})</div>
+                    `;
+                }
+            })
+            .catch(error => {
+                btnTestar.innerHTML = '<i class="bi bi-activity"></i> Testar API Agora';
+                btnTestar.disabled = false;
+                alert('Erro na requisição AJAX.');
+            });
+        });
+    }
+});
+</script>
+{% endblock %}

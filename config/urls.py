@@ -168,8 +168,10 @@ urlpatterns = [
     # Georeferencias
     path('georeferencias/', include('georeferencias.urls')),
 
-    # Alertas
+    # Integração de Dados (DGE)
+    path('integracao/', include('integracao_dados.urls')),
 
+    # Alertas
     path('alertas/', include('alertas.urls')),
 ]
 

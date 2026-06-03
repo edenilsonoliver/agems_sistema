@@ -122,6 +122,19 @@ class NaoVisualizadorMixin(LoginRequiredMixin, UserPassesTestMixin):
         raise PermissionDenied
 
 
+class DatasetManagerRequiredMixin(LoginRequiredMixin, UserPassesTestMixin):
+    """
+    Mixin que restringe o acesso apenas para usuários com perfil de Dataset Manager (is_dataset_manager=True)
+    ou Administradores do sistema (perfil 0).
+    """
+    def test_func(self):
+        return getattr(self.request.user, 'is_dataset_manager', False) or self.request.user.perfil == 0
+    
+    def handle_no_permission(self):
+        messages.error(self.request, 'Acesso restrito ao perfil de Dataset Manager.')
+        raise PermissionDenied
+
+
 class VerificaSenhaTemporariaMixin(LoginRequiredMixin):
     """
     Mixin que redireciona para troca de senha se senha for temporária

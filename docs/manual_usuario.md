@@ -14,10 +14,11 @@ Para acessar o sistema, utilize o navegador de sua preferência e insira o ender
 3. **Dashboard:** Após o login, você será direcionado ao Painel Principal, que apresenta um resumo gráfico das ações e status das obrigações.
 
 ### 👥 Perfis de Acesso
-O que você pode fazer no sistema depende do seu perfil:
-- **Gestor:** Acesso total. Pode criar, editar e excluir qualquer registro e gerenciar usuários.
-- **Técnico:** Foco na execução. Pode criar e editar **Ações**, mas não pode excluir registros. Vê apenas as tarefas em que está envolvido.
-- **Visualizador:** Acesso apenas para consulta. Não pode realizar alterações.
+O que você pode fazer no sistema depende do seu perfil (o sistema possui 6 perfis funcionais organizados em 4 níveis de grupos Django):
+- **Admin do Sistema** (0): Acesso total e irrestrito, inclusive a logs e configurações técnicas globais no `/admin`.
+- **Gestor (Diretor/Assessor)** (1 e 2): Gerenciamento completo de Entidades, Instrumentos, Obrigações e Ações (pode criar, editar e excluir). Possui dashboard global.
+- **Técnico (Coordenador/Executor)** (3 e 4): Foco operacional. Pode criar e editar **Ações**, anexar fotos/evidências, preencher checklists, mas **não pode excluir**. Tem visibilidade restrita a ações onde é participante.
+- **Visualizador (Auditor)** (5): Acesso para auditoria e consulta geral em modo de somente leitura. Não vê botões de ação ou formulários editáveis.
 
 ---
 
@@ -131,7 +132,18 @@ O módulo de **Ações** é o coração da execução do sistema. Ele é usado p
 - O menu **Indicadores** permite acompanhar metas contratuais e valores ideais definidos para cada serviço regulado.
 
 ### 📸 Fotos e GPS
-- Ao realizar ações de campo, você pode anexar fotos diretamente. O sistema registrará automaticamente as coordenadas de **GPS** da foto para fins de comprovação.
+- Ao realizar ações de campo, você pode anexar fotos diretamente. O sistema registrará automaticamente as coordenadas de **GPS** da foto (extraídas dos metadados EXIF) para fins de comprovação e auditoria.
+
+### 🔔 Alertas e Notificações
+- O sistema possui um motor de notificações para alertar sobre ações atrasadas, novas tarefas atribuídas e prazos de obrigações.
+- As notificações são exibidas no painel (sininho) e podem ser enviadas por e-mail de forma imediata ou em resumos diários/semanais.
+- Ajuste suas preferências de alerta no menu de perfil em **Configurações de Notificação**.
+
+### 📊 Inteligência e Integração de Dados
+- Exclusivo para perfis com permissão especial (*Dataset Manager*).
+- Permite configurar a conexão com APIs externas, bancos de dados SQL, planilhas e arquivos CSV.
+- Permite processar cargas de dados históricas (Snapshots), estruturar conjuntos de dados tabulares (Datasets) e criar Widgets gráficos personalizados.
+- É possível criar vínculos regulatórios entre datasets e as obrigações para auditorias automáticas.
 
 ---
 

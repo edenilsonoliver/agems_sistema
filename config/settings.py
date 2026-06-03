@@ -103,6 +103,7 @@ INSTALLED_APPS = [
     'documentos',
     'dashboards',
     'georeferencias',
+    'integracao_dados',
 
 ]
 
