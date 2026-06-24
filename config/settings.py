@@ -229,13 +229,15 @@ REST_FRAMEWORK = {
 }
 
 # Celery Configuration
-CELERY_BROKER_URL = 'redis://localhost:6379/0'
-CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
+CELERY_BROKER_URL = os.environ.get('CELERY_BROKER_URL', 'redis://localhost:6379/0')
+CELERY_RESULT_BACKEND = os.environ.get('CELERY_RESULT_BACKEND', 'redis://localhost:6379/0')
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = TIME_ZONE
 CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
+# Compatibilidade com Celery 6.0 (evita CPendingDeprecationWarning)
+CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
 
 # Email Configuration (para alertas)
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
@@ -245,18 +247,9 @@ LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'dashboard'
 LOGOUT_REDIRECT_URL = 'login'
 
-# CSRF Configuration for deployment
-CSRF_TRUSTED_ORIGINS = [
-    'https://*.manus.run',
-    'http://*.manus.run',
-    'https://8080-ili05mvyzwwhytmgl021n-fda686d1.manusvm.computer',
-    'http://8080-ili05mvyzwwhytmgl021n-fda686d1.manusvm.computer',
-    'https://*.manusvm.computer',
-    'http://*.manusvm.computer',
-    'https://*.up.railway.app',
-    'https://*.onrender.com',
-    'https://*.fly.dev',
-]
+# CSRF Configuration - lido exclusivamente do .env via linha 75
+# Defina CSRF_TRUSTED_ORIGINS no seu .env ou .env.prod com os dominios/IPs reais
+# Exemplo: CSRF_TRUSTED_ORIGINS=http://10.6.0.208,https://agems.ms.gov.br
 
 # Logging Configuration
 LOGGING = {

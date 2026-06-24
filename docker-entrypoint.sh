@@ -44,36 +44,49 @@ python manage.py collectstatic --noinput
 
 # ==========================================
 # ðŸ›¡ï¸ Configurar Grupos e PermissÃµes
+# 🛡️ Configurar Grupos e Permissões
 # ==========================================
 echo ""
-echo "ðŸ›¡ï¸ Configurando grupos e permissÃµes de acesso..."
+echo "🛡️ Configurando grupos e permissões de acesso..."
 python manage.py setup_permissions
 
 # ==========================================
-# ðŸ‘¤ Criar superusuÃ¡rio padrÃ£o (se nÃ£o existir)
+# Criar superusuario padrao (se nao existir)
 # ==========================================
 echo ""
-echo "ðŸ‘¤ Verificando superusuÃ¡rio e sincronizando grupos..."
-python manage.py shell <<EOF
-from usuarios.models import Usuario
-from django.contrib.auth.models import Group
+echo "Verificando superusuario e sincronizando grupos..."
 
-# Criar superusuÃ¡rio admin se nÃ£o existir
+# Criar admin somente se a variavel DJANGO_SUPERUSER_PASSWORD estiver definida
+# e o usuario ainda nao existir. Em producao com admin ja existente: ignorado.
+if [ -n "$DJANGO_SUPERUSER_PASSWORD" ]; then
+  python manage.py shell <<EOF_ADMIN
+from usuarios.models import Usuario
+import os
+
 if not Usuario.objects.filter(username='admin').exists():
-    print("Criando superusuÃ¡rio admin...")
-    admin = Usuario.objects.create_superuser(
-        username='admin',
-        email='admin@agems.ms.gov.br',
-        password='admin123',
+    print("Criando superusuario admin...")
+    Usuario.objects.create_superuser(
+        username=os.environ.get('DJANGO_SUPERUSER_USERNAME', 'admin'),
+        email=os.environ.get('DJANGO_SUPERUSER_EMAIL', 'admin@agems.ms.gov.br'),
+        password=os.environ.get('DJANGO_SUPERUSER_PASSWORD'),
         first_name='Administrador',
         last_name='AGEMS',
         perfil=0
     )
-    print("âœ… SuperusuÃ¡rio criado com sucesso!")
+    print("Superusuario criado com sucesso!")
 else:
-    print("â„¹ï¸ SuperusuÃ¡rio admin jÃ¡ existe.")
+    print("Superusuario admin ja existe. Nenhuma alteracao realizada.")
+EOF_ADMIN
+else
+  echo "DJANGO_SUPERUSER_PASSWORD nao definida - superusuario nao sera criado automaticamente."
+fi
 
-# SincronizaÃ§Ã£o automÃ¡tica de grupos para todos os usuÃ¡rios
+# Sincronizacao automatica de grupos para todos os usuarios
+python manage.py shell <<EOF_GROUPS
+from django.contrib.auth.models import Group
+from django.contrib.auth import get_user_model
+Usuario = get_user_model()
+
 groups_map = {1: 'Gestores', 2: 'Gestores', 3: 'Tecnicos', 4: 'Tecnicos', 5: 'Visualizadores'}
 for user in Usuario.objects.all():
     if user.perfil in groups_map:
@@ -82,23 +95,21 @@ for user in Usuario.objects.all():
             group = Group.objects.get(name=group_name)
             if group not in user.groups.all():
                 user.groups.add(group)
-                print(f"âœ… {user.username} â†’ grupo {group_name}")
+                print(f"{user.username} -> grupo {group_name}")
         except Group.DoesNotExist:
-            print(f"âš ï¸ Grupo {group_name} nÃ£o encontrado para {user.username}")
-EOF
+            print(f"Grupo {group_name} nao encontrado para {user.username}")
+EOF_GROUPS
 
 # ==========================================
-# âœ… InicializaÃ§Ã£o concluÃ­da
+# ✅ Inicialização concluída
 # ==========================================
 echo ""
 echo "=========================================="
-echo "  âœ… Sistema iniciado com sucesso!"
+echo "  ✅ Sistema iniciado com sucesso!"
 echo "=========================================="
 echo ""
-echo "ðŸŒ Acesse: http://localhost:8000"
-echo "ðŸ‘¤ UsuÃ¡rio: admin"
-echo "ðŸ”‘ Senha: admin123"
+echo "🌐 Acesse: http://localhost:8000"
 echo ""
 
-# Executar comando padrÃ£o do container
+# Executar comando padrão do container
 exec "$@"
