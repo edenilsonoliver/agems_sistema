@@ -2,15 +2,15 @@
 set -e
 
 echo "=========================================="
-echo "  ðŸš€ AGEMS - Sistema de GestÃ£o RegulatÃ³ria"
+echo "  AGEMS - Sistema de Gestao Regulatoria"
 echo "=========================================="
 echo ""
 
 # ==========================================
-# ðŸ•’ Aguarda o banco de dados (PostgreSQL)
+# Aguarda o banco de dados (PostgreSQL)
 # ==========================================
 if [ "$DB_ENGINE" = "django.db.backends.postgresql" ]; then
-  echo "â³ Aguardando PostgreSQL (${DB_HOST}:${DB_PORT})..."
+  echo "Aguardando PostgreSQL (${DB_HOST}:${DB_PORT})..."
   python <<'PYCODE'
 import socket, time, os
 host = os.getenv("DB_HOST", "db")
@@ -18,36 +18,35 @@ port = int(os.getenv("DB_PORT", "5432"))
 while True:
     try:
         socket.create_connection((host, port), timeout=3)
-        print("âœ… PostgreSQL estÃ¡ pronto!")
+        print("PostgreSQL esta pronto!")
         break
     except OSError:
-        print("â³ Aguardando PostgreSQL...")
+        print("Aguardando PostgreSQL...")
         time.sleep(2)
 PYCODE
 else
-  echo "ðŸ’¾ Usando banco de dados SQLite local"
+  echo "Usando banco de dados SQLite local"
 fi
 
 # ==========================================
-# ðŸ“¦ Aplicar migraÃ§Ãµes
+# Aplicar migracoes
 # ==========================================
 echo ""
-echo "ðŸ“œ Aplicando migraÃ§Ãµes do banco de dados..."
+echo "Aplicando migracoes do banco de dados..."
 python manage.py migrate --noinput
 
 # ==========================================
-# ðŸŽ¨ Coletar arquivos estÃ¡ticos
+# Coletar arquivos estaticos
 # ==========================================
 echo ""
-echo "ðŸŽ¨ Coletando arquivos estÃ¡ticos..."
+echo "Coletando arquivos estaticos..."
 python manage.py collectstatic --noinput
 
 # ==========================================
-# ðŸ›¡ï¸ Configurar Grupos e PermissÃµes
-# 🛡️ Configurar Grupos e Permissões
+# Configurar Grupos e Permissoes
 # ==========================================
 echo ""
-echo "🛡️ Configurando grupos e permissões de acesso..."
+echo "Configurando grupos e permissoes de acesso..."
 python manage.py setup_permissions
 
 # ==========================================
@@ -101,15 +100,15 @@ for user in Usuario.objects.all():
 EOF_GROUPS
 
 # ==========================================
-# ✅ Inicialização concluída
+# Inicializacao concluida
 # ==========================================
 echo ""
 echo "=========================================="
-echo "  ✅ Sistema iniciado com sucesso!"
+echo "  Sistema iniciado com sucesso!"
 echo "=========================================="
 echo ""
-echo "🌐 Acesse: http://localhost:8000"
+echo "Acesse: http://localhost:8000"
 echo ""
 
-# Executar comando padrão do container
+# Executar comando padrao do container
 exec "$@"

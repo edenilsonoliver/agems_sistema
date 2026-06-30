@@ -26,8 +26,8 @@ PRONTO! O sistema abrirá automaticamente no navegador.
 ACESSO
 ============================================================
 URL: http://localhost:8000
-Usuário: admin
-Senha: admin123
+Usuario: admin
+Senha: Defina DJANGO_SUPERUSER_PASSWORD no .env
 
 ============================================================
 COMANDOS ÚTEIS

@@ -58,4 +58,21 @@ docker-compose.yml
 *.zip
 *.tar.gz
 .env
+.env.prod
 
+# Backups e arquivos temporarios
+*.bak
+tmp/
+backups/
+
+# Scripts internos (nao necessarios no container)
+*.ps1
+
+# Binarios Office
+*.pptx
+*.xlsx
+*.docx
+
+# Agent config e analise de seguranca
+.agent/
+.security_analysis/

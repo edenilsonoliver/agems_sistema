@@ -173,7 +173,7 @@ http://localhost:8000
 
 **Credenciais:**
 - **Usuário:** `admin`
-- **Senha:** `admin123`
+- **Senha:** Defina via `DJANGO_SUPERUSER_PASSWORD` no `.env`
 
 ---
 
@@ -319,7 +319,7 @@ Após seguir todos os passos, você deve ter:
 ✅ Docker Desktop rodando  
 ✅ Container `agems_web` com status "Up"  
 ✅ Sistema acessível em `http://localhost:8000`  
-✅ Login funcionando com `admin/admin123`  
+✅ Login funcionando com as credenciais definidas no `.env`  
 
 ---
 

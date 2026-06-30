@@ -25,9 +25,9 @@ Siga o guia detalhado em: **`INSTALACAO_MANUAL.md`**
 
 - **URL:** http://localhost:8000
 - **Usuário:** `admin`
-- **Senha:** `admin123`
+- **Senha:** Defina via variável de ambiente `DJANGO_SUPERUSER_PASSWORD` no `.env`
 
-> ⚠️ Alterar senha do administrador imediatamente em produção.
+> ⚠️ Nunca use senhas padrão em produção. Gere uma senha forte e armazene-a em um gerenciador de senhas.
 
 ---
 

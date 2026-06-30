@@ -134,8 +134,8 @@ function Show-AccessInfo {
     Write-Host "  http://localhost:8000" -ForegroundColor $ColorInfo
     Write-Host ""
     Write-Host "Credenciais de acesso:" -ForegroundColor $ColorTitle
-    Write-Host "  Usuário: admin" -ForegroundColor $ColorInfo
-    Write-Host "  Senha:   admin123" -ForegroundColor $ColorInfo
+    Write-Host "  Usuario: admin" -ForegroundColor $ColorInfo
+    Write-Host "  Senha:   (definida via DJANGO_SUPERUSER_PASSWORD no .env)" -ForegroundColor $ColorInfo
     Write-Host ""
     Write-Host "Comandos úteis:" -ForegroundColor $ColorTitle
     Write-Host "  Parar sistema:     docker-compose down" -ForegroundColor $ColorInfo

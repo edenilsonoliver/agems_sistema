@@ -23,6 +23,7 @@ docs/*.md
 debug_*
 test_*
 automated_*
+setup_logout_paranoico.py
 
 # Informações de DB
 agems_database_der.png
@@ -55,3 +56,15 @@ RELATORIO_MELHORIAS_OBRIGACOES.md
 
 # Manuals and Internal Documentation
 manuals/
+
+# Arquivos temporarios e scripts internos
+tmp/
+*.ps1
+
+# Binarios Office (documentacao deve ser em .md)
+*.pptx
+*.xlsx
+*.docx
+
+# Producao
+.env.prod

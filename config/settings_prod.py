@@ -13,6 +13,9 @@ IMPORTANTE: Este arquivo exige variáveis de ambiente configuradas!
 
 from .settings import *
 import os
+import logging
+
+logger = logging.getLogger(__name__)
 
 # ============================================================================
 # SEGURANÇA CRÍTICA
@@ -207,9 +210,8 @@ MIDDLEWARE += ['django.middleware.gzip.GZipMiddleware']
 # MENSAGEM DE INICIALIZAÇÃO
 # ============================================================================
 
-print("🔒 [PROD] Configurações de PRODUÇÃO carregadas")
-print(f"   ├─ DEBUG: {DEBUG}")
-print(f"   ├─ ALLOWED_HOSTS: {ALLOWED_HOSTS}")
-print(f"   ├─ Database: PostgreSQL")
-print(f"   ├─ HTTPS: Obrigatório")
-print(f"   └─ Ambiente: PRODUÇÃO")
+logger.info("[PROD] Configuracoes de PRODUCAO carregadas")
+logger.info(f"   DEBUG: {DEBUG}")
+logger.info(f"   ALLOWED_HOSTS: {ALLOWED_HOSTS}")
+logger.info(f"   Database: PostgreSQL")
+logger.info(f"   Ambiente: PRODUCAO")
