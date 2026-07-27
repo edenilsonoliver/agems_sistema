@@ -99,15 +99,6 @@
                     <span class="badge bg-primary ms-1">{% if object %}{{arquivos|length}}{% else %}0{% endif %}</span>
                 </button>
             </li>
-            {% if vinculos_analiticos %}
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" id="dashboards-tab" data-bs-toggle="tab" data-bs-target="#dashboards"
-                    type="button">
-                    <i class="bi bi-graph-up me-2 text-info"></i>DGE
-                    <span class="badge bg-info ms-1">{{vinculos_analiticos|length}}</span>
-                </button>
-            </li>
-            {% endif %}
         </ul>
 
         <div class="tab-content">
@@ -451,35 +442,6 @@
                 </div>
             </div>
             
-            <!-- Aba Dashboards (DGE) -->
-            {% if vinculos_analiticos %}
-            <div class="tab-pane fade" id="dashboards" role="tabpanel">
-                <div class="card border-0 shadow-sm mb-4">
-                    <div class="card-header bg-info text-white py-3">
-                        <h5 class="mb-0"><i class="bi bi-graph-up me-2"></i>Inteligência de Dados Regulatórios</h5>
-                    </div>
-                    <div class="card-body p-4">
-                        <p class="text-muted mb-4">Abaixo estão os painéis analíticos vinculados às obrigações deste instrumento.</p>
-                        <div class="row">
-                            {% for vinculo in vinculos_analiticos %}
-                            <div class="col-md-6 mb-3">
-                                <div class="card h-100 border-info">
-                                    <div class="card-body">
-                                        <h6 class="card-title text-info fw-bold">{{ vinculo.dashboard.nome }}</h6>
-                                        <p class="small text-muted mb-2"><strong>Obrigação:</strong> {{ vinculo.obrigacao.titulo }} ({{ vinculo.obrigacao.clausula_referencia }})</p>
-                                        <p class="card-text small">{{ vinculo.dashboard.descricao }}</p>
-                                        <a href="{% url 'integracao_dados:dashboard_detail' vinculo.dashboard.id %}" target="_blank" class="btn btn-sm btn-outline-info w-100">
-                                            <i class="bi bi-eye me-1"></i> Abrir Dashboard
-                                        </a>
-                                    </div>
-                                </div>
-                            </div>
-                            {% endfor %}
-                        </div>
-                    </div>
-                </div>
-            </div>
-            {% endif %}
         </div>
 
         

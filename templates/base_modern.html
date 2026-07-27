@@ -577,14 +577,6 @@
                 </div>
             </li>
 
-            {% if request.user.is_dataset_manager or request.user.perfil == 0 or request.user.perfil == 1 or request.user.perfil == 2 %}
-            <li class="sidebar-nav-item">
-                <a href="{% url 'integracao_dados:dashboard_list' %}" class="sidebar-nav-link">
-                    <i class="bi bi-graph-up text-info"></i>
-                    <span>Dashboards (DGE)</span>
-                </a>
-            </li>
-            {% endif %}
 
             {% if perms.entidades.view_entidade %}
             <li class="sidebar-nav-item">
