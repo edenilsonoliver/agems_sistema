@@ -27,9 +27,7 @@
                     {% if not object and form.arquivo_kml %}
                     <div class="alert alert-info">
                         <i class="bi bi-info-circle-fill me-2"></i>
-                        O sistema irá processar o arquivo KML e extrair elementos de <strong>Ponto, Linha e
-                            Polígono</strong>.
-                        O processamento pode levar alguns instantes.
+                        O sistema irá validar a integridade do arquivo KML e importar automaticamente <strong>pontos, linhas, polígonos, cores e estilos nativos</strong> do próprio KML.
                     </div>
                     {% endif %}
 
@@ -46,30 +44,17 @@
 
                         {{ form.descricao|as_crispy_field }}
 
-                        <div class="row">
-                            <div class="col-md-6">
-                                {{ form.cor_marcador|as_crispy_field }}
-                                <small class="text-muted">Cor hexadecimal (ex: #FF0000 para vermelho)</small>
-                            </div>
-                            <div class="col-md-6">
-                                {{ form.icone|as_crispy_field }}
-                                <small class="text-muted">Nome do ícone Bootstrap Icons (ex: circle, geo-alt)</small>
-                            </div>
-                        </div>
-
                         {% if not object %}
                         <div class="mt-3 p-3 bg-light rounded border border-dashed text-center">
                             <label for="id_arquivo_kml" class="form-label d-block fw-bold display-6">
                                 <i class="bi bi-cloud-upload"></i> Upload KML
                             </label>
                             {{ form.arquivo_kml|as_crispy_field }}
-                            <small class="d-block mt-2">Arraste seu arquivo KML ou clique para selecionar. (Máx:
-                                5MB)</small>
+                            <small class="d-block mt-2">Arraste seu arquivo KML ou clique para selecionar. (Máx: 10MB)</small>
                         </div>
                         {% else %}
                         <div class="alert alert-warning mt-3">
-                            <strong>Nota:</strong> O arquivo KML original não pode ser editado. Para alterar os pontos,
-                            exclua esta camada e crie uma nova.
+                            <strong>Nota:</strong> O arquivo KML original não pode ser re-enviado nesta camada. Para substituir os elementos espaciais, exclua esta camada e crie uma nova.
                         </div>
                         {% endif %}
 
@@ -88,22 +73,21 @@
             <div class="card mb-4 shadow-sm">
                 <div class="card-header bg-light">
                     <i class="bi bi-question-circle me-1"></i>
-                    Ajuda
+                    Ajuda & Importação
                 </div>
                 <div class="card-body">
                     <h6>Arquivos Aceitos</h6>
-                    <p class="small text-muted">Apenas arquivos <code>.kml</code> são suportados. Arquivos compactados
-                        (<code>.kmz</code>) devem ser extraídos antes.</p>
+                    <p class="small text-muted">Apenas arquivos <code>.kml</code> são suportados.</p>
 
-                    <h6>Estrutura do KML</h6>
-                    <p class="small text-muted">O sistema lê os <code>Placemarks</code> que contêm geometria de Ponto,
-                        Linha ou Polígono.</p>
+                    <h6>Validação de Integridade</h6>
+                    <p class="small text-muted">Antes de importar, o sistema valida a estrutura XML, a existência de elementos e limites geográficos (Lat/Lon).</p>
 
-                    <h6>Atributos Importados</h6>
+                    <h6>Estilos Nativos Importados</h6>
                     <ul class="small text-muted ps-3">
-                        <li>Nome do Ponto</li>
-                        <li>Descrição (HTML básico)</li>
-                        <li>Coordenadas (Lat/Long)</li>
+                        <li>Cores de Linha e Preenchimento</li>
+                        <li>Transparências (Opacidade/Alpha)</li>
+                        <li>Ícones nativos do KML</li>
+                        <li>Geometrias: Ponto, Linha e Polígono</li>
                     </ul>
                 </div>
             </div>

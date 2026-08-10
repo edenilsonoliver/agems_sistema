@@ -3,7 +3,6 @@
 {% block table_headers %}
 <th>Nome</th>
 <th>Ativo</th>
-<th class="text-center">Ícone/Cor</th>
 <th class="text-center">Elementos</th>
 <th>Criado Em</th>
 {% endblock %}
@@ -25,13 +24,7 @@
         {% endif %}
     </td>
     <td class="text-center">
-        <span class="badge rounded-pill" style="background-color: {{ camada.cor_marcador }}; color: #fff;">
-            <i class="bi bi-{{ camada.icone|default:'circle' }}"></i>
-            {{ camada.cor_marcador }}
-        </span>
-    </td>
-    <td class="text-center">
-        <span class="badge bg-light text-dark border">{{ camada.pontos.count }}</span>
+        <span class="badge bg-light text-dark border"><i class="bi bi-geo-alt me-1"></i>{{ camada.pontos.count }}</span>
     </td>
     <td>{{ camada.data_criacao|date:"d/m/Y H:i" }}</td>
     <td>
@@ -50,4 +43,86 @@
     </td>
 </tr>
 {% endfor %}
+
+{% if kml_import_resumo %}
+<!-- Modal Resumo de Importação KML -->
+<div class="modal fade" id="kmlResumoModal" tabindex="-1" aria-labelledby="kmlResumoModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content shadow-lg border-0">
+            <div class="modal-header {% if kml_import_resumo.total_descartados > 0 %}bg-warning text-dark{% else %}bg-success text-white{% endif %}">
+                <h5 class="modal-title fw-bold" id="kmlResumoModalLabel">
+                    <i class="bi bi-file-earmark-check me-2"></i> Relatório de Integridade da Importação KML
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="alert {% if kml_import_resumo.total_descartados > 0 %}alert-warning{% else %}alert-success{% endif %} d-flex align-items-center mb-4">
+                    <i class="bi {% if kml_import_resumo.total_descartados > 0 %}bi-exclamation-triangle-fill{% else %}bi-check-circle-fill{% endif %} fs-3 me-3"></i>
+                    <div>
+                        <h6 class="fw-bold mb-1">Camada: {{ kml_import_resumo.camada_nome }}</h6>
+                        <p class="mb-0 small">
+                            A validação do arquivo foi concluída. 
+                            <strong>{{ kml_import_resumo.total_importados }}</strong> elementos válidos importados
+                            {% if kml_import_resumo.total_descartados > 0 %}
+                            e <strong>{{ kml_import_resumo.total_descartados }}</strong> descartados por inconsistências nas coordenadas ou estrutura.
+                            {% else %}
+                            com 100% de integridade!
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+
+                <div class="row text-center mb-4">
+                    <div class="col-6">
+                        <div class="p-3 bg-light rounded border">
+                            <span class="d-block display-6 text-success fw-bold">{{ kml_import_resumo.total_importados }}</span>
+                            <span class="text-muted small uppercase fw-bold">Elementos Importados</span>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="p-3 bg-light rounded border">
+                            <span class="d-block display-6 {% if kml_import_resumo.total_descartados > 0 %}text-danger{% else %}text-muted{% endif %} fw-bold">{{ kml_import_resumo.total_descartados }}</span>
+                            <span class="text-muted small uppercase fw-bold">Elementos Descartados</span>
+                        </div>
+                    </div>
+                </div>
+
+                {% if kml_import_resumo.descartados_detalhes %}
+                <h6 class="fw-bold text-secondary mb-2"><i class="bi bi-list-nested me-1"></i> Detalhes dos Elementos Descartados</h6>
+                <div class="table-responsive" style="max-height: 200px;">
+                    <table class="table table-sm table-striped align-middle modern-table">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Nome do Elemento</th>
+                                <th>Motivo do Descarte</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for desc in kml_import_resumo.descartados_detalhes %}
+                            <tr>
+                                <td><code>{{ desc.name }}</code></td>
+                                <td class="text-danger small">{{ desc.reason }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% endif %}
+            </div>
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">
+                    <i class="bi bi-check-lg me-1"></i> Entendido
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        var resumoModal = new bootstrap.Modal(document.getElementById('kmlResumoModal'));
+        resumoModal.show();
+    });
+</script>
+{% endif %}
 {% endblock %}

@@ -1036,9 +1036,9 @@
                         const div = document.createElement('div');
                         div.className = 'form-check form-check-inline m-0 border rounded px-2 py-1 bg-white shadow-sm';
                         div.innerHTML = `
-                            <input class="form-check-input" type="checkbox" id="camada-${camada.id}" value="${camada.id}" onchange="toggleCamadaReferencia(this, '${camada.cor_marcador}', '${camada.icone}')">
+                            <input class="form-check-input" type="checkbox" id="camada-${camada.id}" value="${camada.id}" onchange="toggleCamadaReferencia(this)">
                             <label class="form-check-label small fw-bold" for="camada-${camada.id}" style="cursor: pointer;">
-                                <i class="bi bi-${camada.icone || 'circle'} me-1" style="color: ${camada.cor_marcador}"></i>${camada.nome}
+                                <i class="bi bi-layers-fill text-primary me-1"></i>${camada.nome}
                             </label>
                         `;
                         container.appendChild(div);
@@ -1053,13 +1053,13 @@
             });
     }
 
-    function toggleCamadaReferencia(checkbox, cor, icone) {
+    function toggleCamadaReferencia(checkbox) {
         const camadaId = checkbox.value;
         if (checkbox.checked) {
             if (camadasReferencia[camadaId]) {
                 leafletMap.addLayer(camadasReferencia[camadaId]);
             } else {
-                carregarPontosCamada(camadaId, cor, icone);
+                carregarPontosCamada(camadaId);
             }
         } else {
             if (camadasReferencia[camadaId]) {
@@ -1068,7 +1068,7 @@
         }
     }
 
-    function carregarPontosCamada(camadaId, corPadrao, iconePadrao) {
+    function carregarPontosCamada(camadaId) {
         fetch(`/georeferencias/api/camada/${camadaId}/pontos/`)
             .then(res => res.json())
             .then(data => {
@@ -1077,23 +1077,33 @@
                     data.pontos.forEach(p => {
                         let layer;
                         const estilo = p.estilo_json || {};
-                        const color = estilo.icon_color || estilo.stroke_color || corPadrao || '#3388ff';
+                        const color = estilo.icon_color || estilo.stroke_color || '#3388ff';
                         const weight = estilo.stroke_width || 3;
-                        const opacity = estilo.stroke_opacity || 0.8;
+                        const opacity = estilo.stroke_opacity !== undefined ? estilo.stroke_opacity : 0.8;
                         const fillColor = estilo.fill_color || color;
-                        const fillOpacity = estilo.fill_opacity || 0.2;
+                        const fillOpacity = estilo.fill_opacity !== undefined ? estilo.fill_opacity : 0.3;
 
                         if (p.tipo_geometria === 'Point') {
-                            layer = L.circleMarker([p.latitude, p.longitude], {
-                                radius: 6,
-                                fillColor: color,
-                                color: '#fff',
-                                weight: 1,
-                                opacity: 1,
-                                fillOpacity: 0.8
-                            });
+                            if (estilo.icon_href) {
+                                // Renderizar Ícone Nativo trazido do KML
+                                const customIcon = L.icon({
+                                    iconUrl: estilo.icon_href,
+                                    iconSize: [28, 28],
+                                    iconAnchor: [14, 28],
+                                    popupAnchor: [0, -28]
+                                });
+                                layer = L.marker([p.latitude, p.longitude], { icon: customIcon });
+                            } else {
+                                layer = L.circleMarker([p.latitude, p.longitude], {
+                                    radius: 6,
+                                    fillColor: color,
+                                    color: '#ffffff',
+                                    weight: 1.5,
+                                    opacity: 1,
+                                    fillOpacity: estilo.icon_opacity !== undefined ? estilo.icon_opacity : 0.85
+                                });
+                            }
                         } else if (p.tipo_geometria === 'LineString' && p.coordenadas_json) {
-                            // Converter [lon, lat] para [lat, lon] para o Leaflet
                             const latlngs = p.coordenadas_json.map(c => [c[1], c[0]]);
                             layer = L.polyline(latlngs, {
                                 color: color,
@@ -1101,8 +1111,6 @@
                                 opacity: opacity
                             });
                         } else if (p.tipo_geometria === 'Polygon' && p.coordenadas_json) {
-                            // Polygon no GeoJSON style é [[[lon, lat], ...]]
-                            // Leaflet Polygon quer [lat, lon] ou [[lat, lon], ...]
                             const latlngs = p.coordenadas_json[0].map(c => [c[1], c[0]]);
                             layer = L.polygon(latlngs, {
                                 color: color,
@@ -1114,20 +1122,20 @@
                         }
 
                         if (layer) {
-                            // Tooltip no mouseover (Requisito 2)
                             layer.bindTooltip(p.nome, {
                                 sticky: true,
                                 direction: 'top',
                                 offset: [0, -5]
                             });
 
-                            // Popup no clique (Interatividade)
                             layer.bindPopup(`
-                                <div class="p-1" style="min-width: 150px;">
+                                <div class="p-1" style="min-width: 160px;">
                                     <h6 class="mb-1 fw-bold text-primary">${p.nome}</h6>
-                                    <p class="small text-muted mb-0">${p.descricao || ''}</p>
-                                    <hr class="my-1">
-                                    <small class="text-muted">Tipo: ${p.tipo_geometria}</small>
+                                    <div class="small text-muted mb-2">${p.descricao || ''}</div>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span class="badge bg-secondary">${p.tipo_geometria}</span>
+                                        <small class="text-muted">${data.camada_nome || ''}</small>
+                                    </div>
                                 </div>
                             `);
                             layerGroup.addLayer(layer);

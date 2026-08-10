@@ -5,8 +5,6 @@ class CamadaReferencia(models.Model):
     nome = models.CharField(max_length=200, verbose_name="Nome da Camada")
     descricao = models.TextField(blank=True, verbose_name="Descrição")
     arquivo_kml = models.FileField(upload_to='kml_referencias/', verbose_name="Arquivo KML")
-    cor_marcador = models.CharField(max_length=7, default='#3388ff', blank=True, verbose_name="Cor Padrão (Fallback)", help_text="Usada se o KML não tiver estilos")
-    icone = models.CharField(max_length=50, default='circle', blank=True, verbose_name="Ícone Padrão", help_text="Emoji ou nome de ícone")
     ativo = models.BooleanField(default=True, verbose_name="Ativo")
     criado_por = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -52,7 +50,7 @@ class PontoReferencia(models.Model):
     # Polygon: [[[lon, lat], ...]]
     coordenadas_json = models.JSONField(null=True, blank=True, verbose_name="Coordenadas (JSON)")
     
-    # Estilo específico extraído do KML (cor, largura, opacidade)
+    # Estilo específico extraído do KML (cor, largura, opacidade, icone href)
     estilo_json = models.JSONField(null=True, blank=True, verbose_name="Estilo Customizado (JSON)")
     
     def __str__(self):

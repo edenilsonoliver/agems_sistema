@@ -8,7 +8,6 @@ from django.views.decorators.http import require_GET
 from django.contrib.auth.decorators import login_required
 from .models import CamadaReferencia, PontoReferencia
 from .forms import CamadaReferenciaForm
-# from .kml_parser import parse_kml 
 
 class CamadaListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     model = CamadaReferencia
@@ -24,6 +23,13 @@ class CamadaListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
         'icon': 'bi-layers'
     }
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # Recuperar resumo da sessão se houver resultado recente de importação KML
+        if 'kml_import_resumo' in self.request.session:
+            context['kml_import_resumo'] = self.request.session.pop('kml_import_resumo')
+        return context
+
 class CamadaCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
     model = CamadaReferencia
     permission_required = 'georeferencias.add_camadareferencia'
@@ -33,57 +39,67 @@ class CamadaCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
 
     def form_valid(self, form):
         from .kml_parser import parse_kml
-        
+
         form.instance.criado_por = self.request.user
         try:
             with transaction.atomic():
-                response = super().form_valid(form) # Salva o arquivo primeiro
-                
-                # Processar KML
-                try:
-                    pontos = parse_kml(self.object.arquivo_kml.path)
-                    
-                    if not pontos:
-                        messages.warning(self.request, "O arquivo KML foi salvo, mas nenhum ponto válido (Placemark) foi encontrado.")
+                response = super().form_valid(form)  # Salva o arquivo primeiro
+
+                # Parsear KML
+                parse_result = parse_kml(self.object.arquivo_kml.path)
+                elementos = parse_result.get('elementos', [])
+                descartados = parse_result.get('descartados', [])
+
+                if not elementos:
+                    messages.warning(
+                        self.request,
+                        "O arquivo KML foi salvo, mas nenhum elemento válido foi encontrado para importação."
+                    )
+                else:
+                    elementos_objs = [
+                        PontoReferencia(
+                            camada=self.object,
+                            nome=p.get('nome', 'Sem Nome')[:200],
+                            descricao=p.get('descricao', ''),
+                            tipo_geometria=p.get('tipo_geometria', 'Point'),
+                            latitude=p['latitude'],
+                            longitude=p['longitude'],
+                            coordenadas_json=p.get('coordenadas'),
+                            estilo_json=p.get('estilo')
+                        ) for p in elementos
+                    ]
+                    PontoReferencia.objects.bulk_create(elementos_objs)
+
+                    # Registrar resumo de importação na sessão para exibição no Modal
+                    self.request.session['kml_import_resumo'] = {
+                        'camada_nome': self.object.nome,
+                        'total_importados': len(elementos),
+                        'total_descartados': len(descartados),
+                        'descartados_detalhes': descartados
+                    }
+
+                    if descartados:
+                        messages.warning(
+                            self.request,
+                            f"Camada criada com sucesso! {len(elementos)} elementos importados e {len(descartados)} elementos descartados por inconsistência."
+                        )
                     else:
-                        # Criar objetos em bulk (Pontos, Linhas, Polígonos)
-                        elementos_objs = [
-                            PontoReferencia(
-                                camada=self.object,
-                                nome=p.get('nome', 'Sem Nome')[:200],
-                                descricao=p.get('descricao', ''),
-                                tipo_geometria=p.get('tipo_geometria', 'Point'),
-                                latitude=p['latitude'],
-                                longitude=p['longitude'],
-                                coordenadas_json=p.get('coordenadas'),
-                                estilo_json=p.get('estilo')
-                            ) for p in pontos
-                        ]
-                        PontoReferencia.objects.bulk_create(elementos_objs)
-                        messages.success(self.request, f"Camada processada com sucesso! {len(pontos)} elementos de referência importados.")
-                        
-                except Exception as e:
-                    # Se falhar o parse, vamos avisar mas manter a camada (ou rollback?)
-                    # transaction.atomic faria rollback de tudo se estourasse erro,
-                    # mas aqui estou capturando. 
-                    # Decisão de design: Rollback se o KML for inválido.
-                    raise ValueError(f"Erro ao parsear KML: {str(e)}")
+                        messages.success(
+                            self.request,
+                            f"Camada de referência processada com sucesso! {len(elementos)} elementos importados."
+                        )
 
         except Exception as e:
-            messages.error(self.request, f"Falha na criação da camada: {e}")
-            # Se já salvou o arquivo, talvez precise deletar, mas o transaction.atomic evita salvar no DB.
-            # O arquivo físico pode restar no disco, mas o Django cuida disso eventualmente ou sobrescreve.
+            messages.error(self.request, f"Falha ao processar o arquivo KML: {e}")
             return self.form_invalid(form)
-            
-        return response
 
-# ... (código anterior mantido)
+        return response
 
 class CamadaUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
     model = CamadaReferencia
     permission_required = 'georeferencias.change_camadareferencia'
     template_name = 'georeferencias/camada_form.html'
-    fields = ['nome', 'descricao', 'cor_marcador', 'icone', 'ativo'] # Arquivo KML não editável por segurança/complexidade
+    fields = ['nome', 'descricao', 'ativo']  # Removidos cor_marcador e icone
     success_url = reverse_lazy('georeferencias:camada_list')
 
     def form_valid(self, form):
@@ -107,24 +123,23 @@ class CamadaDeleteView(LoginRequiredMixin, PermissionRequiredMixin, DeleteView):
 def api_list_camadas(request):
     """Retorna lista de camadas ativas para o frontend"""
     camadas = CamadaReferencia.objects.filter(ativo=True).values(
-        'id', 'nome', 'cor_marcador', 'icone'
+        'id', 'nome', 'descricao'
     )
     return JsonResponse({'camadas': list(camadas)})
 
 @login_required
 @require_GET
 def api_get_pontos_camada(request, camada_id):
-    """Retorna os pontos de uma camada específica"""
+    """Retorna os pontos e geometrias de uma camada específica com seus estilos nativos KML"""
     try:
         camada = CamadaReferencia.objects.get(id=camada_id, ativo=True)
         pontos = camada.pontos.values(
-            'nome', 'descricao', 'latitude', 'longitude', 
+            'nome', 'descricao', 'latitude', 'longitude',
             'tipo_geometria', 'coordenadas_json', 'estilo_json'
         )
         return JsonResponse({
             'camada_id': camada.id,
-            'cor_padrao': camada.cor_marcador,
-            'icone_padrao': camada.icone,
+            'camada_nome': camada.nome,
             'pontos': list(pontos)
         })
     except CamadaReferencia.DoesNotExist:

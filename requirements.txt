@@ -1,20 +1,31 @@
+# Core & Frameworks
 Django==5.1.2
 djangorestframework==3.15.2
+flask>=3.0.0
+werkzeug>=3.0.0
+gunicorn==23.0.0
+whitenoise==6.8.2
+
+# Database & Persistence
+dj-database-url==2.3.0
+psycopg[binary]>=3.2.0
+
+# Async Tasks & Cache
 celery==5.4.0
 redis==5.2.0
+django-celery-beat==2.7.0
+
+# UI Forms & Security
 django-crispy-forms==2.3
 crispy-bootstrap5==2024.10
+django-cryptography==1.1
+python-dotenv==1.0.1
+
+# GIS, Files & Utilities
 Pillow==10.4.0
 django-import-export==4.3.3
-django-celery-beat==2.7.0
-dj-database-url==2.3.0
-gunicorn==23.0.0
-python-dotenv==1.0.1
 python-magic==0.4.27
 lxml>=5.2.0
 shapely>=2.0.0
-fastkml>=1.0
-psycopg[binary]>=3.2.0
-django-cryptography==1.1
+fastkml>=1.4.0
 requests==2.32.3
-whitenoise==6.8.2
